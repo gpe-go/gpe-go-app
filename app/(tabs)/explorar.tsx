@@ -1,0 +1,525 @@
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  FlatList,
+  Pressable,
+  Image,
+  ScrollView,
+  Linking,
+  Alert,
+  Platform,
+} from 'react-native';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
+import * as Location from 'expo-location';
+import { useFavoritos, Lugar } from '../../src/context/FavoritosContext';
+
+
+/* ================= DATA ================= */
+
+const SITIOS_TURISTICOS: Lugar[] = [
+  {
+    id: 'c1',
+    nombre: 'Cerro de la Silla',
+    categoria: 'Cerros',
+    rating: 5,
+    imagen:
+      'https://mvsnoticias.com/u/fotografias/m/2023/9/27/f768x400-565219_609122_7.jpg',
+    ubicacion: 'Guadalupe, NL',
+    costo: 'Gratis',
+  },
+  {
+    id: 'c2',
+    nombre: 'Cerro del Obispado',
+    categoria: 'Cerros',
+    rating: 4.8,
+    imagen:
+      'https://mvsnoticias.com/u/fotografias/m/2023/9/27/f768x400-565213_609116_0.jpg',
+    ubicacion: 'Monterrey, NL',
+    costo: 'Gratis',
+  },
+  {
+    id: 'p1',
+    nombre: 'Parque Fundidora',
+    categoria: 'Parques',
+    rating: 4.9,
+    imagen: 'https://tse4.mm.bing.net/th/id/OIP.LSo-DdPCU1kKKMGv9yBkkwHaFj',
+    ubicacion: 'Monterrey, NL',
+    costo: 'Gratis',
+  },
+  {
+    id: 'm1',
+    nombre: 'MARCO',
+    categoria: 'Museos',
+    rating: 4.9,
+    imagen: 'https://www.turimexico.com/wp-content/uploads/2015/06/marco.jpg',
+    ubicacion: 'Centro Monterrey',
+    costo: '$90 MXN',
+  },
+  {
+    id: 'p2',
+    nombre: 'Parque Pipo',
+    categoria: 'Parques',
+    rating: 4.5,
+    imagen: 'https://media-cdn.tripadvisor.com/media/photo-s/12/74/d3/4e/rio-la-silla.jpg',
+    ubicacion: 'Guadalupe, NL',
+    costo: 'Gratis',
+  },
+  {
+    id: 'p3',
+    nombre: 'Parque Ecológico Chipinque',
+    categoria: 'Parques',
+    rating: 4.9,
+    imagen: 'https://tse1.mm.bing.net/th/id/OIP.Vd67Wv_2mjiLc_0FQIsLJAHaFj?rs=1&pid=ImgDetMain&o=7&rm=3',
+    ubicacion: 'San Pedro Garza García, NL',
+    costo: '$80 MXN',
+  },
+  {
+    id: 'pm1',
+    nombre: 'Santiago',
+    categoria: 'Pueblos Mágicos',
+    rating: 4.7,
+    imagen: 'https://tse1.mm.bing.net/th/id/OIP.j6MPb2t1znNLuUxVB0-y8QHaEK?rs=1&pid=ImgDetMain&o=7&rm=3',
+    ubicacion: 'Santiago, NL',
+    costo: 'Gratis',
+  },
+  {
+    id: 'pm2',
+    nombre: 'Bustamante',
+    categoria: 'Pueblos Mágicos',
+    rating: 4.6,
+    imagen: 'https://tse1.mm.bing.net/th/id/OIP.xLA8540BS1kQo85-77Z5vwHaEK?rs=1&pid=ImgDetMain&o=7&rm=3',
+    ubicacion: 'Bustamante, NL',
+    costo: 'Gratis',
+  },
+  {
+    id: 'pm3',
+    nombre: 'Linares',
+    categoria: 'Pueblos Mágicos',
+    rating: 4.5,
+    imagen: 'https://mexicodesconocidoviajes.mx/wp-content/uploads/2018/10/Catedral-San-Felipe-Apostol_cortesia-secturNL-ok.jpg',
+    ubicacion: 'Linares, NL',
+    costo: 'Gratis',
+  }
+];
+
+const CATEGORIAS = [
+  { id: '1', nombre: 'Cerros', icon: 'image-filter-hdr', color: '#E96928' },
+  { id: '2', nombre: 'Parques', icon: 'pine-tree', color: '#4CAF50' },
+  { id: '3', nombre: 'Pueblos Mágicos', icon: 'church', color: '#9C27B0' },
+  { id: '4', nombre: 'Museos', icon: 'domain', color: '#4A90E2' },
+];
+
+export default function ExplorarScreen() {
+  const { toggleFavorito, esFavorito } = useFavoritos();
+  const mapRef = useRef<MapView>(null);
+
+  const [search, setSearch] = useState('');
+  const [categoriaActiva, setCategoriaActiva] = useState<string | null>(null);
+  const [filteredData, setFilteredData] =
+    useState<Lugar[]>(SITIOS_TURISTICOS);
+  const [region, setRegion] = useState<Region | null>(null);
+
+  /* ================= GEO ================= */
+
+  useEffect(() => {
+    obtenerUbicacion();
+  }, []);
+
+  const obtenerUbicacion = async () => {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permiso requerido', 'Activa la ubicación');
+      return;
+    }
+
+    const loc = await Location.getCurrentPositionAsync({});
+    const nuevaRegion = {
+      latitude: loc.coords.latitude,
+      longitude: loc.coords.longitude,
+      latitudeDelta: 0.02,
+      longitudeDelta: 0.02,
+    };
+
+    setRegion(nuevaRegion);
+    mapRef.current?.animateToRegion(nuevaRegion, 1000);
+  };
+
+  /* ================= FILTROS ================= */
+
+  const filtrarCategoria = (cat: string) => {
+    const nueva = cat === categoriaActiva ? null : cat;
+    setCategoriaActiva(nueva);
+    setSearch('');
+    setFilteredData(
+      nueva
+        ? SITIOS_TURISTICOS.filter((l) => l.categoria === nueva)
+        : SITIOS_TURISTICOS
+    );
+  };
+
+  const handleSearch = (text: string) => {
+    setSearch(text);
+    setCategoriaActiva(null);
+    setFilteredData(
+      SITIOS_TURISTICOS.filter((l) =>
+        l.nombre.toLowerCase().includes(text.toLowerCase())
+      )
+    );
+  };
+
+  const openInMaps = (nombre: string, ubicacion: string) => {
+    const query = encodeURIComponent(`${nombre} ${ubicacion}`);
+    Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${query}`);
+  };
+
+  /* ================= HEADER ================= */
+
+  const Header = () => (
+    <View>
+      {/* ===== BANNER ===== */}
+      <View style={styles.orangeBanner}>
+        <Text style={styles.bannerTitle}>Sitios Turísticos</Text>
+        <Text style={styles.bannerSub}>
+          Explora los lugares más emblemáticos
+        </Text>
+
+        <View style={styles.searchBox}>
+          <Ionicons name="search" size={20} color="#94A3B8" />
+          <TextInput
+            placeholder="Buscar lugares"
+            placeholderTextColor="#94A3B8"
+            value={search}
+            onChangeText={handleSearch}
+            style={styles.searchInput}
+          />
+        </View>
+        {/* ===== RESULTADOS DE BÚSQUEDA ===== */}
+        {search.length > 0 && (
+          <View style={styles.searchResults}>
+            <Text style={styles.searchTitle}>Resultados de búsqueda</Text>
+
+            {filteredData.length === 0 ? (
+              <Text style={styles.noResults}>No se encontraron lugares</Text>
+            ) : (
+              filteredData.map((item) => (
+                <Pressable
+                  key={item.id}
+                  style={styles.searchItem}
+                  onPress={() => openInMaps(item.nombre, item.ubicacion)}
+                >
+                  <Ionicons name="location-outline" size={18} color="#E96928" />
+                  <Text style={styles.searchItemText}>{item.nombre}</Text>
+                </Pressable>
+              ))
+            )}
+          </View>
+        )}
+      </View>
+
+      {/* ===== MAPA ===== */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Mapa del Estado</Text>
+
+        <View style={styles.mapBox}>
+          <MapView
+            ref={mapRef}
+            provider={PROVIDER_GOOGLE}
+            style={StyleSheet.absoluteFillObject}
+            initialRegion={
+              region ?? {
+                latitude: 25.676,
+                longitude: -100.256,
+                latitudeDelta: 0.1,
+                longitudeDelta: 0.1,
+              }
+            }
+          >
+            {region && <Marker coordinate={region} />}
+          </MapView>
+
+          <Pressable style={styles.locationBtn} onPress={obtenerUbicacion}>
+            <MaterialCommunityIcons
+              name="crosshairs-gps"
+              size={24}
+              color="#E96928"
+            />
+          </Pressable>
+        </View>
+
+        {/* ===== CATEGORÍAS ===== */}
+        <Text style={[styles.sectionTitle, { marginTop: 18 }]}>
+          Categorías
+        </Text>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 16 }} // 👈 ESPACIO EXTRA
+        >
+          {CATEGORIAS.map((cat) => {
+            const activa = categoriaActiva === cat.nombre;
+            return (
+              <Pressable
+                key={cat.id}
+                onPress={() => filtrarCategoria(cat.nombre)}
+                style={[
+                  styles.categoryCard,
+                  activa && { borderColor: cat.color, borderWidth: 2 },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.iconCircle,
+                    { backgroundColor: cat.color + '20' },
+                  ]}
+                >
+                  <MaterialCommunityIcons
+                    name={cat.icon as any}
+                    size={26}
+                    color={cat.color}
+                  />
+                </View>
+                <Text style={styles.catName}>{cat.nombre}</Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      </View>
+
+      <Text style={styles.sectionTitleAlt}>
+        {categoriaActiva ?? 'Descubre Nuevos Lugares'}
+      </Text>
+    </View>
+  );
+
+  /* ================= RENDER ================= */
+
+  return (
+    <FlatList
+      data={filteredData}
+      keyExtractor={(item) => item.id}
+      numColumns={2}
+      ListHeaderComponent={Header}
+      contentContainerStyle={{ paddingBottom: 40 }}
+      style={{ backgroundColor: '#F8FAFC' }}
+      renderItem={({ item }) => (
+        <View style={styles.placeCard}>
+          <Image source={{ uri: item.imagen }} style={styles.placeImg} />
+
+          <Pressable
+            style={styles.heartBadge}
+            onPress={() => toggleFavorito(item)}
+          >
+            <Ionicons
+              name={esFavorito(item.id) ? 'heart' : 'heart-outline'}
+              size={18}
+              color={esFavorito(item.id) ? '#E11D48' : '#fff'}
+            />
+          </Pressable>
+
+          <View style={styles.cardInfo}>
+            <Text style={styles.placeName} numberOfLines={1}>
+              {item.nombre}
+            </Text>
+            <Text style={styles.placeSub}>{item.ubicacion}</Text>
+            <Text style={styles.placeCost}>{item.costo}</Text>
+
+            <Pressable
+              style={styles.mapBtn}
+              onPress={() => openInMaps(item.nombre, item.ubicacion)}
+            >
+              <Ionicons name="navigate" size={14} color="#fff" />
+              <Text style={styles.mapBtnText}>Ver mapa</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
+    />
+  );
+}
+
+/* ================= STYLES ================= */
+
+const styles = StyleSheet.create({
+  orangeBanner: {
+    backgroundColor: '#E96928',
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 40 : 30,
+    paddingBottom: 18,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+  },
+  bannerTitle: { color: '#fff', fontSize: 24, fontWeight: '900' },
+  bannerSub: { color: '#fff', fontSize: 14, opacity: 0.9, marginBottom: 10 },
+
+  searchBox: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    alignItems: 'center',
+    height: 44,
+  },
+  searchInput: { flex: 1, marginLeft: 10, color: '#1E293B' },
+
+  section: { paddingHorizontal: 20, marginTop: 16 },
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#1E293B' },
+  sectionTitleAlt: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginLeft: 20,
+    marginTop: 16, // 👈 ESPACIO ENTRE CATEGORÍAS Y TÍTULO
+    marginBottom: 10,
+    color: '#1E293B',
+  },
+
+  mapBox: {
+    height: 170,
+    borderRadius: 22,
+    overflow: 'hidden',
+    marginTop: 12,
+    borderLeftWidth: 6,
+    borderLeftColor: '#E96928',
+    backgroundColor: '#fff',
+  },
+  locationBtn: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: '#fff',
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  categoryCard: {
+    backgroundColor: '#fff',
+    paddingVertical: 14,
+    paddingHorizontal: 10,
+    borderRadius: 16,
+    marginRight: 12,
+    alignItems: 'center',
+    width: 105,
+    marginTop: 12,
+  },
+  iconCircle: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  catName: {
+    fontWeight: '600',
+    fontSize: 12,
+    textAlign: 'center',
+    color: '#1E293B',
+  },
+
+  placeCard: {
+    width: '44%',
+    backgroundColor: '#fff',
+    margin: '3%',
+    borderRadius: 18,
+    overflow: 'hidden',
+  },
+  placeImg: { width: '100%', height: 120 },
+  heartBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    borderRadius: 12,
+    padding: 5,
+  },
+  cardInfo: { padding: 12 },
+  placeName: { fontWeight: 'bold', fontSize: 14 },
+  placeSub: { fontSize: 11, color: '#64748B' },
+  placeCost: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    marginTop: 4,
+    color: '#E96928',
+  },
+
+  mapBtn: {
+    backgroundColor: '#E96928',
+    marginTop: 8,
+    padding: 7,
+    borderRadius: 8,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 5,
+  },
+
+  searchResults: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginTop: 10,
+    paddingVertical: 8,
+  },
+
+  searchTitle: {
+    fontWeight: 'bold',
+    fontSize: 14,
+    color: '#1E293B',
+    paddingHorizontal: 12,
+    marginBottom: 4,
+  },
+
+  searchItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+
+  searchItemText: {
+    color: '#1E293B',
+    fontSize: 13,
+  },
+
+  noResults: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    color: '#64748B',
+    fontSize: 13,
+  },
+  mapBtnText: { color: '#fff', fontSize: 11, fontWeight: 'bold' },
+});
+
+
+/* ====================== Cuando exista backend reemplazar ===================== */
+
+// import { getLugares } from "@/src/api/api";
+// const [lugares, setLugares] = useState(LUGARES_DATA);
+
+/*
+import { useEffect } from "react";
+
+useEffect(() => {
+
+  const cargarLugares = async () => {
+    try {
+      const data = await getLugares();
+      setLugares(data);
+    } catch (error) {
+      console.log("Usando datos locales");
+    }
+  };
+
+  cargarLugares();
+
+}, []);
+*/
+
+/* ============================================================================ */
