@@ -1,0 +1,62 @@
+{
+  "expo": {
+    "name": "GuadalupeGo",
+    "slug": "GuadalupeGo",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "././assets/images/icon.png",
+    "scheme": "guadalupego",
+    "userInterfaceStyle": "automatic",
+
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+      "NSLocationWhenInUseUsageDescription": "GuadalupeGo usa tu ubicación para mostrar restaurantes, lugares turísticos y eventos cercanos."
+}
+    },
+
+    "android": {
+      "package": "com.guadalupego.app",
+      "permissions": ["ACCESS_FINE_LOCATION"],
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "././assets/images/android-icon-foreground.png",
+        "backgroundImage": "././assets/images/android-icon-background.png",
+        "monochromeImage": "././assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+
+    "web": {
+      "output": "static",
+      "favicon": "./assets/images/icon.png"
+    },
+
+    "plugins": [
+      "expo-router",
+
+      [
+        "expo-splash-screen",
+        {
+          "image": "././assets/images/splash-screen1.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#F37021"
+        }
+      ],
+
+      "expo-video",
+
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "GuadalupeGo necesita tu ubicación para mostrarte lugares cercanos."
+        }
+      ]
+    ],
+
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}
