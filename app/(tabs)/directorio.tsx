@@ -14,6 +14,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import * as Location from "expo-location";
 import { useFavoritos, Lugar } from "../../src/context/FavoritosContext";
+import { useRouter } from "expo-router";
 
 /* ================= DATA ================= */
 
@@ -81,6 +82,52 @@ const LUGARES: Lugar[] = [
     ubicacion: "Av. Eloy Cavazos",
     costo: "Gratis",
   },
+  {
+    id: "8",
+    nombre: "Hospital General de Guadalupe",
+    categoria: "Hospitales",
+    rating: 4.3,
+    imagen: "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?w=400",
+    ubicacion: "Av. Benito Juárez",
+    costo: "Gratis",
+  },
+  {
+    id: "9",
+    nombre: "Farmacias Guadalajara",
+    categoria: "Farmacias",
+    rating: 4.4,
+    imagen: "https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=400",
+    ubicacion: "Av. Pablo Livas",
+    costo: "$$",
+  },
+  {
+    id: "10",
+    nombre: "Soriana Guadalupe",
+    categoria: "Supermercados",
+    rating: 4.2,
+    imagen: "https://fastly.4sqi.net/img/general/600x600/11459827_LxS6x3Vs_KFdw02l4IWZ_mN_d6wtJfo2-qWKV9Aud_s.jpg",
+    ubicacion: "Av. Eloy Cavazos",
+    costo: "$$",
+  },
+  {
+    id: "11",
+    nombre: "Gasolinera PEMEX Pablo Livas",
+    categoria: "Gasolineras",
+    rating: 4.1,
+    imagen: "https://gobmx.org/wp-content/uploads/Gasolineras-PEMEX-Mexico-1024x576.jpg",
+    ubicacion: "Av. Pablo Livas",
+    costo: "$$",
+  },
+  {
+    id: "12",
+    nombre: "Oxxo Gas Guadalupe",
+    categoria: "Gasolineras",
+    rating: 4.0,
+    imagen: "https://www.onexpo.com.mx/NOTICIAS/AFECTA-APERTURAS-DE-OXXO-GAS-LA-FALTA-DE-GUIA-REGU/images/AFECTA-APERTURAS-DE-OXXO-GAS-LA-FALTA-DE-GUIA-REGU.jpg",
+    ubicacion: "Av. Eloy Cavazos",
+    costo: "$$",
+  },
+
 ];
 
 const CATEGORIAS = [
@@ -89,9 +136,14 @@ const CATEGORIAS = [
   { id: "3", nombre: "Tiendas", icon: "shopping", color: "#F5BE41" },
   { id: "4", nombre: "Servicios", icon: "hammer-wrench", color: "#E96928" },
   { id: "5", nombre: "Plazas", icon: "storefront", color: "#10B981" },
+  { id: "6", nombre: "Hospitales", icon: "hospital-box", color: "#a2a6a6" },
+  { id: "7", nombre: "Farmacias", icon: "pill", color: "#528968" },
+  { id: "8", nombre: "Supermercados", icon: "cart", color: "#87479c" },
+  { id: "9", nombre: "Gasolineras", icon: "gas-station", color: "#EF4444" },
 ];
 
 export default function DirectorioScreen() {
+  const router = useRouter();
   const mapRef = useRef<MapView>(null);
   const { toggleFavorito, esFavorito } = useFavoritos();
 
@@ -259,10 +311,21 @@ export default function DirectorioScreen() {
         const isFav = esFavorito(item.id);
 
         return (
-          <View style={styles.placeCard}>
+          <Pressable
+            style={styles.placeCard}
+            onPress={() =>
+              router.push({
+                pathname: "/(stack)/detalleLugar",
+                params: {
+                  lugar: JSON.stringify(item),
+                  from: "directorio"
+                },
+              })
+            }
+          >
             <View style={styles.imageWrapper}>
               <Image source={{ uri: item.imagen }} style={styles.placeImage} />
-              <Pressable style={styles.heartBtn} onPress={() => toggleFavorito(item)}>
+              <Pressable style={styles.heartBtn} onPress={() => toggleFavorito({ ...item, origen: "detalle" })}>
                 <Ionicons
                   name={isFav ? "heart" : "heart-outline"}
                   size={20}
@@ -276,7 +339,7 @@ export default function DirectorioScreen() {
               <Text style={styles.placeName}>{item.nombre}</Text>
               <Text style={styles.placeAddress}>{item.ubicacion}</Text>
             </View>
-          </View>
+          </Pressable>
         );
       }}
     />
@@ -376,11 +439,12 @@ const styles = StyleSheet.create({
 
   categoryCard: {
     backgroundColor: "#fff",
-    padding: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     borderRadius: 18,
     marginRight: 12,
     alignItems: "center",
-    width: 105,
+    minWidth: 95,
   },
 
   categoryCardActive: {

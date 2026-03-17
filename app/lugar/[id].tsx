@@ -26,7 +26,7 @@ export default function LugarDetalle() {
 
           <TouchableOpacity
             style={styles.topHeart}
-            onPress={() => toggleFavorito(lugar)}
+            onPress={() => toggleFavorito({ ...lugar, origen: "id" })}
           >
             <Ionicons
               name={esFavorito(lugar.id) ? "heart" : "heart-outline"}

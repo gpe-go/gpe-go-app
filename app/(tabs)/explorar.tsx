@@ -16,6 +16,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useFavoritos, Lugar } from '../../src/context/FavoritosContext';
+import { useRouter } from "expo-router";
 
 
 /* ================= DATA ================= */
@@ -114,6 +115,7 @@ const CATEGORIAS = [
 ];
 
 export default function ExplorarScreen() {
+  const router = useRouter();
   const { toggleFavorito, esFavorito } = useFavoritos();
   const mapRef = useRef<MapView>(null);
 
@@ -307,12 +309,21 @@ export default function ExplorarScreen() {
       contentContainerStyle={{ paddingBottom: 40 }}
       style={{ backgroundColor: '#F8FAFC' }}
       renderItem={({ item }) => (
-        <View style={styles.placeCard}>
+        <Pressable
+          style={styles.placeCard}
+          onPress={() =>
+            router.push({
+              pathname: "/(stack)/detalleLugar",
+              params: {
+                lugar: JSON.stringify(item),
+                from: "explorar"
+              },
+            })
+          }
+        >
           <Image source={{ uri: item.imagen }} style={styles.placeImg} />
 
-          <Pressable
-            style={styles.heartBadge}
-            onPress={() => toggleFavorito(item)}
+          <Pressable style={styles.heartBadge} onPress={() => toggleFavorito({ ...item, origen: "detalle" })}
           >
             <Ionicons
               name={esFavorito(item.id) ? 'heart' : 'heart-outline'}
@@ -336,7 +347,7 @@ export default function ExplorarScreen() {
               <Text style={styles.mapBtnText}>Ver mapa</Text>
             </Pressable>
           </View>
-        </View>
+        </Pressable>
       )}
     />
   );

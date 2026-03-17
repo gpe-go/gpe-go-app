@@ -9,6 +9,7 @@ export interface Lugar {
   ubicacion: string;
   rating?: number; // 👈 opcional
   costo?: string;  // 👈 opcional (CLAVE)
+   origen?: "id" | "detalle";
 }
 
 interface FavoritosContextType {

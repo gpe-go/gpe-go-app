@@ -73,7 +73,18 @@ export default function FavoritosScreen() {
               styles.card,
               { opacity: pressed ? 0.9 : 1 }
             ]}
-            onPress={() => router.push(`/lugar/${item.id}`)}
+            onPress={() => {
+              if (item.origen === "detalle") {
+                router.push({
+                  pathname: "/(stack)/detalleLugar",
+                  params: { lugar: JSON.stringify(item),
+                  from: "favoritos"  
+                  },
+                });
+              } else {
+                router.push(`/lugar/${item.id}`);
+              }
+            }}
           >
             <Image source={{ uri: item.imagen }} style={styles.image} />
 
