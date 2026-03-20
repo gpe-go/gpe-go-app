@@ -119,16 +119,19 @@ export default function ContactoScreen() {
             </View>
           </Pressable>
 
-          <View style={styles.infoRow}>
+          <Pressable
+            style={styles.infoRow}
+            onPress={() => Linking.openURL('https://www.google.com/maps/search/?api=1&query=Palacio+Municipal+Guadalupe+Nuevo+Leon+Mexico')}
+          >
             <View style={[styles.iconBox, { backgroundColor: '#F5BE41' }]}>
               <Ionicons name="location" size={20} color="white" />
             </View>
             <View style={styles.infoTextContainer}>
               <Text style={styles.infoLabel}>Dirección</Text>
-              <Text style={styles.infoValue}>Palacio Municipal, Centro</Text>
+              <Text style={[styles.infoValue, { color: '#E96928' }]}>Palacio Municipal, Centro</Text>
               <Text style={styles.infoSubValue}>Guadalupe, Nuevo León, México</Text>
             </View>
-          </View>
+          </Pressable>
         </View>
       </View>
     </ScrollView>

@@ -9,11 +9,13 @@ import {
   Image,
   ScrollView,
   Platform,
+  Linking,
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import * as Location from "expo-location";
 import { useFavoritos, Lugar } from "../../src/context/FavoritosContext";
+import { getLugares } from "../../src/api/api";
 
 /* ================= DATA ================= */
 
@@ -97,12 +99,34 @@ export default function DirectorioScreen() {
 
   const [search, setSearch] = useState("");
   const [categoriaActiva, setCategoriaActiva] = useState<string | null>(null);
+  const [todosLugares, setTodosLugares] = useState<Lugar[]>(LUGARES);
   const [filteredData, setFilteredData] = useState<Lugar[]>(LUGARES);
   const [region, setRegion] = useState<any>(null);
 
   useEffect(() => {
     obtenerUbicacion();
+    cargarLugares();
   }, []);
+
+  const cargarLugares = async () => {
+    try {
+      const res = await getLugares({ por_pagina: 50 });
+      if (res.success && res.data?.lugares?.length > 0) {
+        const lugares: Lugar[] = res.data.lugares.map((l: any) => ({
+          id: String(l.id),
+          nombre: l.nombre,
+          categoria: l.categoria_nombre,
+          imagen: l.imagen || 'https://via.placeholder.com/400x300',
+          ubicacion: l.ubicacion || l.direccion || '',
+          costo: '',
+        }));
+        setTodosLugares(lugares);
+        setFilteredData(lugares);
+      }
+    } catch {
+      // usa datos locales
+    }
+  };
 
   const obtenerUbicacion = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
@@ -120,7 +144,7 @@ export default function DirectorioScreen() {
   };
 
   const filtrar = (texto: string, categoria: string | null) => {
-    let data = LUGARES;
+    let data = todosLugares;
 
     if (categoria) data = data.filter((l) => l.categoria === categoria);
     if (texto)
@@ -258,8 +282,13 @@ export default function DirectorioScreen() {
       renderItem={({ item }) => {
         const isFav = esFavorito(item.id);
 
+        const abrirMaps = () => {
+          const query = encodeURIComponent(`${item.nombre} ${item.ubicacion} Guadalupe Nuevo León`);
+          Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${query}`);
+        };
+
         return (
-          <View style={styles.placeCard}>
+          <Pressable style={styles.placeCard} onPress={abrirMaps}>
             <View style={styles.imageWrapper}>
               <Image source={{ uri: item.imagen }} style={styles.placeImage} />
               <Pressable style={styles.heartBtn} onPress={() => toggleFavorito(item)}>
@@ -276,7 +305,7 @@ export default function DirectorioScreen() {
               <Text style={styles.placeName}>{item.nombre}</Text>
               <Text style={styles.placeAddress}>{item.ubicacion}</Text>
             </View>
-          </View>
+          </Pressable>
         );
       }}
     />

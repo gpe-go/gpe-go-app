@@ -16,9 +16,10 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useFavoritos, Lugar } from '../../src/context/FavoritosContext';
+import { getLugares } from '../../src/api/api';
 
 
-/* ================= DATA ================= */
+/* ================= DATA LOCAL (fallback) ================= */
 
 const SITIOS_TURISTICOS: Lugar[] = [
   {
@@ -119,15 +120,36 @@ export default function ExplorarScreen() {
 
   const [search, setSearch] = useState('');
   const [categoriaActiva, setCategoriaActiva] = useState<string | null>(null);
-  const [filteredData, setFilteredData] =
-    useState<Lugar[]>(SITIOS_TURISTICOS);
+  const [todosLugares, setTodosLugares] = useState<Lugar[]>(SITIOS_TURISTICOS);
+  const [filteredData, setFilteredData] = useState<Lugar[]>(SITIOS_TURISTICOS);
   const [region, setRegion] = useState<Region | null>(null);
 
-  /* ================= GEO ================= */
+  /* ================= CARGAR DATOS ================= */
 
   useEffect(() => {
     obtenerUbicacion();
+    cargarLugares();
   }, []);
+
+  const cargarLugares = async () => {
+    try {
+      const res = await getLugares({ por_pagina: 50 });
+      if (res.success && res.data?.lugares?.length > 0) {
+        const lugares: Lugar[] = res.data.lugares.map((l: any) => ({
+          id: String(l.id),
+          nombre: l.nombre,
+          categoria: l.categoria_nombre,
+          imagen: l.imagen || 'https://via.placeholder.com/400x300',
+          ubicacion: l.ubicacion || l.direccion || '',
+          costo: '',
+        }));
+        setTodosLugares(lugares);
+        setFilteredData(lugares);
+      }
+    } catch {
+      // usa datos locales
+    }
+  };
 
   const obtenerUbicacion = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
@@ -156,8 +178,8 @@ export default function ExplorarScreen() {
     setSearch('');
     setFilteredData(
       nueva
-        ? SITIOS_TURISTICOS.filter((l) => l.categoria === nueva)
-        : SITIOS_TURISTICOS
+        ? todosLugares.filter((l) => l.categoria === nueva)
+        : todosLugares
     );
   };
 
@@ -165,7 +187,7 @@ export default function ExplorarScreen() {
     setSearch(text);
     setCategoriaActiva(null);
     setFilteredData(
-      SITIOS_TURISTICOS.filter((l) =>
+      todosLugares.filter((l) =>
         l.nombre.toLowerCase().includes(text.toLowerCase())
       )
     );

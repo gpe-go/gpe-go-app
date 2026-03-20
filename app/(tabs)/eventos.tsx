@@ -1,6 +1,6 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { VideoView, useVideoPlayer } from 'expo-video';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   FlatList,
   Image,
@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { EVENTOS_DATA } from "@/src/data/eventos";
+import { getEventos } from '../../src/api/api';
 
 const CATEGORIAS = [
   { id: '1', nombre: 'Deporte', icon: 'soccer' },
@@ -45,10 +46,37 @@ export default function EventosScreen() {
   const [search, setSearch] = useState('');
   const [activeCat, setActiveCat] = useState('Todas');
   const [playVideo, setPlayVideo] = useState(false);
+  const [eventosBackend, setEventosBackend] = useState<any[]>([]);
 
+  useEffect(() => {
+    cargarEventos();
+  }, []);
+
+  const cargarEventos = async () => {
+    try {
+      const res = await getEventos({ por_pagina: 50 });
+      if (res.success && res.data?.eventos?.length > 0) {
+        setEventosBackend(res.data.eventos.map((e: any) => ({
+          id: String(e.id),
+          titulo: e.titulo,
+          fecha: e.fecha_inicio,
+          lugar: '',
+          imagen: e.imagen || 'https://via.placeholder.com/400x260',
+          categoria: e.tipo === 'noticia' ? 'Cultural' : 'Sociales',
+          sub: e.tipo,
+          costo: '',
+          especial: false,
+        })));
+      }
+    } catch {
+      // usa datos locales
+    }
+  };
+
+  const todosEventos = eventosBackend.length > 0 ? eventosBackend : EVENTOS_DATA;
   const eventoPrincipal = EVENTOS_DATA.find(e => e.especial);
 
-  const filteredEvents = EVENTOS_DATA.filter((event) => {
+  const filteredEvents = todosEventos.filter((event) => {
     if (event.especial) return false;
     const matchesSearch = event.titulo.toLowerCase().includes(search.toLowerCase());
     const matchesCat = activeCat === 'Todas' || event.categoria === activeCat;

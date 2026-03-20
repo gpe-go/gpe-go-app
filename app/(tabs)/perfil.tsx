@@ -1,294 +1,142 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  Pressable,
-  ScrollView,
+  View, Text, StyleSheet, Pressable,
+  ScrollView, ActivityIndicator, Alert
 } from 'react-native';
-import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getPerfil } from '../../src/api/api';
 
 export default function PerfilScreen() {
   const router = useRouter();
+  const [usuario, setUsuario] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    cargarPerfil();
+  }, []);
+
+  const cargarPerfil = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) { setLoading(false); return; }
+
+      const res = await getPerfil();
+      if (res.success) setUsuario(res.data);
+    } catch {
+      // sin sesión
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCerrarSesion = async () => {
+    await AsyncStorage.removeItem('token');
+    await AsyncStorage.removeItem('usuario');
+    setUsuario(null);
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color="#E96928" />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* BOTÓN CERRAR */}
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+
         <Pressable style={styles.closeButton} onPress={() => router.back()}>
           <Ionicons name="close" size={26} color="#94a3b8" />
         </Pressable>
 
-        {/* HEADER PREMIUM */}
-        <View style={styles.header}>
-          <View style={styles.avatarCircle}>
-            <Ionicons name="person" size={40} color="white" />
-          </View>
-
-          <Text style={styles.welcomeText}>Bienvenido</Text>
-          <Text style={styles.instructionText}>
-            Accede a tu cuenta para guardar eventos favoritos y recibir noticias exclusivas.
-          </Text>
-        </View>
-
-        {/* CARD FORMULARIO */}
-        <View style={styles.card}>
-          <View style={styles.form}>
-
-            <View style={styles.inputWrapper}>
-              <Ionicons name="mail-outline" size={20} color="#94a3b8" />
-              <TextInput
-                style={styles.input}
-                placeholder="Correo electrónico"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                placeholderTextColor="#94a3b8"
-              />
+        {usuario ? (
+          // === SESIÓN ACTIVA ===
+          <View>
+            <View style={styles.header}>
+              <View style={styles.avatarCircle}>
+                <Ionicons name="person" size={40} color="white" />
+              </View>
+              <Text style={styles.welcomeText}>{usuario.nombre}</Text>
+              <Text style={styles.emailText}>{usuario.email}</Text>
+              <View style={styles.rolBadge}>
+                <Text style={styles.rolText}>{usuario.rol}</Text>
+              </View>
             </View>
 
-            <View style={styles.inputWrapper}>
-              <Ionicons name="lock-closed-outline" size={20} color="#94a3b8" />
-              <TextInput
-                style={styles.input}
-                placeholder="Contraseña"
-                secureTextEntry
-                placeholderTextColor="#94a3b8"
-              />
-            </View>
-
-            <Pressable style={styles.loginButton}>
-              <Text style={styles.loginButtonText}>Iniciar Sesión</Text>
-            </Pressable>
-
-            <Pressable>
-              <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
+            <Pressable style={styles.logoutButton} onPress={handleCerrarSesion}>
+              <Ionicons name="log-out-outline" size={20} color="#E96928" />
+              <Text style={styles.logoutText}>Cerrar sesión</Text>
             </Pressable>
           </View>
-        </View>
+        ) : (
+          // === SIN SESIÓN ===
+          <View>
+            <View style={styles.header}>
+              <View style={styles.avatarCircle}>
+                <Ionicons name="person" size={40} color="white" />
+              </View>
+              <Text style={styles.welcomeText}>Bienvenido</Text>
+              <Text style={styles.instructionText}>
+                Accede a tu cuenta para guardar favoritos y recibir noticias exclusivas.
+              </Text>
+            </View>
 
-        {/* DIVIDER */}
-        <View style={styles.divider}>
-          <View style={styles.line} />
-          <Text style={styles.dividerText}>o continúa con</Text>
-          <View style={styles.line} />
-        </View>
+            <Pressable style={styles.loginButton} onPress={() => router.push('/login')}>
+              <Text style={styles.loginButtonText}>Iniciar sesión</Text>
+            </Pressable>
 
-        {/* SOCIAL */}
-        <View style={styles.socialButtons}>
-          <Pressable style={[styles.socialBtn, styles.googleBtn]}>
-            <FontAwesome5 name="google" size={18} color="#ea4335" />
-            <Text style={styles.socialBtnText}>Google</Text>
-          </Pressable>
-
-          <Pressable style={[styles.socialBtn, styles.appleBtn]}>
-            <Ionicons name="logo-apple" size={22} color="white" />
-            <Text style={[styles.socialBtnText, { color: 'white' }]}>
-              Apple
-            </Text>
-          </Pressable>
-        </View>
-
-        <Pressable style={styles.registerContainer}>
-          <Text style={styles.registerText}>
-            ¿No tienes cuenta?{' '}
-            <Text style={styles.orangeLink}>Crear cuenta</Text>
-          </Text>
-        </Pressable>
+            <Pressable style={styles.registerContainer} onPress={() => router.push('/registro')}>
+              <Text style={styles.registerText}>
+                ¿No tienes cuenta?{' '}
+                <Text style={styles.orangeLink}>Crear cuenta</Text>
+              </Text>
+            </Pressable>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#F1F5F9',
-  },
-
-  scrollContent: {
-    padding: 24,
-    paddingBottom: 40,
-  },
-
-  closeButton: {
-    alignSelf: 'flex-end',
-  },
-
-  header: {
-    alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 30,
-  },
-
+  safeArea: { flex: 1, backgroundColor: '#F1F5F9' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  scrollContent: { padding: 24, paddingBottom: 40 },
+  closeButton: { alignSelf: 'flex-end' },
+  header: { alignItems: 'center', marginTop: 20, marginBottom: 30 },
   avatarCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#E96928',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 15,
-    elevation: 6,
+    width: 80, height: 80, borderRadius: 40,
+    backgroundColor: '#E96928', justifyContent: 'center',
+    alignItems: 'center', marginBottom: 15, elevation: 6,
   },
-
-  welcomeText: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: '#0f172a',
+  welcomeText: { fontSize: 26, fontWeight: '900', color: '#0f172a' },
+  emailText: { fontSize: 15, color: '#64748b', marginTop: 4 },
+  rolBadge: {
+    marginTop: 10, backgroundColor: '#fff3ec', borderRadius: 20,
+    paddingHorizontal: 14, paddingVertical: 4,
   },
-
+  rolText: { color: '#E96928', fontWeight: '700', fontSize: 13 },
   instructionText: {
-    fontSize: 15,
-    color: '#64748b',
-    marginTop: 8,
-    textAlign: 'center',
-    lineHeight: 22,
-    paddingHorizontal: 10,
+    fontSize: 15, color: '#64748b', marginTop: 8,
+    textAlign: 'center', lineHeight: 22, paddingHorizontal: 10,
   },
-
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 25,
-    padding: 25,
-    elevation: 8,
-  },
-
-  form: {
-    gap: 18,
-  },
-
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 18,
-    paddingHorizontal: 18,
-    height: 58,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-
-  input: {
-    flex: 1,
-    marginLeft: 10,
-    fontSize: 16,
-    color: '#0f172a',
-  },
-
   loginButton: {
-    backgroundColor: '#E96928',
-    height: 58,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 10,
-    elevation: 4,
+    backgroundColor: '#E96928', height: 58, borderRadius: 18,
+    justifyContent: 'center', alignItems: 'center', elevation: 4,
   },
-
-  loginButtonText: {
-    color: 'white',
-    fontSize: 17,
-    fontWeight: '800',
+  loginButtonText: { color: 'white', fontSize: 17, fontWeight: '800' },
+  logoutButton: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 8, borderWidth: 1, borderColor: '#E96928', borderRadius: 18,
+    height: 52, marginTop: 10,
   },
-
-  forgotText: {
-    textAlign: 'center',
-    marginTop: 8,
-    color: '#64748b',
-    fontSize: 14,
-  },
-
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 35,
-  },
-
-  line: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#e2e8f0',
-  },
-
-  dividerText: {
-    marginHorizontal: 15,
-    color: '#94a3b8',
-    fontSize: 14,
-  },
-
-  socialButtons: {
-    gap: 15,
-  },
-
-  socialBtn: {
-    flexDirection: 'row',
-    height: 55,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 12,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-  },
-
-  googleBtn: {
-    backgroundColor: '#ffffff',
-  },
-
-  appleBtn: {
-    backgroundColor: '#000000',
-  },
-
-  socialBtnText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#0f172a',
-  },
-
-  registerContainer: {
-    marginTop: 40,
-    alignItems: 'center',
-  },
-
-  registerText: {
-    color: '#64748b',
-    fontSize: 15,
-  },
-
-  orangeLink: {
-    color: '#E96928',
-    fontWeight: '800',
-  },
+  logoutText: { color: '#E96928', fontWeight: '700', fontSize: 16 },
+  registerContainer: { marginTop: 24, alignItems: 'center' },
+  registerText: { color: '#64748b', fontSize: 15 },
+  orangeLink: { color: '#E96928', fontWeight: '800' },
 });
-
-/* ====================== Cuando exista backend reemplazar ===================== */
-
-// import { getUsuario } from "@/src/api/api";
-// const [usuario, setUsuario] = useState(USUARIO_DATA);
-
-/*
-import { useEffect } from "react";
-
-useEffect(() => {
-
-  const cargarUsuario = async () => {
-    try {
-      const data = await getUsuario();
-      setUsuario(data);
-    } catch (error) {
-      console.log("Usando datos locales");
-    }
-  };
-
-  cargarUsuario();
-
-}, []);
-*/
-
-/* ============================================================================ */

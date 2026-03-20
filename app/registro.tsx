@@ -7,39 +7,47 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { solicitarCodigo, loginConPassword } from '../src/api/api';
+import { registrarConPassword, registrarUsuario, solicitarCodigo } from '../src/api/api';
 
 type Metodo = 'password' | 'codigo';
 
-export default function Login() {
+export default function Registro() {
   const router = useRouter();
   const [metodo, setMetodo] = useState<Metodo>('password');
+  const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmar, setConfirmar] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => {
-    if (!email.trim()) { Alert.alert('Error', 'Ingresa tu correo'); return; }
+  const handleRegistro = async () => {
+    if (!nombre.trim() || !email.trim()) {
+      Alert.alert('Error', 'Completa todos los campos'); return;
+    }
 
     setLoading(true);
     try {
       if (metodo === 'password') {
-        if (!password.trim()) { Alert.alert('Error', 'Ingresa tu contraseña'); setLoading(false); return; }
-        const res = await loginConPassword(email.trim(), password);
+        if (!password.trim()) { Alert.alert('Error', 'Ingresa una contraseña'); setLoading(false); return; }
+        if (password.length < 6) { Alert.alert('Error', 'La contraseña debe tener al menos 6 caracteres'); setLoading(false); return; }
+        if (password !== confirmar) { Alert.alert('Error', 'Las contraseñas no coinciden'); setLoading(false); return; }
+
+        const res = await registrarConPassword(nombre.trim(), email.trim(), password);
         if (res.success) {
           await AsyncStorage.setItem('token', res.data.token);
           await AsyncStorage.setItem('usuario', JSON.stringify(res.data.usuario));
           router.replace('/(tabs)');
         } else {
-          Alert.alert('Error', res.error?.mensaje || 'Credenciales incorrectas');
+          Alert.alert('Error', res.error?.mensaje || 'No se pudo crear la cuenta');
         }
       } else {
-        const res = await solicitarCodigo(email.trim());
+        const res = await registrarUsuario(nombre.trim(), email.trim());
         if (res.success) {
-          router.push({ pathname: '/codigo', params: { email: email.trim(), codigoDesarrollo: res.data?.codigo } });
+          const resCodigo = await solicitarCodigo(email.trim());
+          router.replace({ pathname: '/codigo', params: { email: email.trim(), codigoDesarrollo: resCodigo.data?.codigo } });
         } else {
-          Alert.alert('Error', res.error?.mensaje || 'No se pudo enviar el código');
+          Alert.alert('Error', res.error?.mensaje || 'No se pudo crear la cuenta');
         }
       }
     } catch {
@@ -52,8 +60,8 @@ export default function Login() {
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.inner} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>Iniciar sesión</Text>
-        <Text style={styles.subtitle}>Bienvenido a GuadalupeGO</Text>
+        <Text style={styles.title}>Crear cuenta</Text>
+        <Text style={styles.subtitle}>Únete a GuadalupeGO</Text>
 
         {/* Selector de método */}
         <View style={styles.tabs}>
@@ -61,14 +69,27 @@ export default function Login() {
             style={[styles.tab, metodo === 'password' && styles.tabActive]}
             onPress={() => setMetodo('password')}
           >
-            <Text style={[styles.tabText, metodo === 'password' && styles.tabTextActive]}>Contraseña</Text>
+            <Text style={[styles.tabText, metodo === 'password' && styles.tabTextActive]}>Con contraseña</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.tab, metodo === 'codigo' && styles.tabActive]}
             onPress={() => setMetodo('codigo')}
           >
-            <Text style={[styles.tabText, metodo === 'codigo' && styles.tabTextActive]}>Código por email</Text>
+            <Text style={[styles.tabText, metodo === 'codigo' && styles.tabTextActive]}>Solo email</Text>
           </TouchableOpacity>
+        </View>
+
+        {/* Nombre */}
+        <View style={styles.inputWrapper}>
+          <Ionicons name="person-outline" size={20} color="#94a3b8" />
+          <TextInput
+            style={styles.input}
+            placeholder="Tu nombre"
+            placeholderTextColor="#94a3b8"
+            autoCapitalize="words"
+            value={nombre}
+            onChangeText={setNombre}
+          />
         </View>
 
         {/* Email */}
@@ -87,32 +108,44 @@ export default function Login() {
 
         {/* Contraseña (solo en modo password) */}
         {metodo === 'password' && (
-          <View style={styles.inputWrapper}>
-            <Ionicons name="lock-closed-outline" size={20} color="#94a3b8" />
-            <TextInput
-              style={styles.input}
-              placeholder="Contraseña"
-              placeholderTextColor="#94a3b8"
-              secureTextEntry={!showPassword}
-              value={password}
-              onChangeText={setPassword}
-            />
-            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-              <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#94a3b8" />
-            </TouchableOpacity>
-          </View>
+          <>
+            <View style={styles.inputWrapper}>
+              <Ionicons name="lock-closed-outline" size={20} color="#94a3b8" />
+              <TextInput
+                style={styles.input}
+                placeholder="Contraseña (mín. 6 caracteres)"
+                placeholderTextColor="#94a3b8"
+                secureTextEntry={!showPassword}
+                value={password}
+                onChangeText={setPassword}
+              />
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#94a3b8" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.inputWrapper}>
+              <Ionicons name="lock-closed-outline" size={20} color="#94a3b8" />
+              <TextInput
+                style={styles.input}
+                placeholder="Confirmar contraseña"
+                placeholderTextColor="#94a3b8"
+                secureTextEntry={!showPassword}
+                value={confirmar}
+                onChangeText={setConfirmar}
+              />
+            </View>
+          </>
         )}
 
-        <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
+        <TouchableOpacity style={styles.button} onPress={handleRegistro} disabled={loading}>
           {loading ? <ActivityIndicator color="#fff" /> : (
-            <Text style={styles.buttonText}>
-              {metodo === 'password' ? 'Entrar' : 'Enviar código'}
-            </Text>
+            <Text style={styles.buttonText}>Crear cuenta</Text>
           )}
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.registerButton} onPress={() => router.replace('/registro')}>
-          <Text style={styles.registerText}>¿No tienes cuenta? <Text style={styles.registerLink}>Regístrate</Text></Text>
+        <TouchableOpacity style={styles.loginButton} onPress={() => router.replace('/login')}>
+          <Text style={styles.loginText}>¿Ya tienes cuenta? <Text style={styles.loginLink}>Inicia sesión</Text></Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -143,7 +176,7 @@ const styles = StyleSheet.create({
     height: 54, justifyContent: 'center', alignItems: 'center', marginTop: 4,
   },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  registerButton: { marginTop: 24, alignItems: 'center' },
-  registerText: { fontSize: 14, color: '#64748b' },
-  registerLink: { color: '#E96928', fontWeight: '600' },
+  loginButton: { marginTop: 24, alignItems: 'center' },
+  loginText: { fontSize: 14, color: '#64748b' },
+  loginLink: { color: '#E96928', fontWeight: '600' },
 });
