@@ -1,123 +1,150 @@
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { LUGARES } from "../../src/data/lugares";
-import { Ionicons } from "@expo/vector-icons";
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, StatusBar, Platform } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { LUGARES } from '../../src/data/lugares';
+import { Ionicons } from '@expo/vector-icons';
 import { useFavoritos } from '../../src/context/FavoritosContext';
+import { useTranslation } from 'react-i18next';
+import { useTheme } from '../../src/context/ThemeContext';
 
 export default function LugarDetalle() {
+  const { t } = useTranslation();
+  const { colors, fonts } = useTheme();
+  const s = makeStyles(colors, fonts);
+
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { toggleFavorito, esFavorito } = useFavoritos();
 
   const lugar = LUGARES.find((item: any) => item.id === id);
 
-  if (!lugar) return <View style={styles.container}><Text>Cargando...</Text></View>;
+  if (!lugar) {
+    return (
+      <View style={s.container}>
+        <Text style={s.loadingText}>{t('loading')}</Text>
+      </View>
+    );
+  }
 
   return (
-    <View style={styles.container}>
+    <View style={s.container}>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+
       <ScrollView>
         {/* Imagen de Cabecera */}
         <View>
-          <Image source={{ uri: lugar.imagen }} style={styles.mainImage} />
+          <Image source={{ uri: lugar.imagen }} style={s.mainImage} />
 
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          <TouchableOpacity style={s.backBtn} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.topHeart}
-            onPress={() => toggleFavorito({ ...lugar, origen: "id" })}
+            style={s.topHeart}
+            onPress={() => toggleFavorito({ ...lugar, origen: 'id' })}
           >
             <Ionicons
-              name={esFavorito(lugar.id) ? "heart" : "heart-outline"}
+              name={esFavorito(lugar.id) ? 'heart' : 'heart-outline'}
               size={28}
-              color={esFavorito(lugar.id) ? "#e63946" : "#fff"}
+              color={esFavorito(lugar.id) ? '#e63946' : '#fff'}
             />
           </TouchableOpacity>
         </View>
 
-        {/* Tarjeta Rosa Flotante */}
-        <View style={styles.infoWrapper}>
-          <View style={styles.pinkCard}>
-            <Text style={styles.pinkTitle}>{lugar.nombre}</Text>
-            <Text style={styles.pinkStars}>⭐⭐⭐⭐⭐</Text>
-            <Text style={styles.pinkPrice}>{lugar.costo}</Text>
+        {/* Tarjeta flotante */}
+        <View style={s.infoWrapper}>
+          <View style={s.pinkCard}>
+            <Text style={s.pinkTitle}>{lugar.nombre}</Text>
+            <Text style={s.pinkStars}>⭐⭐⭐⭐⭐</Text>
+            <Text style={s.pinkPrice}>{lugar.costo}</Text>
           </View>
         </View>
 
-        {/* Detalles de contacto e Info */}
-        <View style={styles.detailsContainer}>
-          <View style={styles.row}>
-            <Text style={styles.icon}>🏷️</Text>
-            <Text style={styles.detailText}>Turismo Nuevo León</Text>
+        {/* Detalles */}
+        <View style={s.detailsContainer}>
+          <View style={s.row}>
+            <Text style={s.icon}>🏷️</Text>
+            <Text style={s.detailText}>Turismo Nuevo León</Text>
           </View>
 
-          <View style={styles.separator} />
+          <View style={s.separator} />
 
-          <View style={styles.row}>
-            <Text style={styles.icon}>🕒</Text>
-            <Text style={styles.detailText}>Cerrado ahora: 14:00 - 19:00 ▼</Text>
+          <View style={s.row}>
+            <Text style={s.icon}>🕒</Text>
+            <Text style={s.detailText}>{t('schedule')}</Text>
           </View>
 
-          <View style={styles.row}>
-            <Text style={styles.icon}>📍</Text>
-            <Text style={styles.detailText}>{lugar.ubicacion}</Text>
+          <View style={s.row}>
+            <Text style={s.icon}>📍</Text>
+            <Text style={s.detailText}>{lugar.ubicacion}</Text>
           </View>
 
-          <View style={styles.row}>
-            <Text style={styles.icon}>📅</Text>
-            <Text style={styles.detailText}>Todo el año</Text>
+          <View style={s.row}>
+            <Text style={s.icon}>📅</Text>
+            <Text style={s.detailText}>{t('date')}</Text>
           </View>
 
-          <View style={styles.feedbackSection}>
-            <Text style={styles.feedbackTitle}>Califica tu experiencia</Text>
-            <Text style={styles.bigStars}>⭐⭐⭐⭐⭐</Text>
+          <View style={s.feedbackSection}>
+            <Text style={s.feedbackTitle}>{t('popular')}</Text>
+            <Text style={s.bigStars}>⭐⭐⭐⭐⭐</Text>
           </View>
         </View>
       </ScrollView>
 
-      {/* Botón flotante de compra */}
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.buyBtn}>
-          <Text style={styles.buyBtnText}>Comprar</Text>
+      {/* Botón flotante */}
+      <View style={s.footer}>
+        <TouchableOpacity style={s.buyBtn}>
+          <Text style={s.buyBtnText}>{t('confirm')}</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
+const makeStyles = (c: any, f: any) => StyleSheet.create({
+  container:   { flex: 1, backgroundColor: c.background },
+  loadingText: { color: c.text, fontSize: f.base, textAlign: 'center', marginTop: 40 },
+
   mainImage: { width: '100%', height: 320 },
+
   backBtn: {
-    position: 'absolute', top: 50, left: 20,
-    backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 25, padding: 8
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 55 : 40,
+    left: 20,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    borderRadius: 25, padding: 8,
   },
   topHeart: {
-    position: 'absolute', top: 50, right: 20,
-    backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 25, padding: 8
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 55 : 40,
+    right: 20,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    borderRadius: 25, padding: 8,
   },
+
   infoWrapper: { alignItems: 'center', marginTop: -50 },
   pinkCard: {
     backgroundColor: '#E96928',
-    width: '85%',
-    padding: 20,
-    borderRadius: 15,
-    alignItems: 'center',
-    elevation: 8,
+    width: '85%', padding: 20, borderRadius: 15,
+    alignItems: 'center', elevation: 8,
   },
-  pinkTitle: { color: '#fff', fontSize: 22, fontWeight: 'bold', textAlign: 'center' },
-  pinkStars: { fontSize: 18, marginVertical: 5 },
-  pinkPrice: { color: '#fff', fontSize: 24, fontWeight: '800' },
+  pinkTitle: { color: '#fff', fontSize: f.xl, fontWeight: 'bold', textAlign: 'center' },
+  pinkStars: { fontSize: f.md, marginVertical: 5 },
+  pinkPrice: { color: '#fff', fontSize: f.xl, fontWeight: '800' },
+
   detailsContainer: { padding: 25, paddingBottom: 100 },
-  row: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  icon: { fontSize: 20, marginRight: 15 },
-  detailText: { fontSize: 16, color: '#555' },
-  separator: { height: 1, backgroundColor: '#eee', marginBottom: 20 },
+  row:      { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
+  icon:     { fontSize: 20, marginRight: 15 },
+  detailText: { fontSize: f.base, color: c.text },           // ← reactivo
+  separator:  { height: 1, backgroundColor: c.border, marginBottom: 20 }, // ← reactivo
+
   feedbackSection: { alignItems: 'center', marginTop: 20 },
-  feedbackTitle: { fontSize: 16, color: '#888', marginBottom: 10 },
-  bigStars: { fontSize: 30, opacity: 0.2 },
+  feedbackTitle:   { fontSize: f.base, color: c.subtext, marginBottom: 10 },
+  bigStars:        { fontSize: 30, opacity: 0.2 },
+
   footer: { position: 'absolute', bottom: 30, right: 20 },
-  buyBtn: { backgroundColor: '#cddc39', paddingVertical: 15, paddingHorizontal: 35, borderRadius: 25 },
-  buyBtnText: { fontWeight: 'bold', fontSize: 18 }
+  buyBtn: {
+    backgroundColor: '#cddc39',
+    paddingVertical: 15, paddingHorizontal: 35, borderRadius: 25,
+  },
+  buyBtnText: { fontWeight: 'bold', fontSize: f.md },
 });

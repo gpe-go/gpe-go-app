@@ -1,129 +1,97 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from "expo-router";
-import React from "react";
-import {
-  FlatList,
-  Image,
-  Platform,
-  Pressable,
-  StatusBar,
-  StyleSheet,
-  Text,
-  View
-} from "react-native";
+import { useRouter } from 'expo-router';
+import React from 'react';
+import { FlatList, Image, Platform, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { useFavoritos } from '../../src/context/FavoritosContext';
+import { useTranslation } from 'react-i18next';
+import { useTheme } from '../../src/context/ThemeContext';
 
 export default function FavoritosScreen() {
+  const { t } = useTranslation();
+  const { colors, fonts, isDark } = useTheme();
+  const s = makeStyles(colors, fonts);
+
   const { favoritos, toggleFavorito } = useFavoritos();
   const router = useRouter();
 
-  // Función para regresar al inicio con una transición limpia
-  const irAlInicio = () => {
-    // replace evita que esta pantalla se quede en el stack, haciendo la transición más fluida
-    router.replace('/');
-  };
+  const irAlInicio = () => router.replace('/');
 
   const HeaderFavoritos = () => (
-    <View style={styles.banner}>
+    <View style={s.banner}>
       <LinearGradient
         colors={['#E96928', '#ff8e53']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
-        style={styles.bannerGradient}
+        style={s.bannerGradient}
       >
-        <Text style={styles.bannerTitle}>Mis Favoritos</Text>
-        <Text style={styles.bannerSubtitle}>Tus lugares preferidos en Guadalupe</Text>
+        <Text style={s.bannerTitle}>{t('favorites')}</Text>
+        <Text style={s.bannerSubtitle}>{t('tab_favorites')}</Text>
       </LinearGradient>
     </View>
   );
 
   if (favoritos.length === 0) {
     return (
-      <View style={styles.emptyContainer}>
+      <View style={s.emptyContainer}>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <Ionicons name="heart-dislike-outline" size={100} color="#E96928" style={{ opacity: 0.5 }} />
-        <Text style={styles.emptyTitle}>Aún no hay nada aquí</Text>
-        <Text style={styles.emptyText}>Explora la app y guarda los lugares que más te gusten.</Text>
-
-        {/* Botón con feedback visual de presión */}
+        <Text style={s.emptyTitle}>{t('no_results')}</Text>
+        <Text style={s.emptyText}>{t('Fav')}</Text>
         <Pressable
-          style={({ pressed }) => [
-            styles.exploreBtn,
-            { opacity: pressed ? 0.8 : 1, transform: [{ scale: pressed ? 0.96 : 1 }] }
-          ]}
+          style={({ pressed }) => [s.exploreBtn, { opacity: pressed ? 0.8 : 1, transform: [{ scale: pressed ? 0.96 : 1 }] }]}
           onPress={irAlInicio}
         >
-          <Text style={styles.exploreBtnText}>Ir a Inicio</Text>
+          <Text style={s.exploreBtnText}>{t('tab_inic')}</Text>
         </Pressable>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={s.container}>
       <StatusBar barStyle="light-content" />
       <FlatList
         data={favoritos}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={item => item.id.toString()}
         ListHeaderComponent={HeaderFavoritos}
         contentContainerStyle={{ paddingBottom: 20 }}
         renderItem={({ item }) => (
           <Pressable
-            style={({ pressed }) => [
-              styles.card,
-              { opacity: pressed ? 0.9 : 1 }
-            ]}
+            style={({ pressed }) => [s.card, { opacity: pressed ? 0.9 : 1 }]}
             onPress={() => {
-              if (item.origen === "detalle") {
-                router.push({
-                  pathname: "/(stack)/detalleLugar",
-                  params: { lugar: JSON.stringify(item),
-                  from: "favoritos"  
-                  },
-                });
+              if (item.origen === 'detalle') {
+                router.push({ pathname: '/(stack)/detalleLugar', params: { lugar: JSON.stringify(item), from: 'favoritos' } });
               } else {
                 router.push(`/lugar/${item.id}`);
               }
             }}
           >
-            <Image source={{ uri: item.imagen }} style={styles.image} />
-
-            <LinearGradient
-              colors={['transparent', 'rgba(0,0,0,0.8)']}
-              style={styles.gradient}
-            >
-              <View style={styles.cardContent}>
-                <View style={styles.topRow}>
-                  <View style={styles.starsContainer}>
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Ionicons
-                        key={star}
-                        name={star <= (item.rating ?? 5) ? "star" : "star-outline"}
-                        size={14}
-                        color="#FFD700"
-                      />
+            <Image source={{ uri: item.imagen }} style={s.image} />
+            <LinearGradient colors={['transparent', 'rgba(0,0,0,0.8)']} style={s.gradient}>
+              <View style={s.cardContent}>
+                <View style={s.topRow}>
+                  <View style={s.starsContainer}>
+                    {[1, 2, 3, 4, 5].map(star => (
+                      <Ionicons key={star} name={star <= (item.rating ?? 5) ? 'star' : 'star-outline'} size={14} color="#FFD700" />
                     ))}
                   </View>
-                  <Text style={styles.categoryBadge}>{item.categoria}</Text>
+                  <Text style={s.categoryBadge}>{item.categoria}</Text>
                 </View>
-
-                <View style={styles.bottomRow}>
-                  <View style={styles.textInfo}>
-                    <Text style={styles.nombreText} numberOfLines={1}>{item.nombre}</Text>
-                    <View style={styles.locationRow}>
+                <View style={s.bottomRow}>
+                  <View style={s.textInfo}>
+                    <Text style={s.nombreText} numberOfLines={1}>{item.nombre}</Text>
+                    <View style={s.locationRow}>
                       <Ionicons name="location" size={14} color="#fff" />
-                      <Text style={styles.locationText} numberOfLines={1}>{item.ubicacion}</Text>
+                      <Text style={s.locationText} numberOfLines={1}>{item.ubicacion}</Text>
                     </View>
                   </View>
-                  <Text style={styles.priceText}>{item.costo || "$ ---"}</Text>
+                  <Text style={s.priceText}>{item.costo || '$ ---'}</Text>
                 </View>
               </View>
             </LinearGradient>
 
-            <Pressable
-              style={styles.heartBtn}
-              onPress={() => toggleFavorito(item)}
-            >
+            <Pressable style={s.heartBtn} onPress={() => toggleFavorito(item)}>
               <Ionicons name="heart" size={24} color="#ff4d4d" />
             </Pressable>
           </Pressable>
@@ -133,160 +101,41 @@ export default function FavoritosScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f8f9fa",
-  },
-  banner: {
-    height: 140,
-    width: '100%',
-    marginBottom: 10,
-  },
-  bannerGradient: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 25,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    paddingTop: Platform.OS === 'ios' ? 20 : 0,
-  },
-  bannerTitle: {
-    fontSize: 32,
-    fontWeight: '900',
-    color: '#fff',
-    letterSpacing: -0.5,
-  },
-  bannerSubtitle: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.9)',
-    fontWeight: '500',
-    marginTop: 2,
-  },
+const makeStyles = (c: any, f: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.background },
+
+  banner:        { height: 140, width: '100%', marginBottom: 10 },
+  bannerGradient: { flex: 1, justifyContent: 'center', paddingHorizontal: 25, borderBottomLeftRadius: 30, borderBottomRightRadius: 30, paddingTop: Platform.OS === 'ios' ? 20 : 0 },
+  bannerTitle:    { fontSize: f['3xl'], fontWeight: '900', color: '#fff', letterSpacing: -0.5 },
+  bannerSubtitle: { fontSize: f.sm, color: 'rgba(255,255,255,0.9)', fontWeight: '500', marginTop: 2 },
+
   card: {
-    height: 220,
-    marginHorizontal: 16,
-    marginVertical: 10,
-    borderRadius: 20,
-    overflow: 'hidden',
-    backgroundColor: '#000',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
+    height: 220, marginHorizontal: 16, marginVertical: 10,
+    borderRadius: 20, overflow: 'hidden', backgroundColor: '#000',
+    elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5,
   },
-  image: {
-    width: '100%',
-    height: '100%',
-    position: 'absolute',
-  },
-  gradient: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: '70%',
-    justifyContent: 'flex-end',
-    padding: 15,
-  },
-  cardContent: {
-    width: '100%',
-  },
-  topRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 5,
-  },
-  starsContainer: {
-    flexDirection: 'row',
-  },
-  categoryBadge: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 10,
-    color: '#fff',
-    fontSize: 10,
-    textTransform: 'uppercase',
-    fontWeight: 'bold',
-  },
-  bottomRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-  },
-  textInfo: {
-    flex: 1,
-    marginRight: 10,
-  },
-  nombreText: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: 'bold',
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: -1, height: 1 },
-    textShadowRadius: 10
-  },
-  locationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 2,
-  },
-  locationText: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 12,
-    marginLeft: 4,
-  },
-  priceText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '800',
-  },
-  heartBtn: {
-    position: 'absolute',
-    top: 15,
-    right: 15,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    padding: 8,
-    borderRadius: 20,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 40,
-  },
-  emptyTitle: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginTop: 20,
-    color: '#1e293b',
-  },
-  emptyText: {
-    color: "#64748b",
-    textAlign: 'center',
-    marginTop: 10,
-    lineHeight: 20,
-  },
-  exploreBtn: {
-    marginTop: 25,
-    backgroundColor: '#E96928',
-    paddingVertical: 12,
-    paddingHorizontal: 35,
-    borderRadius: 30,
-    elevation: 4,
-    shadowColor: '#E96928',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-  exploreBtnText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 18,
-  }
+  image:    { width: '100%', height: '100%', position: 'absolute' },
+  gradient: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '70%', justifyContent: 'flex-end', padding: 15 },
+
+  cardContent:    { width: '100%' },
+  topRow:         { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 },
+  starsContainer: { flexDirection: 'row' },
+  categoryBadge:  { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10, color: '#fff', fontSize: f.xs, textTransform: 'uppercase', fontWeight: 'bold' },
+
+  bottomRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
+  textInfo:    { flex: 1, marginRight: 10 },
+  nombreText:  { color: '#fff', fontSize: f.lg, fontWeight: 'bold', textShadowColor: 'rgba(0,0,0,0.75)', textShadowOffset: { width: -1, height: 1 }, textShadowRadius: 10 },
+  locationRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
+  locationText: { color: 'rgba(255,255,255,0.8)', fontSize: f.xs, marginLeft: 4 },
+  priceText:   { color: '#fff', fontSize: f.md, fontWeight: '800' },
+
+  heartBtn: { position: 'absolute', top: 15, right: 15, backgroundColor: 'rgba(255,255,255,0.9)', padding: 8, borderRadius: 20 },
+
+  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40, backgroundColor: c.background },
+  emptyTitle:     { fontSize: f.xl, fontWeight: 'bold', marginTop: 20, color: c.text },
+  emptyText:      { color: c.subtext, textAlign: 'center', marginTop: 10, lineHeight: f.base * 1.5, fontSize: f.base },
+  exploreBtn:     { marginTop: 25, backgroundColor: '#E96928', paddingVertical: 12, paddingHorizontal: 35, borderRadius: 30, elevation: 4 },
+  exploreBtnText: { color: '#fff', fontWeight: 'bold', fontSize: f.md },
 });
 
 /* ====================== Cuando exista backend reemplazar ===================== */

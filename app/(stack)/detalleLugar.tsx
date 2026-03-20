@@ -2,23 +2,19 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React from "react";
 import {
-  Image,
-  Linking,
-  Platform,
-  Pressable,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  View
+  Image, Linking, Platform, Pressable,
+  ScrollView, StatusBar, StyleSheet, Text, View,
 } from "react-native";
-
+import { useTranslation } from "react-i18next";
+import { useTheme } from "../../src/context/ThemeContext";
 
 export default function DetalleLugar() {
+  const { t } = useTranslation();
+  const { colors, fonts } = useTheme();
+  const s = makeStyles(colors, fonts);
+
   const router = useRouter();
   const { lugar: lugarParam } = useLocalSearchParams();
-
-
   const lugar = lugarParam ? JSON.parse(lugarParam as string) : {};
 
   const abrirMapa = () => {
@@ -27,102 +23,70 @@ export default function DetalleLugar() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+    <View style={s.container}>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
       <ScrollView showsVerticalScrollIndicator={false}>
 
         {/* HERO IMAGE */}
-        <View style={styles.hero}>
-          <Image source={{ uri: lugar.imagen }} style={styles.heroImage} />
+        <View style={s.hero}>
+          <Image source={{ uri: lugar.imagen }} style={s.heroImage} />
 
-          <Pressable style={styles.backBtn} onPress={() => router.back()}>
-            
+          <Pressable style={s.backBtn} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={22} color="#fff" />
           </Pressable>
 
-          <Pressable style={styles.favBtn}>
+          <Pressable style={s.favBtn}>
             <Ionicons name="heart-outline" size={22} color="#fff" />
           </Pressable>
         </View>
 
         {/* CARD PRINCIPAL */}
-        <View style={styles.mainCard}>
+        <View style={s.mainCard}>
+          <Text style={s.title}>{lugar.nombre || t("places")}</Text>
 
-          <Text style={styles.title}>
-            {lugar.nombre || "Lugar turístico"}
-          </Text>
-
-          <View style={styles.ratingRow}>
+          <View style={s.ratingRow}>
             <Ionicons name="star" size={18} color="#FFD700" />
-            <Text style={styles.ratingText}>4.9</Text>
-            <Text style={styles.dot}>•</Text>
-            <Text style={styles.locationText}>
-              {lugar.ubicacion || "Nuevo León"}
-            </Text>
+            <Text style={s.ratingText}>4.9</Text>
+            <Text style={s.dot}>•</Text>
+            <Text style={s.locationText}>{lugar.ubicacion || "Nuevo León"}</Text>
           </View>
 
-          <Text style={styles.price}>
-            {lugar.costo || "Gratis"}
-          </Text>
+          <Text style={s.price}>{lugar.costo || "Gratis"}</Text>
 
-          {/* BOTONES */}
-          <View style={styles.actionRow}>
-
-            <Pressable style={styles.actionBtn} onPress={abrirMapa}>
+          <View style={s.actionRow}>
+            <Pressable style={s.actionBtn} onPress={abrirMapa}>
               <Ionicons name="navigate" size={18} color="#fff" />
-              <Text style={styles.actionText}>Cómo llegar</Text>
+              <Text style={s.actionText}>{t("location")}</Text>
             </Pressable>
 
-            <Pressable style={styles.actionBtnSecondary}>
+            <Pressable style={s.actionBtnSecondary}>
               <Ionicons name="share-social-outline" size={18} color="#E96928" />
-              <Text style={styles.actionTextSecondary}>Compartir</Text>
+              <Text style={s.actionTextSecondary}>{t("share")}</Text>
             </Pressable>
-
           </View>
-
         </View>
 
         {/* DETALLES */}
-        <View style={styles.details}>
-
-          <View style={styles.infoRow}>
-            <MaterialCommunityIcons
-              name="map-marker"
-              size={24}
-              color="#E96928"
-            />
-            <Text style={styles.infoText}>
-              {lugar.ubicacion || "Ubicación no disponible"}
-            </Text>
+        <View style={s.details}>
+          <View style={s.infoRow}>
+            <MaterialCommunityIcons name="map-marker" size={24} color="#E96928" />
+            <Text style={s.infoText}>{lugar.ubicacion || t("location")}</Text>
           </View>
 
-          <View style={styles.separator} />
+          <View style={s.separator} />
 
-          <View style={styles.infoRow}>
-            <MaterialCommunityIcons
-              name="clock-outline"
-              size={24}
-              color="#4A90E2"
-            />
-            <Text style={styles.infoText}>
-              Abierto todos los días
-            </Text>
+          <View style={s.infoRow}>
+            <MaterialCommunityIcons name="clock-outline" size={24} color="#4A90E2" />
+            <Text style={s.infoText}>{t("schedule")}</Text>
           </View>
 
-          <View style={styles.separator} />
+          <View style={s.separator} />
 
-          <View style={styles.infoRow}>
-            <MaterialCommunityIcons
-              name="calendar-month"
-              size={24}
-              color="#10B981"
-            />
-            <Text style={styles.infoText}>
-              Disponible todo el año
-            </Text>
+          <View style={s.infoRow}>
+            <MaterialCommunityIcons name="calendar-month" size={24} color="#10B981" />
+            <Text style={s.infoText}>{t("date")}</Text>
           </View>
-
         </View>
 
       </ScrollView>
@@ -130,153 +94,65 @@ export default function DetalleLugar() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: any, f: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.background },
 
-  container: {
-    flex: 1,
-    backgroundColor: "#F8FAFC",
-  },
-
-  hero: {
-    width: "100%",
-    height: 260,
-  },
-
-  heroImage: {
-    width: "100%",
-    height: "100%",
-  },
+  hero: { width: "100%", height: 260 },
+  heroImage: { width: "100%", height: "100%" },
 
   backBtn: {
     position: "absolute",
     top: Platform.OS === "ios" ? 55 : 40,
     left: 20,
     backgroundColor: "rgba(0,0,0,0.35)",
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
+    width: 40, height: 40, borderRadius: 20,
+    justifyContent: "center", alignItems: "center",
   },
-
   favBtn: {
     position: "absolute",
     top: Platform.OS === "ios" ? 55 : 40,
     right: 20,
     backgroundColor: "rgba(0,0,0,0.35)",
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
+    width: 40, height: 40, borderRadius: 20,
+    justifyContent: "center", alignItems: "center",
   },
 
   mainCard: {
-    backgroundColor: "#fff",
+    backgroundColor: c.card,
     marginTop: -25,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     padding: 24,
+    borderWidth: 1,
+    borderColor: c.border,
   },
 
-  title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#1E293B",
-  },
+  title: { fontSize: f.xl, fontWeight: "bold", color: c.text },
+  ratingRow: { flexDirection: "row", alignItems: "center", marginTop: 6 },
+  ratingText: { marginLeft: 4, fontWeight: "bold", color: c.text, fontSize: f.sm },
+  dot: { marginHorizontal: 6, color: c.subtext },
+  locationText: { color: c.subtext, fontSize: f.sm },
+  price: { fontSize: f.lg, fontWeight: "bold", color: "#E96928", marginTop: 10 },
 
-  ratingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 6,
-  },
-
-  ratingText: {
-    marginLeft: 4,
-    fontWeight: "bold",
-    color: "#1E293B",
-  },
-
-  dot: {
-    marginHorizontal: 6,
-    color: "#64748B",
-  },
-
-  locationText: {
-    color: "#64748B",
-  },
-
-  price: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#E96928",
-    marginTop: 10,
-  },
-
-  actionRow: {
-    flexDirection: "row",
-    marginTop: 18,
-    gap: 10,
-  },
-
+  actionRow: { flexDirection: "row", marginTop: 18, gap: 10 },
   actionBtn: {
-    flex: 1,
-    backgroundColor: "#E96928",
-    padding: 12,
-    borderRadius: 12,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 6,
+    flex: 1, backgroundColor: "#E96928", padding: 12, borderRadius: 12,
+    flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 6,
   },
-
   actionBtnSecondary: {
-    flex: 1,
-    borderWidth: 2,
-    borderColor: "#E96928",
-    padding: 12,
-    borderRadius: 12,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 6,
+    flex: 1, borderWidth: 2, borderColor: "#E96928", padding: 12, borderRadius: 12,
+    flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 6,
   },
-
-  actionText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-
-  actionTextSecondary: {
-    color: "#E96928",
-    fontWeight: "bold",
-  },
+  actionText: { color: "#fff", fontWeight: "bold", fontSize: f.sm },
+  actionTextSecondary: { color: "#E96928", fontWeight: "bold", fontSize: f.sm },
 
   details: {
-    backgroundColor: "#fff",
-    marginTop: 10,
-    paddingHorizontal: 24,
-    paddingVertical: 20,
-    borderRadius: 20,
-    marginHorizontal: 12,
-    marginBottom: 30,
+    backgroundColor: c.card,
+    marginTop: 10, paddingHorizontal: 24, paddingVertical: 20,
+    borderRadius: 20, marginHorizontal: 12, marginBottom: 30,
+    borderWidth: 1, borderColor: c.border,
   },
-
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-  },
-
-  infoText: {
-    marginLeft: 14,
-    fontSize: 16,
-    color: "#334155",
-  },
-
-  separator: {
-    height: 1,
-    backgroundColor: "#E2E8F0",
-  }
-
+  infoRow: { flexDirection: "row", alignItems: "center", paddingVertical: 12 },
+  infoText: { marginLeft: 14, fontSize: f.base, color: c.text },
+  separator: { height: 1, backgroundColor: c.border },
 });

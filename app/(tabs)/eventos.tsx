@@ -2,47 +2,49 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import React, { useState } from 'react';
 import {
-  FlatList,
-  Image,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableWithoutFeedback,
-  View,
+  FlatList, Image, Pressable, ScrollView, StyleSheet,
+  Text, TextInput, TouchableWithoutFeedback, View, StatusBar,
 } from 'react-native';
-import { EVENTOS_DATA } from "@/src/data/eventos";
+import { EVENTOS_DATA } from '@/src/data/eventos';
+import { useTranslation } from 'react-i18next';
+import { useTheme } from '../../src/context/ThemeContext';
 
+// Las claves internas permanecen en español para hacer match con los datos (event.categoria)
+// El campo labelKey apunta a la clave de traducción en i18n
 const CATEGORIAS = [
-  { id: '1', nombre: 'Deporte', icon: 'soccer' },
-  { id: '2', nombre: 'Cultural', icon: 'palette' },
-  { id: '3', nombre: 'Gastronomía', icon: 'food' },
-  { id: '4', nombre: 'Sociales', icon: 'account-group' },
+  { id: '1', value: 'Deporte',     labelKey: 'cat_deporte',     icon: 'soccer' },
+  { id: '2', value: 'Cultural',    labelKey: 'cat_cultural',    icon: 'palette' },
+  { id: '3', value: 'Gastronomía', labelKey: 'cat_gastronomia', icon: 'food' },
+  { id: '4', value: 'Sociales',    labelKey: 'cat_sociales',    icon: 'account-group' },
 ];
 
-/* ================= EVENT CARD OPTIMIZADO ================= */
+/* ================= EVENT CARD ================= */
 
-const EventCard = React.memo(({ item }: any) => {
+const EventCard = React.memo(({ item, colors, fonts }: any) => {
+  const s = makeStyles(colors, fonts);
   return (
-    <View style={styles.card}>
-      <Image source={{ uri: item.imagen }} style={styles.cardImage} />
-      <View style={styles.cardContent}>
-        <Text style={styles.categoryLabel}>{item.sub}</Text>
-        <Text style={styles.eventTitle}>{item.titulo}</Text>
-        <Text style={styles.infoText}>{item.fecha}</Text>
-        <Text style={styles.infoText}>{item.lugar}</Text>
+    <View style={s.card}>
+      <Image source={{ uri: item.imagen }} style={s.cardImage} />
+      <View style={s.cardContent}>
+        <Text style={s.categoryLabel}>{item.sub}</Text>
+        <Text style={s.eventTitle}>{item.titulo}</Text>
+        <Text style={s.infoText}>{item.fecha}</Text>
+        <Text style={s.infoText}>{item.lugar}</Text>
       </View>
     </View>
   );
 });
 
-EventCard.displayName = "EventCard";
+EventCard.displayName = 'EventCard';
 
 /* ================= SCREEN ================= */
 
 export default function EventosScreen() {
-  const [search, setSearch] = useState('');
+  const { t } = useTranslation();
+  const { colors, fonts } = useTheme();
+  const s = makeStyles(colors, fonts);
+
+  const [search, setSearch]       = useState('');
   const [activeCat, setActiveCat] = useState('Todas');
   const [playVideo, setPlayVideo] = useState(false);
 
@@ -51,117 +53,96 @@ export default function EventosScreen() {
   const filteredEvents = EVENTOS_DATA.filter((event) => {
     if (event.especial) return false;
     const matchesSearch = event.titulo.toLowerCase().includes(search.toLowerCase());
-    const matchesCat = activeCat === 'Todas' || event.categoria === activeCat;
+    const matchesCat    = activeCat === 'Todas' || event.categoria === activeCat;
     return matchesSearch && matchesCat;
   });
 
-  const player = useVideoPlayer(eventoPrincipal?.videoSource, player => {
-    player.loop = false;
-  });
+  const player = useVideoPlayer(eventoPrincipal?.videoSource, p => { p.loop = false; });
 
-  const startVideo = () => {
-    setPlayVideo(true);
-    player.currentTime = 0;
-    player.play();
-  };
-
-  const stopVideo = () => {
-    player.pause();
-    player.currentTime = 0;
-    setPlayVideo(false);
-  };
+  const startVideo = () => { setPlayVideo(true); player.currentTime = 0; player.play(); };
+  const stopVideo  = () => { player.pause(); player.currentTime = 0; setPlayVideo(false); };
 
   return (
-    <View style={styles.container}>
+    <View style={s.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#E96928" />
+
       <FlatList
         data={filteredEvents}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <EventCard item={item} />}
+        renderItem={({ item }) => <EventCard item={item} colors={colors} fonts={fonts} />}
         showsVerticalScrollIndicator={false}
         initialNumToRender={6}
         maxToRenderPerBatch={6}
         windowSize={5}
-        removeClippedSubviews={true}
+        removeClippedSubviews
 
         ListHeaderComponent={
           <View>
-
             {/* BANNER */}
-            <View style={styles.orangeBanner}>
-              <Text style={styles.bannerTitle}>Eventos</Text>
-              <Text style={styles.bannerSub}>
-                Aquí se estarán publicando las noticias y eventos sociales del municipio.
-              </Text>
+            <View style={s.orangeBanner}>
+              <Text style={s.bannerTitle}>{t('tab_events')}</Text>
+              <Text style={s.bannerSub}>{t('Eve')}</Text>
 
               {/* BUSCADOR */}
               <View style={{ position: 'relative', zIndex: 100 }}>
-                <View style={styles.floatingSearch}>
+                <View style={s.floatingSearch}>
                   <Ionicons name="search" size={20} color="#94a3b8" />
                   <TextInput
-                    placeholder="Buscar eventos..."
-                    style={styles.searchInput}
+                    placeholder={t('search')}
+                    placeholderTextColor="#94a3b8"
+                    style={s.searchInput}
                     value={search}
-                    onChangeText={(text) => {
-                      setSearch(text);
-                    }}
+                    onChangeText={setSearch}
                   />
                 </View>
 
                 {search.length > 0 && (
-                  <View style={styles.searchResults}>
-
-                    <Text style={styles.resultsTitle}>Resultados de búsqueda</Text>
-
+                  <View style={s.searchResults}>
+                    <Text style={s.resultsTitle}>{t('search')}</Text>
                     {EVENTOS_DATA.filter(e =>
                       e.titulo.toLowerCase().includes(search.toLowerCase())
                     ).map(item => (
                       <Pressable
                         key={item.id}
-                        style={styles.searchItem}
-                        onPress={() => {
-                          setSearch(item.titulo);
-                        }}
+                        style={s.searchItem}
+                        onPress={() => setSearch(item.titulo)}
                       >
-                        <MaterialCommunityIcons
-                          name="calendar-star"
-                          size={18}
-                          color="#64748B"
-                        />
-                        <Text style={styles.searchItemText}>{item.titulo}</Text>
+                        <MaterialCommunityIcons name="calendar-star" size={18} color={colors.subtext} />
+                        <Text style={s.searchItemText}>{item.titulo}</Text>
                       </Pressable>
                     ))}
                   </View>
                 )}
               </View>
-
             </View>
 
             {/* CATEGORÍAS */}
-            <View style={styles.catContainer}>
-              <Text style={styles.catTitle}>Categorías</Text>
+            <View style={s.catContainer}>
+              <Text style={s.catTitle}>{t('categories')}</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {/* Botón "Todas" */}
                 <Pressable
-                  style={[styles.catItem, activeCat === 'Todas' && styles.catActive]}
+                  style={[s.catItem, activeCat === 'Todas' && s.catActive]}
                   onPress={() => setActiveCat('Todas')}
                 >
-                  <Text style={[styles.catText, activeCat === 'Todas' && styles.catTextActive]}>
-                    Todas
+                  <Text style={[s.catText, activeCat === 'Todas' && s.catTextActive]}>
+                    {t('all')}
                   </Text>
                 </Pressable>
 
                 {CATEGORIAS.map((cat) => (
                   <Pressable
                     key={cat.id}
-                    style={[styles.catItem, activeCat === cat.nombre && styles.catActive]}
-                    onPress={() => setActiveCat(cat.nombre)}
+                    style={[s.catItem, activeCat === cat.value && s.catActive]}
+                    onPress={() => setActiveCat(cat.value)}
                   >
                     <MaterialCommunityIcons
                       name={cat.icon as any}
                       size={18}
-                      color={activeCat === cat.nombre ? 'white' : '#64748B'}
+                      color={activeCat === cat.value ? 'white' : colors.subtext}
                     />
-                    <Text style={[styles.catText, activeCat === cat.nombre && styles.catTextActive]}>
-                      {cat.nombre}
+                    <Text style={[s.catText, activeCat === cat.value && s.catTextActive]}>
+                      {t(cat.labelKey)}
                     </Text>
                   </Pressable>
                 ))}
@@ -170,46 +151,32 @@ export default function EventosScreen() {
 
             {/* EVENTO PRINCIPAL */}
             {eventoPrincipal && (
-              <TouchableWithoutFeedback
-                onPressIn={startVideo}
-                onPressOut={stopVideo}
-              >
-                <View style={styles.mainEventCard}>
+              <TouchableWithoutFeedback onPressIn={startVideo} onPressOut={stopVideo}>
+                <View style={s.mainEventCard}>
                   {!playVideo ? (
-                    <Image
-                      source={{ uri: eventoPrincipal.imagen }}
-                      style={styles.mainEventImage}
-                    />
+                    <Image source={{ uri: eventoPrincipal.imagen }} style={s.mainEventImage} />
                   ) : (
                     <VideoView
-                      style={styles.mainEventImage}
+                      style={s.mainEventImage}
                       player={player}
                       allowsPictureInPicture={false}
                       nativeControls={false}
                     />
                   )}
-
-                  <View style={styles.worldBadge}>
-                    <Text style={styles.worldBadgeText}>Mundial 2026</Text>
+                  <View style={s.worldBadge}>
+                    <Text style={s.worldBadgeText}>Mundial 2026</Text>
                   </View>
-
-                  <View style={styles.mainEventOverlay}>
-                    <Text style={styles.mainEventTitle}>
-                      {eventoPrincipal.titulo}
-                    </Text>
-                    <Text style={styles.mainEventSub}>
-                      {eventoPrincipal.fecha} • {eventoPrincipal.lugar}
-                    </Text>
+                  <View style={s.mainEventOverlay}>
+                    <Text style={s.mainEventTitle}>{eventoPrincipal.titulo}</Text>
+                    <Text style={s.mainEventSub}>{eventoPrincipal.fecha} • {eventoPrincipal.lugar}</Text>
                   </View>
                 </View>
               </TouchableWithoutFeedback>
             )}
 
-            <Text style={styles.mainSectionTitle}>Más Eventos</Text>
-
+            <Text style={s.mainSectionTitle}>{t('see_more')}</Text>
           </View>
         }
-
       />
     </View>
   );
@@ -217,8 +184,8 @@ export default function EventosScreen() {
 
 /* ================= STYLES ================= */
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
+const makeStyles = (c: any, f: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.background },
 
   orangeBanner: {
     backgroundColor: '#E96928',
@@ -229,8 +196,8 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 30,
   },
 
-  bannerTitle: { color: '#fff', fontSize: 24, fontWeight: '900', marginBottom: 6 },
-  bannerSub: { color: '#fff', fontSize: 14, opacity: 0.9 },
+  bannerTitle: { color: '#fff', fontSize: f.xl, fontWeight: '900', marginBottom: 6 },
+  bannerSub:   { color: '#fff', fontSize: f.sm, opacity: 0.9 },
 
   floatingSearch: {
     flexDirection: 'row',
@@ -243,59 +210,51 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
 
+  searchInput: { flex: 1, marginLeft: 10, color: '#1E293B', fontSize: f.base },
+
+  searchResults: {
+    backgroundColor: c.card,
+    borderRadius: 12,
+    marginTop: 10,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: c.border,
+  },
+
   resultsTitle: {
-    fontSize: 16,
+    fontSize: f.base,
     fontWeight: '700',
-    color: '#1E293B',
+    color: c.text,
     paddingHorizontal: 10,
     marginBottom: 8,
   },
 
-  searchInput: { flex: 1, marginLeft: 10 },
-
-  searchResults: {
-    backgroundColor: "#F1F5F9",
-    borderRadius: 12,
-    marginTop: 10,
-    paddingVertical: 8,
-  },
-
-  searchTitle: {
-    fontWeight: "bold",
-    fontSize: 14,
-    color: "#1E293B",
-    paddingHorizontal: 12,
-    marginBottom: 4,
-  },
-
   searchItem: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
     paddingVertical: 8,
     paddingHorizontal: 12,
   },
-
-  searchItemText: {
-    color: "#1E293B",
-    fontSize: 13,
-  },
+  searchItemText: { color: c.text, fontSize: f.sm },
 
   catContainer: { marginVertical: 20, paddingHorizontal: 20 },
+  catTitle: { fontSize: f.md, fontWeight: 'bold', color: c.text, marginBottom: 12 },
 
   catItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: c.card,
     paddingHorizontal: 15,
     height: 40,
     borderRadius: 20,
     marginRight: 10,
+    borderWidth: 1,
+    borderColor: c.border,
   },
-
-  catActive: { backgroundColor: '#E96928' },
-  catText: { marginLeft: 5, fontWeight: '600', color: '#64748B' },
-  catTextActive: { color: '#fff' },
+  catActive:        { backgroundColor: '#E96928', borderColor: '#E96928' },
+  catText:          { marginLeft: 5, fontWeight: '600', color: c.subtext, fontSize: f.sm },
+  catTextActive:    { color: '#fff' },
 
   mainEventCard: {
     marginHorizontal: 20,
@@ -305,11 +264,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
     elevation: 10,
   },
-
-  mainEventImage: {
-    width: '100%',
-    height: 260,
-  },
+  mainEventImage:   { width: '100%', height: 260 },
 
   worldBadge: {
     position: 'absolute',
@@ -320,72 +275,41 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
   },
-
-  worldBadgeText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 12,
-  },
+  worldBadgeText: { color: '#fff', fontWeight: 'bold', fontSize: f.xs },
 
   mainEventOverlay: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+    bottom: 0, left: 0, right: 0,
     padding: 18,
     backgroundColor: 'rgba(0,0,0,0.75)',
   },
-
-  mainEventTitle: {
-    color: '#fff',
-    fontSize: 22,
-    fontWeight: '900',
-    marginBottom: 6,
-  },
-
-  mainEventSub: {
-    color: '#fff',
-    fontSize: 14,
-    opacity: 0.9,
-  },
+  mainEventTitle: { color: '#fff', fontSize: f.xl, fontWeight: '900', marginBottom: 6 },
+  mainEventSub:   { color: '#fff', fontSize: f.sm, opacity: 0.9 },
 
   mainSectionTitle: {
-    fontSize: 20,
+    fontSize: f.lg,
     fontWeight: 'bold',
-    color: '#1E293B',
+    color: c.text,
     marginLeft: 20,
     marginBottom: 15,
   },
 
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: c.card,
     marginHorizontal: 20,
     marginBottom: 20,
     borderRadius: 20,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: c.border,
   },
-
-  catTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1E293B',
-    marginBottom: 12,
-  },
-
-  cardImage: { width: '100%', height: 160 },
+  cardImage:   { width: '100%', height: 160 },
   cardContent: { padding: 15 },
 
-  categoryLabel: {
-    color: '#E96928',
-    fontWeight: 'bold',
-    fontSize: 11,
-    marginBottom: 4,
-  },
-
-  eventTitle: { fontSize: 18, fontWeight: 'bold', color: '#1E293B' },
-  infoText: { color: '#64748B', fontSize: 13, marginTop: 4 },
+  categoryLabel: { color: '#E96928', fontWeight: 'bold', fontSize: f.xs, marginBottom: 4 },
+  eventTitle:    { fontSize: f.md, fontWeight: 'bold', color: c.text },
+  infoText:      { color: c.subtext, fontSize: f.sm, marginTop: 4 },
 });
-
 /* ====================== Cuando exista backend reemplazar ===================== */
 
 // import { getEventos } from "@/src/api/api";
