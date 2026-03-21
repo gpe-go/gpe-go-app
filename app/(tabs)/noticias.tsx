@@ -1,23 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, Pressable } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, Pressable, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { getNoticias } from '@/src/api/api';
+import { useNoticias } from '../../src/hooks/useNoticias';
 import { router } from "expo-router";
 
 export default function NoticiasScreen() {
 
-  const [noticias, setNoticias] = useState<any[]>([]);
-
-  useEffect(() => {
-
-    const cargarNoticias = async () => {
-      const data = await getNoticias();
-      setNoticias(data);
-    };
-
-    cargarNoticias();
-
-  }, []);
+  const { data: noticias, loading } = useNoticias();
 
   const getBadgeColor = (cat: string) => {
     switch (cat) {
@@ -67,6 +56,21 @@ export default function NoticiasScreen() {
       </View>
 
       <View style={styles.listContainer}>
+
+        {loading && (
+          <View style={{ padding: 40, alignItems: "center" }}>
+            <ActivityIndicator size="large" color="#E96928" />
+          </View>
+        )}
+
+        {!loading && noticias.length === 0 && (
+          <View style={{ padding: 40, alignItems: "center" }}>
+            <Ionicons name="newspaper-outline" size={60} color="#CBD5E1" />
+            <Text style={{ fontSize: 16, color: "#94A3B8", marginTop: 12 }}>
+              No hay noticias disponibles
+            </Text>
+          </View>
+        )}
 
         {noticias.map((item, index) => {
 
@@ -126,7 +130,6 @@ export default function NoticiasScreen() {
                         description: item.description,
                         image: item.image,
                         content: item.content,
-                        url: item.url,
                         date: item.publishedAt
                       }
                     })

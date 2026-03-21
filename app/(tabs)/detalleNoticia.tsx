@@ -1,12 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
-import * as Linking from "expo-linking";
 import { useLocalSearchParams } from "expo-router";
 import React from "react";
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
 
 export default function DetalleNoticiaScreen() {
 
-  const { title, description, image, content, url, date } = useLocalSearchParams();
+  const { title, description, image, content, date } = useLocalSearchParams();
 
   return (
     <ScrollView style={styles.container}>
@@ -33,16 +32,6 @@ export default function DetalleNoticiaScreen() {
         <Text style={styles.contentText}>
           {content}
         </Text>
-
-        <Pressable
-          style={styles.button}
-          onPress={() => Linking.openURL(url as string)}
-        >
-          <Ionicons name="open-outline" size={18} color="#fff" />
-          <Text style={styles.buttonText}>
-            Ver noticia completa
-          </Text>
-        </Pressable>
 
       </View>
 
@@ -98,21 +87,5 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     marginBottom: 30
   },
-
-  button: {
-    backgroundColor: "#E96928",
-    paddingVertical: 14,
-    borderRadius: 10,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 8
-  },
-
-  buttonText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 16
-  }
 
 });
