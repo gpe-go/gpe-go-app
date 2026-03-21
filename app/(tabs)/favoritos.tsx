@@ -13,9 +13,15 @@ import {
   View
 } from "react-native";
 import { useFavoritos } from '../../src/context/FavoritosContext';
+import { useFavoritosAPI } from '../../src/hooks/useFavoritosAPI';
+import { ActivityIndicator } from "react-native";
 
 export default function FavoritosScreen() {
-  const { favoritos, toggleFavorito } = useFavoritos();
+  const { favoritos: favoritosLocal, toggleFavorito: toggleLocal } = useFavoritos();
+  const { favoritos: favoritosAPI, toggleFavorito: toggleAPI, loading: loadingAPI, isAuth } = useFavoritosAPI();
+
+  const favoritos = isAuth ? favoritosAPI : favoritosLocal;
+  const toggleFavorito = isAuth ? toggleAPI : toggleLocal;
   const router = useRouter();
 
   // Función para regresar al inicio con una transición limpia
@@ -277,29 +283,3 @@ const styles = StyleSheet.create({
     fontSize: 18,
   }
 });
-
-/* ====================== Cuando exista backend reemplazar ===================== */
-
-// import { getFavoritos } from "@/src/api/api";
-// const [favoritos, setFavoritos] = useState(FAVORITOS_DATA);
-
-/*
-import { useEffect } from "react";
-
-useEffect(() => {
-
-  const cargarFavoritos = async () => {
-    try {
-      const data = await getFavoritos();
-      setFavoritos(data);
-    } catch (error) {
-      console.log("Usando datos locales");
-    }
-  };
-
-  cargarFavoritos();
-
-}, []);
-*/
-
-/* ============================================================================ */
