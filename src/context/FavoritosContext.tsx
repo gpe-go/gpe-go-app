@@ -1,15 +1,7 @@
 import React, { createContext, useState, useContext, ReactNode } from 'react';
+import { Lugar } from "../types/lugar";
 
-// DEFINICIÓN ÚNICA Y FLEXIBLE DEL LUGAR
-export interface Lugar {
-  id: string;
-  nombre: string;
-  categoria: string;
-  imagen: string;
-  ubicacion: string;
-  rating?: number; // 👈 opcional
-  costo?: string;  // 👈 opcional (CLAVE)
-}
+export type { Lugar };
 
 interface FavoritosContextType {
   favoritos: Lugar[];

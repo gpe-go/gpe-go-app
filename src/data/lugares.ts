@@ -1,14 +1,6 @@
-// TODO: Cuando exista backend reemplazar LUGARES por:
-// import { getLugares } from "@/src/api/api";
-export type Lugar = {
-  id: string;
-  nombre: string;
-  ubicacion: string;
-  imagen: string;
-  categoria: string;
-  costo: string;
-  rating?: number;
-};
+import { Lugar } from "../types/lugar";
+
+export type { Lugar };
 export const LUGARES: Lugar[] = [
   {
     id: "1",
