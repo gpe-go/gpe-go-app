@@ -139,3 +139,10 @@ export const getFotosLugar = async (id_lugar: number) => {
   });
   return response.data;
 };
+
+export const getFotosEvento = async (id_evento: number) => {
+  const response = await API.get("", {
+    params: { modulo: "fotos_eventos", action: "listar", id_evento },
+  });
+  return response.data;
+};

@@ -8,12 +8,12 @@ const formatearFecha = (inicio?: string, fin?: string): string => {
   return `${inicio} - ${fin}`;
 };
 
-export const mapEvento = (raw: any): Evento => ({
+export const mapEvento = (raw: any, imagenOverride?: string): Evento => ({
   id: String(raw.id),
   titulo: raw.titulo ?? "",
   fecha: formatearFecha(raw.fecha_inicio, raw.fecha_fin),
   lugar: raw.lugar_nombre ?? "",
-  imagen: PLACEHOLDER_IMG,
+  imagen: imagenOverride ?? PLACEHOLDER_IMG,
   categoria: "General",
   sub: raw.tipo === "noticia" ? "Noticia" : "Evento",
   costo: "Consultar",
@@ -21,4 +21,4 @@ export const mapEvento = (raw: any): Evento => ({
 });
 
 export const mapEventos = (rawList: any[]): Evento[] =>
-  rawList.map(mapEvento);
+  rawList.map((raw) => mapEvento(raw));

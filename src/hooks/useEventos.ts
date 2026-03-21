@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
-import { getEventos } from "../api/api";
-import { mapEventos } from "../mappers/eventosMapper";
-import { Evento } from "../data/eventos"; // Solo el tipo
-// import { EVENTOS_DATA } from "../data/eventos"; // Desactivado: sin datos hardcodeados
+import { getEventos, getFotosEvento } from "../api/api";
+import { mapEvento } from "../mappers/eventosMapper";
+import { Evento } from "../data/eventos";
 
 export const useEventos = (tipo?: string, busqueda?: string) => {
   const [data, setData] = useState<Evento[]>([]);
@@ -18,11 +17,26 @@ export const useEventos = (tipo?: string, busqueda?: string) => {
 
         const res = await getEventos(params);
         if (res.success && res.data?.eventos?.length > 0) {
-          setData(mapEventos(res.data.eventos));
+          // Fetch photos for each event in parallel
+          const eventosConFotos = await Promise.all(
+            res.data.eventos.map(async (raw: any) => {
+              let imagen: string | undefined;
+              try {
+                const fotosRes = await getFotosEvento(raw.id);
+                if (fotosRes.success && Array.isArray(fotosRes.data) && fotosRes.data.length > 0) {
+                  imagen = fotosRes.data[0].url;
+                }
+              } catch {
+                // If photo fetch fails, use placeholder
+              }
+              return mapEvento(raw, imagen);
+            })
+          );
+          setData(eventosConFotos);
         }
       } catch (e) {
         setError("Error cargando eventos");
-        console.log("Usando datos locales de eventos");
+        console.log("Error cargando eventos:", e);
       } finally {
         setLoading(false);
       }

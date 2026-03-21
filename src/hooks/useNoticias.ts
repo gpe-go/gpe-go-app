@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { getNoticias } from "../api/api";
-import { mapNoticias, Noticia } from "../mappers/noticiasMapper";
+import { getNoticias, getFotosEvento } from "../api/api";
+import { mapNoticia, Noticia } from "../mappers/noticiasMapper";
 
 export const useNoticias = (busqueda?: string) => {
   const [data, setData] = useState<Noticia[]>([]);
@@ -15,7 +15,21 @@ export const useNoticias = (busqueda?: string) => {
 
         const res = await getNoticias(params);
         if (res.success && res.data?.eventos?.length > 0) {
-          setData(mapNoticias(res.data.eventos));
+          const noticiasConFotos = await Promise.all(
+            res.data.eventos.map(async (raw: any) => {
+              let imagen: string | undefined;
+              try {
+                const fotosRes = await getFotosEvento(raw.id);
+                if (fotosRes.success && Array.isArray(fotosRes.data) && fotosRes.data.length > 0) {
+                  imagen = fotosRes.data[0].url;
+                }
+              } catch {
+                // If photo fetch fails, use placeholder
+              }
+              return mapNoticia(raw, imagen);
+            })
+          );
+          setData(noticiasConFotos);
         }
       } catch (e) {
         setError("Error cargando noticias");

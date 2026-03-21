@@ -8,13 +8,13 @@ export type Noticia = {
   content: string;
 };
 
-export const mapNoticia = (raw: any): Noticia => ({
+export const mapNoticia = (raw: any, imagenOverride?: string): Noticia => ({
   title: raw.titulo ?? "",
   description: raw.descripcion ?? "",
-  image: PLACEHOLDER_IMG,
+  image: imagenOverride ?? PLACEHOLDER_IMG,
   publishedAt: raw.fecha_inicio ?? "",
   content: raw.descripcion ?? "",
 });
 
 export const mapNoticias = (rawList: any[]): Noticia[] =>
-  rawList.map(mapNoticia);
+  rawList.map((raw) => mapNoticia(raw));
