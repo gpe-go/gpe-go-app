@@ -12,7 +12,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
-import { EVENTOS_DATA } from "@/src/data/eventos";
+import { useEventos } from "../../src/hooks/useEventos";
 
 const CATEGORIAS = [
   { id: '1', nombre: 'Deporte', icon: 'soccer' },
@@ -42,13 +42,14 @@ EventCard.displayName = "EventCard";
 /* ================= SCREEN ================= */
 
 export default function EventosScreen() {
+  const { data: eventos } = useEventos();
   const [search, setSearch] = useState('');
   const [activeCat, setActiveCat] = useState('Todas');
   const [playVideo, setPlayVideo] = useState(false);
 
-  const eventoPrincipal = EVENTOS_DATA.find(e => e.especial);
+  const eventoPrincipal = eventos.find(e => e.especial);
 
-  const filteredEvents = EVENTOS_DATA.filter((event) => {
+  const filteredEvents = eventos.filter((event) => {
     if (event.especial) return false;
     const matchesSearch = event.titulo.toLowerCase().includes(search.toLowerCase());
     const matchesCat = activeCat === 'Todas' || event.categoria === activeCat;
@@ -112,7 +113,7 @@ export default function EventosScreen() {
 
                     <Text style={styles.resultsTitle}>Resultados de búsqueda</Text>
 
-                    {EVENTOS_DATA.filter(e =>
+                    {eventos.filter(e =>
                       e.titulo.toLowerCase().includes(search.toLowerCase())
                     ).map(item => (
                       <Pressable
@@ -386,36 +387,3 @@ const styles = StyleSheet.create({
   infoText: { color: '#64748B', fontSize: 13, marginTop: 4 },
 });
 
-/* ====================== Cuando exista backend reemplazar ===================== */
-
-// import { getEventos } from "@/src/api/api";
-// const [eventos, setEventos] = useState(EVENTOS_DATA);
-
-/*
-import { useEffect } from "react";
-
-useEffect(() => {
-
-  const cargarEventos = async () => {
-    try {
-      const data = await getEventos();
-      setEventos(data);
-    } catch (error) {
-      console.log("Usando datos locales");
-    }
-  };
-
-  cargarEventos();
-
-}, []);
-
-Después cambiar:
-
-const filteredEvents = EVENTOS_DATA.filter(...)
-
-por:
-
-const filteredEvents = eventos.filter(...)
-*/
-
-/* ============================================================================ */
