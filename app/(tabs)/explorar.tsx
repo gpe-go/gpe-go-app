@@ -221,7 +221,15 @@ export default function ExplorarScreen() {
       keyExtractor={(item) => item.id}
       numColumns={2}
       ListHeaderComponent={Header}
-      contentContainerStyle={{ paddingBottom: 40 }}
+      ListEmptyComponent={
+        <View style={{ alignItems: 'center', marginTop: 60, paddingHorizontal: 30 }}>
+          <Ionicons name="compass-outline" size={48} color="#cbd5e1" />
+          <Text style={{ color: '#94a3b8', fontSize: 16, marginTop: 12, textAlign: 'center' }}>
+            Todavía no hay lugares disponibles
+          </Text>
+        </View>
+      }
+      contentContainerStyle={{ paddingBottom: 40, flexGrow: 1 }}
       style={{ backgroundColor: '#F8FAFC' }}
       renderItem={({ item }) => (
         <View style={styles.placeCard}>

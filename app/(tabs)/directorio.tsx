@@ -192,7 +192,15 @@ export default function DirectorioScreen() {
       data={filteredData}
       keyExtractor={(item) => item.id}
       ListHeaderComponent={Header}
-      contentContainerStyle={{ paddingBottom: 40 }}
+      ListEmptyComponent={
+        <View style={{ alignItems: 'center', marginTop: 60, paddingHorizontal: 30 }}>
+          <Ionicons name="business-outline" size={48} color="#cbd5e1" />
+          <Text style={{ color: '#94a3b8', fontSize: 16, marginTop: 12, textAlign: 'center' }}>
+            Todavía no hay negocios disponibles
+          </Text>
+        </View>
+      }
+      contentContainerStyle={{ paddingBottom: 40, flexGrow: 1 }}
       style={{ backgroundColor: "#F8FAFC" }}
       renderItem={({ item }) => {
         const isFav = esFavorito(item.id);

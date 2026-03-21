@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { getLugares } from "../api/api";
 import { mapLugares } from "../mappers/lugaresMapper";
-import { LUGARES } from "../data/lugares";
+// import { LUGARES } from "../data/lugares"; // Desactivado: sin datos hardcodeados
 import { Lugar } from "../types/lugar";
 
 export const useLugares = (id_categoria?: number, busqueda?: string) => {
-  const [data, setData] = useState<Lugar[]>(LUGARES);
+  const [data, setData] = useState<Lugar[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

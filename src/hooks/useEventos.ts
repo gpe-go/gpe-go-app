@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { getEventos } from "../api/api";
 import { mapEventos } from "../mappers/eventosMapper";
-import { EVENTOS_DATA, Evento } from "../data/eventos";
+import { Evento } from "../data/eventos"; // Solo el tipo
+// import { EVENTOS_DATA } from "../data/eventos"; // Desactivado: sin datos hardcodeados
 
 export const useEventos = (tipo?: string, busqueda?: string) => {
-  const [data, setData] = useState<Evento[]>(EVENTOS_DATA);
+  const [data, setData] = useState<Evento[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

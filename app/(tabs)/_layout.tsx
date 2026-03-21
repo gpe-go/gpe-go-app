@@ -154,6 +154,14 @@ function InnerLayout() {
             headerShown: false
           }}
         />
+
+        <Drawer.Screen
+          name="detalleNoticia"
+          options={{
+            drawerItemStyle: { display: 'none' },
+            headerShown: false
+          }}
+        />
       </Drawer>
     </GestureHandlerRootView>
   );

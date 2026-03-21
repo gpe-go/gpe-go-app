@@ -17,6 +17,19 @@ import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import * as Location from "expo-location";
 
 import { useLugares } from "../../src/hooks/useLugares";
+import { getCategoriasAPI } from "../../src/api/api";
+
+type Categoria = { id: number; nombre: string; descripcion: string };
+
+const CATEGORIA_ICONOS: Record<string, string> = {
+  'Restaurantes': 'restaurant-outline',
+  'Hoteles': 'bed-outline',
+  'Salones de belleza': 'cut-outline',
+  'Tiendas': 'cart-outline',
+  'Entretenimiento': 'musical-notes-outline',
+  'Servicios': 'construct-outline',
+  'Sitios turísticos': 'camera-outline',
+};
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -25,6 +38,13 @@ export default function HomeScreen() {
 
   const { data: lugares } = useLugares();
   const [search, setSearch] = useState("");
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
+
+  useEffect(() => {
+    getCategoriasAPI().then((res) => {
+      if (res.success) setCategorias(res.data);
+    }).catch(() => {});
+  }, []);
   const [region, setRegion] = useState<any>(null);
 
   const titleAnim = useRef(new Animated.Value(0)).current;
@@ -146,159 +166,35 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* ================= BENTO GRID – 4 FILAS ================= */}
-
-        {/* FILA 1 */}
-        <View style={styles.gridRow}>
-          <Pressable
-            style={[styles.card, { width: "48%", height: 220 }]}
-            onPress={() => router.push("/categorias/explorar")}
-
-          >
-            <ImageBackground
-              source={{
-                uri: "https://i.pinimg.com/originals/33/b5/22/33b522650f28ec33a20eea361c08beb9.jpg",
-              }}
-              style={styles.cardBg}
-              imageStyle={styles.rounded}
-            >
-              <View style={styles.overlay}>
-                <Ionicons name="map-outline" size={28} color="#fff" />
-                <Text style={styles.cardTitle}>Explorar</Text>
-                <Text style={styles.cardSub}>Guadalupe & NL</Text>
-              </View>
-            </ImageBackground>
-          </Pressable>
-
-          <Pressable
-            style={[styles.card, { width: "48%", height: 220 }]}
-            onPress={() => router.push("/categorias/Fin de semana")}
-          >
-            <ImageBackground
-              source={{
-                uri: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800",
-              }}
-              style={styles.cardBg}
-              imageStyle={styles.rounded}
-            >
-              <View style={styles.overlay}>
-                <Text style={styles.cardTitle}>Fin de Semana</Text>
-              </View>
-            </ImageBackground>
-          </Pressable>
-        </View>
-
-        {/* FILA 2 */}
-        <View style={styles.gridRow}>
-          <Pressable style={[styles.card, { width: "58%", height: 160 }]}
-            onPress={() => router.push("/categorias/Naturaleza & Aventura")}>
-
-            <ImageBackground
-              source={{
-                uri: "https://mvsnoticias.com/u/fotografias/m/2023/9/27/f768x400-565219_609122_7.jpg",
-              }}
-              style={styles.cardBg}
-              imageStyle={styles.rounded}
-            >
-              <View style={styles.overlay}>
-                <Text style={styles.cardTitle}>
-                  Naturaleza & Aventura
-                </Text>
-              </View>
-            </ImageBackground>
-          </Pressable>
-
-          <Pressable style={[styles.card, { width: "38%", height: 160 }]}
-            onPress={() => router.push("/categorias/pueblos Magicos")}>
-
-            <ImageBackground
-              source={{
-                uri: "https://wallpapers.com/images/hd/monterrey-photo-collage-7ilxq3egqhow9gdw.jpg",
-              }}
-              style={styles.cardBg}
-              imageStyle={styles.rounded}
-            >
-              <View style={styles.overlay}>
-                <Text style={styles.cardTitle}>
-                  Pueblos Mágicos
-                </Text>
-              </View>
-            </ImageBackground>
-          </Pressable>
-        </View>
-
-        {/* FILA 3 */}
-        <View style={styles.gridRow}>
-          <Pressable style={[styles.card, { width: "48%", height: 150 }]}
-            onPress={() => router.push("/categorias/tours")}
-          >
-
-            <ImageBackground
-              source={{
-                uri: "https://tse1.mm.bing.net/th/id/OIP.SJuomIXnlZ7o0_RQ7XO18AHaDf",
-              }}
-              style={styles.cardBg}
-              imageStyle={styles.rounded}
-            >
-              <View style={styles.overlay}>
-                <Text style={styles.cardTitle}>Tours</Text>
-              </View>
-            </ImageBackground>
-          </Pressable>
-
-          <Pressable style={[styles.card, { width: "48%", height: 150 }]}
-            onPress={() => router.push("/categorias/cultura")}
-          >
-            <ImageBackground
-              source={{
-                uri: "https://i1.wp.com/www.turimexico.com/wp-content/uploads/2015/06/marco.jpg",
-              }}
-              style={styles.cardBg}
-              imageStyle={styles.rounded}
-            >
-              <View style={styles.overlay}>
-                <Text style={styles.cardTitle}>Cultura</Text>
-              </View>
-            </ImageBackground>
-          </Pressable>
-        </View>
-
-        {/* FILA 4 */}
-        <View style={styles.gridRow}>
-          <Pressable style={[styles.card, { width: "43%", height: 180 }]}
-            onPress={() => router.push("/categorias/compras")}
-          >
-            <ImageBackground
-              source={{
-                uri: "https://statics-cuidateplus.marca.com/cms/2022-11/compras-compulsivas_0.jpg",
-              }}
-              style={styles.cardBg}
-              imageStyle={styles.rounded}
-            >
-              <View style={styles.overlay}>
-                <Text style={styles.cardTitle}>Compras</Text>
-              </View>
-            </ImageBackground>
-          </Pressable>
-
-          <Pressable style={[styles.card, { width: "53%", height: 180 }]}
-            onPress={() => router.push("/categorias/servicios")}
-          >
-            <ImageBackground
-              source={{
-                uri: "https://tse2.mm.bing.net/th/id/OIP.8oc6ncJneaAOQzUfbgh46wHaHa",
-              }}
-              style={styles.cardBg}
-              imageStyle={styles.rounded}
-            >
-              <View style={styles.overlay}>
-                <Text style={styles.cardTitle}>
-                  Servicios Turísticos
-                </Text>
-              </View>
-            </ImageBackground>
-          </Pressable>
-        </View>
+        {/* ================= CATEGORÍAS DESDE API ================= */}
+        {categorias.length > 0 ? (
+          <View style={styles.categoriasGrid}>
+            {categorias.map((cat) => (
+              <Pressable
+                key={cat.id}
+                style={styles.categoriaCard}
+                onPress={() => router.push(`/categorias/${cat.id}?nombre=${encodeURIComponent(cat.nombre)}`)}
+              >
+                <View style={styles.categoriaIconBg}>
+                  <Ionicons
+                    name={(CATEGORIA_ICONOS[cat.nombre] || 'grid-outline') as any}
+                    size={28}
+                    color="#E96928"
+                  />
+                </View>
+                <Text style={styles.categoriaNombre}>{cat.nombre}</Text>
+                <Text style={styles.categoriaDesc} numberOfLines={2}>{cat.descripcion}</Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : (
+          <View style={{ alignItems: 'center', marginVertical: 40 }}>
+            <Ionicons name="grid-outline" size={48} color="#cbd5e1" />
+            <Text style={{ color: '#94a3b8', fontSize: 16, marginTop: 12 }}>
+              Cargando categorías...
+            </Text>
+          </View>
+        )}
 
         {/* ================= MAPA ================= */}
         <Animated.View
@@ -471,5 +367,44 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 3,
     borderColor: "#fff",
+  },
+
+  categoriasGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  categoriaCard: {
+    width: '48%',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+  },
+  categoriaIconBg: {
+    width: 50,
+    height: 50,
+    borderRadius: 14,
+    backgroundColor: '#FFF3ED',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  categoriaNombre: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginBottom: 4,
+  },
+  categoriaDesc: {
+    fontSize: 12,
+    color: '#94a3b8',
+    lineHeight: 16,
   },
 });

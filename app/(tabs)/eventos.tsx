@@ -83,6 +83,14 @@ export default function EventosScreen() {
         maxToRenderPerBatch={6}
         windowSize={5}
         removeClippedSubviews={true}
+        ListEmptyComponent={
+          <View style={{ alignItems: 'center', marginTop: 60, paddingHorizontal: 30 }}>
+            <Ionicons name="calendar-outline" size={48} color="#cbd5e1" />
+            <Text style={{ color: '#94a3b8', fontSize: 16, marginTop: 12, textAlign: 'center' }}>
+              Todavía no hay eventos disponibles
+            </Text>
+          </View>
+        }
 
         ListHeaderComponent={
           <View>

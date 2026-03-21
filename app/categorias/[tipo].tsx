@@ -1,45 +1,58 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Image, Pressable, ScrollView, StyleSheet, Text, View, TouchableOpacity } from "react-native";
+import { FlatList, Image, Pressable, StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import { useLugares } from "../../src/hooks/useLugares";
 import { Ionicons } from "@expo/vector-icons";
 import { useFavoritos } from '../../src/context/FavoritosContext';
 
 export default function Categoria() {
-    const { tipo } = useLocalSearchParams();
+    const { tipo, nombre } = useLocalSearchParams<{ tipo: string; nombre: string }>();
     const router = useRouter();
     const { toggleFavorito, esFavorito } = useFavoritos();
 
-    const { data: todosLugares } = useLugares();
-    const lugares = todosLugares.filter((item) => item.categoria === tipo);
+    const idCategoria = Number(tipo) || undefined;
+    const { data: lugares, loading } = useLugares(idCategoria);
+
+    const titulo = nombre || tipo;
 
     return (
         <View style={styles.container}>
-            {/* Header con botón de regresar */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Ionicons name="chevron-back" size={28} color="#333" />
                 </TouchableOpacity>
-                <Text style={styles.title}>{tipo}</Text>
+                <Text style={styles.title}>{titulo}</Text>
                 <View style={{ width: 28 }} />
             </View>
 
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-                {lugares.map((item: any) => (
+            <FlatList
+                data={lugares}
+                keyExtractor={(item) => item.id}
+                contentContainerStyle={[styles.scrollContent, lugares.length === 0 && { flexGrow: 1 }]}
+                ListEmptyComponent={
+                    <View style={styles.emptyContainer}>
+                        <Ionicons name="location-outline" size={56} color="#cbd5e1" />
+                        <Text style={styles.emptyTitle}>
+                            Todavía no hay lugares disponibles
+                        </Text>
+                        <Text style={styles.emptySubtitle}>
+                            Pronto agregaremos lugares en esta categoría
+                        </Text>
+                    </View>
+                }
+                renderItem={({ item }) => (
                     <Pressable
-                        key={item.id}
                         style={styles.card}
                         onPress={() => router.push(`/lugar/${item.id}`)}
                     >
                         <Image source={{ uri: item.imagen }} style={styles.image} />
-
                         <View style={styles.overlay} />
 
                         <View style={styles.topInfo}>
                             <View style={styles.ratingBox}>
-                                <Text style={styles.stars}>⭐⭐⭐⭐<Text style={{ color: '#666' }}>⭐</Text></Text>
+                                <Text style={styles.stars}>
+                                    {'⭐'.repeat(Math.min(Math.round(item.rating || 4), 5))}
+                                </Text>
                             </View>
-
-                            {/* Corazón Sincronizado */}
                             <TouchableOpacity
                                 onPress={() => toggleFavorito(item)}
                                 style={styles.heartBtn}
@@ -60,8 +73,8 @@ export default function Categoria() {
                             <Text style={styles.precioText}>{item.costo || item.precio}</Text>
                         </View>
                     </Pressable>
-                ))}
-            </ScrollView>
+                )}
+            />
         </View>
     );
 }
@@ -77,7 +90,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 15
     },
     backButton: { padding: 5 },
-    title: { fontSize: 20, fontWeight: "600", textTransform: 'capitalize' },
+    title: { fontSize: 20, fontWeight: "600" },
     scrollContent: { padding: 15 },
     card: {
         height: 200,
@@ -104,5 +117,24 @@ const styles = StyleSheet.create({
     },
     nombreText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
     categoriaText: { color: '#ccc', fontSize: 12 },
-    precioText: { color: '#fff', fontSize: 18, fontWeight: 'bold' }
+    precioText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 30,
+    },
+    emptyTitle: {
+        color: '#94a3b8',
+        fontSize: 17,
+        fontWeight: '600',
+        marginTop: 14,
+        textAlign: 'center',
+    },
+    emptySubtitle: {
+        color: '#cbd5e1',
+        fontSize: 14,
+        marginTop: 6,
+        textAlign: 'center',
+    },
 });
