@@ -131,6 +131,15 @@ export const getCategoriasAPI = async () => {
   return response.data;
 };
 
+/* ================= CATEGORIAS EVENTOS ================= */
+
+export const getCategoriasEventos = async () => {
+  const response = await API.get("", {
+    params: { modulo: "categorias_eventos", action: "listar" },
+  });
+  return response.data;
+};
+
 /* ================= FOTOS ================= */
 
 export const getFotosLugar = async (id_lugar: number) => {

@@ -14,8 +14,8 @@ export const mapEvento = (raw: any, imagenOverride?: string): Evento => ({
   fecha: formatearFecha(raw.fecha_inicio, raw.fecha_fin),
   lugar: raw.lugar_nombre ?? "",
   imagen: imagenOverride ?? PLACEHOLDER_IMG,
-  categoria: "General",
-  sub: raw.tipo === "noticia" ? "Noticia" : "Evento",
+  categoria: raw.categoria_evento_nombre ?? "General",
+  sub: raw.categoria_evento_nombre ?? (raw.tipo === "noticia" ? "Noticia" : "Evento"),
   costo: "Consultar",
   especial: false,
 });

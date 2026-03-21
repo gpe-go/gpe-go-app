@@ -1,6 +1,6 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { VideoView, useVideoPlayer } from 'expo-video';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   FlatList,
   Image,
@@ -13,13 +13,9 @@ import {
   View,
 } from 'react-native';
 import { useEventos } from "../../src/hooks/useEventos";
+import { getCategoriasEventos } from "../../src/api/api";
 
-const CATEGORIAS = [
-  { id: '1', nombre: 'Deporte', icon: 'soccer' },
-  { id: '2', nombre: 'Cultural', icon: 'palette' },
-  { id: '3', nombre: 'Gastronomía', icon: 'food' },
-  { id: '4', nombre: 'Sociales', icon: 'account-group' },
-];
+type CategoriaEvento = { id: number; nombre: string };
 
 /* ================= EVENT CARD OPTIMIZADO ================= */
 
@@ -45,6 +41,15 @@ export default function EventosScreen() {
   const { data: eventos } = useEventos();
   const [search, setSearch] = useState('');
   const [activeCat, setActiveCat] = useState('Todas');
+  const [categorias, setCategorias] = useState<CategoriaEvento[]>([]);
+
+  useEffect(() => {
+    getCategoriasEventos().then((res) => {
+      if (res.success && Array.isArray(res.data)) {
+        setCategorias(res.data);
+      }
+    }).catch(() => {});
+  }, []);
   const [playVideo, setPlayVideo] = useState(false);
 
   const eventoPrincipal = eventos.find(e => e.especial);
@@ -158,17 +163,12 @@ export default function EventosScreen() {
                   </Text>
                 </Pressable>
 
-                {CATEGORIAS.map((cat) => (
+                {categorias.map((cat) => (
                   <Pressable
                     key={cat.id}
                     style={[styles.catItem, activeCat === cat.nombre && styles.catActive]}
                     onPress={() => setActiveCat(cat.nombre)}
                   >
-                    <MaterialCommunityIcons
-                      name={cat.icon as any}
-                      size={18}
-                      color={activeCat === cat.nombre ? 'white' : '#64748B'}
-                    />
                     <Text style={[styles.catText, activeCat === cat.nombre && styles.catTextActive]}>
                       {cat.nombre}
                     </Text>
