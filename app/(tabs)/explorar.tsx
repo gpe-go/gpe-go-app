@@ -16,95 +16,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useFavoritos, Lugar } from '../../src/context/FavoritosContext';
-
-
-/* ================= DATA ================= */
-
-const SITIOS_TURISTICOS: Lugar[] = [
-  {
-    id: 'c1',
-    nombre: 'Cerro de la Silla',
-    categoria: 'Cerros',
-    rating: 5,
-    imagen:
-      'https://mvsnoticias.com/u/fotografias/m/2023/9/27/f768x400-565219_609122_7.jpg',
-    ubicacion: 'Guadalupe, NL',
-    costo: 'Gratis',
-  },
-  {
-    id: 'c2',
-    nombre: 'Cerro del Obispado',
-    categoria: 'Cerros',
-    rating: 4.8,
-    imagen:
-      'https://mvsnoticias.com/u/fotografias/m/2023/9/27/f768x400-565213_609116_0.jpg',
-    ubicacion: 'Monterrey, NL',
-    costo: 'Gratis',
-  },
-  {
-    id: 'p1',
-    nombre: 'Parque Fundidora',
-    categoria: 'Parques',
-    rating: 4.9,
-    imagen: 'https://tse4.mm.bing.net/th/id/OIP.LSo-DdPCU1kKKMGv9yBkkwHaFj',
-    ubicacion: 'Monterrey, NL',
-    costo: 'Gratis',
-  },
-  {
-    id: 'm1',
-    nombre: 'MARCO',
-    categoria: 'Museos',
-    rating: 4.9,
-    imagen: 'https://www.turimexico.com/wp-content/uploads/2015/06/marco.jpg',
-    ubicacion: 'Centro Monterrey',
-    costo: '$90 MXN',
-  },
-  {
-    id: 'p2',
-    nombre: 'Parque Pipo',
-    categoria: 'Parques',
-    rating: 4.5,
-    imagen: 'https://media-cdn.tripadvisor.com/media/photo-s/12/74/d3/4e/rio-la-silla.jpg',
-    ubicacion: 'Guadalupe, NL',
-    costo: 'Gratis',
-  },
-  {
-    id: 'p3',
-    nombre: 'Parque Ecológico Chipinque',
-    categoria: 'Parques',
-    rating: 4.9,
-    imagen: 'https://tse1.mm.bing.net/th/id/OIP.Vd67Wv_2mjiLc_0FQIsLJAHaFj?rs=1&pid=ImgDetMain&o=7&rm=3',
-    ubicacion: 'San Pedro Garza García, NL',
-    costo: '$80 MXN',
-  },
-  {
-    id: 'pm1',
-    nombre: 'Santiago',
-    categoria: 'Pueblos Mágicos',
-    rating: 4.7,
-    imagen: 'https://tse1.mm.bing.net/th/id/OIP.j6MPb2t1znNLuUxVB0-y8QHaEK?rs=1&pid=ImgDetMain&o=7&rm=3',
-    ubicacion: 'Santiago, NL',
-    costo: 'Gratis',
-  },
-  {
-    id: 'pm2',
-    nombre: 'Bustamante',
-    categoria: 'Pueblos Mágicos',
-    rating: 4.6,
-    imagen: 'https://tse1.mm.bing.net/th/id/OIP.xLA8540BS1kQo85-77Z5vwHaEK?rs=1&pid=ImgDetMain&o=7&rm=3',
-    ubicacion: 'Bustamante, NL',
-    costo: 'Gratis',
-  },
-  {
-    id: 'pm3',
-    nombre: 'Linares',
-    categoria: 'Pueblos Mágicos',
-    rating: 4.5,
-    imagen: 'https://mexicodesconocidoviajes.mx/wp-content/uploads/2018/10/Catedral-San-Felipe-Apostol_cortesia-secturNL-ok.jpg',
-    ubicacion: 'Linares, NL',
-    costo: 'Gratis',
-  }
-];
+import { useLugares } from '../../src/hooks/useLugares';
 
 const CATEGORIAS = [
   { id: '1', nombre: 'Cerros', icon: 'image-filter-hdr', color: '#E96928' },
@@ -115,13 +27,18 @@ const CATEGORIAS = [
 
 export default function ExplorarScreen() {
   const { toggleFavorito, esFavorito } = useFavoritos();
+  const { data: sitios } = useLugares();
   const mapRef = useRef<MapView>(null);
 
   const [search, setSearch] = useState('');
   const [categoriaActiva, setCategoriaActiva] = useState<string | null>(null);
-  const [filteredData, setFilteredData] =
-    useState<Lugar[]>(SITIOS_TURISTICOS);
+  const [filteredData, setFilteredData] = useState<Lugar[]>(sitios);
   const [region, setRegion] = useState<Region | null>(null);
+
+  // Sync filteredData when hook data loads
+  useEffect(() => {
+    setFilteredData(sitios);
+  }, [sitios]);
 
   /* ================= GEO ================= */
 
@@ -156,8 +73,8 @@ export default function ExplorarScreen() {
     setSearch('');
     setFilteredData(
       nueva
-        ? SITIOS_TURISTICOS.filter((l) => l.categoria === nueva)
-        : SITIOS_TURISTICOS
+        ? sitios.filter((l) => l.categoria === nueva)
+        : sitios
     );
   };
 
@@ -165,7 +82,7 @@ export default function ExplorarScreen() {
     setSearch(text);
     setCategoriaActiva(null);
     setFilteredData(
-      SITIOS_TURISTICOS.filter((l) =>
+      sitios.filter((l) =>
         l.nombre.toLowerCase().includes(text.toLowerCase())
       )
     );
@@ -496,30 +413,3 @@ const styles = StyleSheet.create({
   },
   mapBtnText: { color: '#fff', fontSize: 11, fontWeight: 'bold' },
 });
-
-
-/* ====================== Cuando exista backend reemplazar ===================== */
-
-// import { getLugares } from "@/src/api/api";
-// const [lugares, setLugares] = useState(LUGARES_DATA);
-
-/*
-import { useEffect } from "react";
-
-useEffect(() => {
-
-  const cargarLugares = async () => {
-    try {
-      const data = await getLugares();
-      setLugares(data);
-    } catch (error) {
-      console.log("Usando datos locales");
-    }
-  };
-
-  cargarLugares();
-
-}, []);
-*/
-
-/* ============================================================================ */

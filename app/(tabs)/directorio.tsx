@@ -14,74 +14,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import * as Location from "expo-location";
 import { useFavoritos, Lugar } from "../../src/context/FavoritosContext";
-
-/* ================= DATA ================= */
-
-const LUGARES: Lugar[] = [
-  {
-    id: "1",
-    nombre: "Hotel Real Guadalupe",
-    categoria: "Hoteles",
-    rating: 4.8,
-    imagen: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400",
-    ubicacion: "Av. Benito Juárez 123",
-    costo: "$$$",
-  },
-  {
-    id: "2",
-    nombre: "La Terraza Gourmet",
-    categoria: "Restaurantes",
-    rating: 4.9,
-    imagen: "https://images.unsplash.com/photo-1544148103-0773bf10d330?w=400",
-    ubicacion: "Blvd. Central 789",
-    costo: "$$$$",
-  },
-  {
-    id: "3",
-    nombre: "Fonda Doña Mari",
-    categoria: "Restaurantes",
-    rating: 4.5,
-    imagen: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400",
-    ubicacion: "Calle Hidalgo 456",
-    costo: "$$",
-  },
-  {
-    id: "4",
-    nombre: "Plaza Multiplaza",
-    categoria: "Plazas",
-    rating: 4.2,
-    imagen: "https://images.unsplash.com/photo-1519567241046-7f570eee3ce6?w=400",
-    ubicacion: "Carretera Reynosa 789",
-    costo: "$",
-  },
-  {
-    id: "5",
-    nombre: "Abarrotes El Güero",
-    categoria: "Tiendas",
-    rating: 4.0,
-    imagen: "https://tse4.mm.bing.net/th/id/OIP.sfUhrvsTMibSw41Y_px8-gHaEK",
-    ubicacion: "Av. Pablo Livas 101",
-    costo: "$",
-  },
-  {
-    id: "6",
-    nombre: "CFE Guadalupe",
-    categoria: "Servicios",
-    rating: 3.8,
-    imagen: "https://recibodeluzmexico.com.mx/wp-content/uploads/2025/03/oficina-cfe-zona-metropolitana-oriente-768x427.jpg",
-    ubicacion: "Centro de Guadalupe",
-    costo: "Gratis",
-  },
-  {
-    id: "7",
-    nombre: "Agua y Drenaje",
-    categoria: "Servicios",
-    rating: 4.1,
-    imagen: "https://tse1.mm.bing.net/th/id/OIP._P5sJ3inFzgJi9oz6YcaxQHaEw",
-    ubicacion: "Av. Eloy Cavazos",
-    costo: "Gratis",
-  },
-];
+import { useLugares } from "../../src/hooks/useLugares";
 
 const CATEGORIAS = [
   { id: "1", nombre: "Restaurantes", icon: "silverware-fork-knife", color: "#FF6B35" },
@@ -94,11 +27,17 @@ const CATEGORIAS = [
 export default function DirectorioScreen() {
   const mapRef = useRef<MapView>(null);
   const { toggleFavorito, esFavorito } = useFavoritos();
+  const { data: lugares } = useLugares();
 
   const [search, setSearch] = useState("");
   const [categoriaActiva, setCategoriaActiva] = useState<string | null>(null);
-  const [filteredData, setFilteredData] = useState<Lugar[]>(LUGARES);
+  const [filteredData, setFilteredData] = useState<Lugar[]>(lugares);
   const [region, setRegion] = useState<any>(null);
+
+  // Sync filteredData when hook data loads
+  useEffect(() => {
+    setFilteredData(lugares);
+  }, [lugares]);
 
   useEffect(() => {
     obtenerUbicacion();
@@ -120,7 +59,7 @@ export default function DirectorioScreen() {
   };
 
   const filtrar = (texto: string, categoria: string | null) => {
-    let data = LUGARES;
+    let data = lugares;
 
     if (categoria) data = data.filter((l) => l.categoria === categoria);
     if (texto)
@@ -472,29 +411,3 @@ const styles = StyleSheet.create({
 
   placeAddress: { fontSize: 12, color: "#64748B" },
 });
-
-/* ====================== Cuando exista backend reemplazar ===================== */
-
-// import { getLugares } from "@/src/api/api";
-// const [lugares, setLugares] = useState(LUGARES_DATA);
-
-/*
-import { useEffect } from "react";
-
-useEffect(() => {
-
-  const cargarLugares = async () => {
-    try {
-      const data = await getLugares();
-      setLugares(data);
-    } catch (error) {
-      console.log("Usando datos locales");
-    }
-  };
-
-  cargarLugares();
-
-}, []);
-*/
-
-/* ============================================================================ */

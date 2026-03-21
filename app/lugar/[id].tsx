@@ -1,6 +1,6 @@
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { LUGARES } from "../../src/data/lugares";
+import { useLugar } from "../../src/hooks/useLugar";
 import { Ionicons } from "@expo/vector-icons";
 import { useFavoritos } from '../../src/context/FavoritosContext';
 
@@ -9,9 +9,10 @@ export default function LugarDetalle() {
   const router = useRouter();
   const { toggleFavorito, esFavorito } = useFavoritos();
 
-  const lugar = LUGARES.find((item: any) => item.id === id);
+  const { data: lugar, loading } = useLugar(id as string);
 
-  if (!lugar) return <View style={styles.container}><Text>Cargando...</Text></View>;
+  if (loading) return <View style={styles.container}><ActivityIndicator size="large" color="#E96928" /></View>;
+  if (!lugar) return <View style={styles.container}><Text>Lugar no encontrado</Text></View>;
 
   return (
     <View style={styles.container}>

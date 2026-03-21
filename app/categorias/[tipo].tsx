@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Image, Pressable, ScrollView, StyleSheet, Text, View, TouchableOpacity } from "react-native";
-import { LUGARES } from "../../src/data/lugares";
+import { useLugares } from "../../src/hooks/useLugares";
 import { Ionicons } from "@expo/vector-icons";
 import { useFavoritos } from '../../src/context/FavoritosContext';
 
@@ -9,7 +9,8 @@ export default function Categoria() {
     const router = useRouter();
     const { toggleFavorito, esFavorito } = useFavoritos();
 
-    const lugares = LUGARES.filter((item) => item.categoria === tipo);
+    const { data: todosLugares } = useLugares();
+    const lugares = todosLugares.filter((item) => item.categoria === tipo);
 
     return (
         <View style={styles.container}>

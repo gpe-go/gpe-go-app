@@ -16,13 +16,14 @@ import { useConfig } from "../../src/context/ConfigContext";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import * as Location from "expo-location";
 
-import { LUGARES } from "../../src/data/lugares";
+import { useLugares } from "../../src/hooks/useLugares";
 
 export default function HomeScreen() {
   const router = useRouter();
   useConfig();
   const mapRef = useRef<MapView>(null);
 
+  const { data: lugares } = useLugares();
   const [search, setSearch] = useState("");
   const [region, setRegion] = useState<any>(null);
 
@@ -85,7 +86,7 @@ export default function HomeScreen() {
 
   const searchResults =
     search.length > 0
-      ? LUGARES.filter((item: any) =>
+      ? lugares.filter((item: any) =>
         item.nombre.toLowerCase().includes(search.toLowerCase())
       )
       : [];
