@@ -1,17 +1,73 @@
-import React from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, StatusBar } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View, Text, StyleSheet, TextInput, Pressable,
+  ScrollView, StatusBar, Image, Alert,
+} from 'react-native';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../src/context/ThemeContext';
+import * as ImagePicker from 'expo-image-picker';
+import * as Camera from 'expo-camera';
 
 export default function PerfilScreen() {
   const { t } = useTranslation();
   const { colors, fonts, isDark } = useTheme();
   const s = makeStyles(colors, fonts);
-
   const router = useRouter();
+
+  const [fotoPerfil, setFotoPerfil] = useState<string | null>(null);
+
+  // ─── Seleccionar foto de galería ───────────────────────
+  const seleccionarDeGaleria = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert(
+        'Permiso requerido',
+        'GuadalupeGo necesita acceso a tu galería para cambiar tu foto de perfil.'
+      );
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled) {
+      setFotoPerfil(result.assets[0].uri);
+    }
+  };
+
+  // ─── Tomar foto con cámara ─────────────────────────────
+  const tomarFoto = async () => {
+    const { status } = await Camera.Camera.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert(
+        'Permiso requerido',
+        'GuadalupeGo necesita acceso a la cámara para tomar tu foto de perfil.'
+      );
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled) {
+      setFotoPerfil(result.assets[0].uri);
+    }
+  };
+
+  // ─── Popup para elegir fuente ──────────────────────────
+  const cambiarFoto = () => {
+    Alert.alert('Foto de perfil', 'Elige una opción', [
+      { text: '📷 Cámara',  onPress: tomarFoto },
+      { text: '🖼️ Galería', onPress: seleccionarDeGaleria },
+      { text: 'Cancelar',   style: 'cancel' },
+    ]);
+  };
 
   return (
     <SafeAreaView style={s.safeArea} edges={['top']}>
@@ -26,9 +82,21 @@ export default function PerfilScreen() {
         </Pressable>
 
         <View style={s.header}>
-          <View style={s.avatarCircle}>
-            <Ionicons name="person" size={40} color="white" />
-          </View>
+          {/* Avatar con botón para cambiar foto */}
+          <Pressable onPress={cambiarFoto} style={s.avatarWrapper}>
+            {fotoPerfil ? (
+              <Image source={{ uri: fotoPerfil }} style={s.avatarImage} />
+            ) : (
+              <View style={s.avatarCircle}>
+                <Ionicons name="person" size={40} color="white" />
+              </View>
+            )}
+            {/* Ícono de cámara encima del avatar */}
+            <View style={s.cameraOverlay}>
+              <Ionicons name="camera" size={14} color="#fff" />
+            </View>
+          </Pressable>
+
           <Text style={s.welcomeText}>{t('welcome')}</Text>
           <Text style={s.instructionText}>{t('Per')}</Text>
         </View>
@@ -101,11 +169,23 @@ const makeStyles = (c: any, f: any) => StyleSheet.create({
   closeButton:   { alignSelf: 'flex-end' },
 
   header: { alignItems: 'center', marginTop: 20, marginBottom: 30 },
+
+  // Avatar
+  avatarWrapper: { marginBottom: 15 },
   avatarCircle: {
     width: 80, height: 80, borderRadius: 40,
     backgroundColor: '#E96928', justifyContent: 'center', alignItems: 'center',
-    marginBottom: 15, elevation: 6,
+    elevation: 6,
   },
+  avatarImage: { width: 80, height: 80, borderRadius: 40 },
+  cameraOverlay: {
+    position: 'absolute', bottom: 0, right: 0,
+    backgroundColor: '#E96928', borderRadius: 12,
+    width: 24, height: 24,
+    justifyContent: 'center', alignItems: 'center',
+    borderWidth: 2, borderColor: '#fff',
+  },
+
   welcomeText:     { fontSize: f['2xl'], fontWeight: '900', color: c.text },
   instructionText: { fontSize: f.base, color: c.subtext, marginTop: 8, textAlign: 'center', lineHeight: f.base * 1.5, paddingHorizontal: 10 },
 

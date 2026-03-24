@@ -8,9 +8,8 @@ import {
 import { EVENTOS_DATA } from '@/src/data/eventos';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../src/context/ThemeContext';
+import { useRouter } from 'expo-router';
 
-// Las claves internas permanecen en español para hacer match con los datos (event.categoria)
-// El campo labelKey apunta a la clave de traducción en i18n
 const CATEGORIAS = [
   { id: '1', value: 'Deporte',     labelKey: 'cat_deporte',     icon: 'soccer' },
   { id: '2', value: 'Cultural',    labelKey: 'cat_cultural',    icon: 'palette' },
@@ -18,12 +17,10 @@ const CATEGORIAS = [
   { id: '4', value: 'Sociales',    labelKey: 'cat_sociales',    icon: 'account-group' },
 ];
 
-/* ================= EVENT CARD ================= */
-
-const EventCard = React.memo(({ item, colors, fonts }: any) => {
+const EventCard = React.memo(({ item, colors, fonts, onPress }: any) => {
   const s = makeStyles(colors, fonts);
   return (
-    <View style={s.card}>
+    <Pressable style={s.card} onPress={onPress}>
       <Image source={{ uri: item.imagen }} style={s.cardImage} />
       <View style={s.cardContent}>
         <Text style={s.categoryLabel}>{item.sub}</Text>
@@ -31,18 +28,17 @@ const EventCard = React.memo(({ item, colors, fonts }: any) => {
         <Text style={s.infoText}>{item.fecha}</Text>
         <Text style={s.infoText}>{item.lugar}</Text>
       </View>
-    </View>
+    </Pressable>
   );
 });
 
 EventCard.displayName = 'EventCard';
 
-/* ================= SCREEN ================= */
-
 export default function EventosScreen() {
   const { t } = useTranslation();
   const { colors, fonts } = useTheme();
   const s = makeStyles(colors, fonts);
+  const router = useRouter();
 
   const [search, setSearch]       = useState('');
   const [activeCat, setActiveCat] = useState('Todas');
@@ -62,6 +58,16 @@ export default function EventosScreen() {
   const startVideo = () => { setPlayVideo(true); player.currentTime = 0; player.play(); };
   const stopVideo  = () => { player.pause(); player.currentTime = 0; setPlayVideo(false); };
 
+  const limpiarSearch = () => setSearch('');
+
+  // ─── Navegar al detalle del evento ────────────────────
+  const irAlDetalle = (item: any) => {
+    router.push({
+      pathname: '/(stack)/detalleEvento',
+      params: { evento: JSON.stringify(item) },
+    });
+  };
+
   return (
     <View style={s.container}>
       <StatusBar barStyle="light-content" backgroundColor="#E96928" />
@@ -69,7 +75,14 @@ export default function EventosScreen() {
       <FlatList
         data={filteredEvents}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <EventCard item={item} colors={colors} fonts={fonts} />}
+        renderItem={({ item }) => (
+          <EventCard
+            item={item}
+            colors={colors}
+            fonts={fonts}
+            onPress={() => irAlDetalle(item)}
+          />
+        )}
         showsVerticalScrollIndicator={false}
         initialNumToRender={6}
         maxToRenderPerBatch={6}
@@ -94,6 +107,11 @@ export default function EventosScreen() {
                     value={search}
                     onChangeText={setSearch}
                   />
+                  {search.length > 0 && (
+                    <Pressable onPress={limpiarSearch}>
+                      <Ionicons name="close-circle" size={20} color="#94a3b8" />
+                    </Pressable>
+                  )}
                 </View>
 
                 {search.length > 0 && (
@@ -120,7 +138,6 @@ export default function EventosScreen() {
             <View style={s.catContainer}>
               <Text style={s.catTitle}>{t('categories')}</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                {/* Botón "Todas" */}
                 <Pressable
                   style={[s.catItem, activeCat === 'Todas' && s.catActive]}
                   onPress={() => setActiveCat('Todas')}
@@ -181,8 +198,6 @@ export default function EventosScreen() {
     </View>
   );
 }
-
-/* ================= STYLES ================= */
 
 const makeStyles = (c: any, f: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: c.background },
@@ -252,9 +267,9 @@ const makeStyles = (c: any, f: any) => StyleSheet.create({
     borderWidth: 1,
     borderColor: c.border,
   },
-  catActive:        { backgroundColor: '#E96928', borderColor: '#E96928' },
-  catText:          { marginLeft: 5, fontWeight: '600', color: c.subtext, fontSize: f.sm },
-  catTextActive:    { color: '#fff' },
+  catActive:     { backgroundColor: '#E96928', borderColor: '#E96928' },
+  catText:       { marginLeft: 5, fontWeight: '600', color: c.subtext, fontSize: f.sm },
+  catTextActive: { color: '#fff' },
 
   mainEventCard: {
     marginHorizontal: 20,
@@ -264,12 +279,11 @@ const makeStyles = (c: any, f: any) => StyleSheet.create({
     backgroundColor: '#000',
     elevation: 10,
   },
-  mainEventImage:   { width: '100%', height: 260 },
+  mainEventImage: { width: '100%', height: 260 },
 
   worldBadge: {
     position: 'absolute',
-    top: 15,
-    left: 15,
+    top: 15, left: 15,
     backgroundColor: '#E53935',
     paddingHorizontal: 14,
     paddingVertical: 6,

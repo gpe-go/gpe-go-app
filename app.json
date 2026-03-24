@@ -11,13 +11,30 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-      "NSLocationWhenInUseUsageDescription": "GuadalupeGo usa tu ubicación para mostrar restaurantes, lugares turísticos y eventos cercanos."
-}
+        "NSLocationWhenInUseUsageDescription": "GuadalupeGo usa tu ubicación para mostrar restaurantes, lugares turísticos y eventos cercanos.",
+        "NSLocationAlwaysUsageDescription": "GuadalupeGo usa tu ubicación para mostrarte lugares y eventos cercanos.",
+        "NSCameraUsageDescription": "GuadalupeGo necesita acceso a la cámara para actualizar tu foto de perfil.",
+        "NSPhotoLibraryUsageDescription": "GuadalupeGo necesita acceso a tu galería para seleccionar una foto de perfil.",
+        "NSPhotoLibraryAddUsageDescription": "GuadalupeGo necesita permiso para guardar imágenes en tu galería.",
+        "NSMicrophoneUsageDescription": "GuadalupeGo necesita acceso al micrófono para grabación de videos.",
+        "NSUserNotificationsUsageDescription": "GuadalupeGo enviará notificaciones sobre eventos y noticias de Guadalupe."
+      }
     },
 
     "android": {
       "package": "com.guadalupego.app",
-      "permissions": ["ACCESS_FINE_LOCATION"],
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_MEDIA_IMAGES",
+        "POST_NOTIFICATIONS",
+        "VIBRATE"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "././assets/images/android-icon-foreground.png",
@@ -50,6 +67,20 @@
         "expo-location",
         {
           "locationAlwaysAndWhenInUsePermission": "GuadalupeGo necesita tu ubicación para mostrarte lugares cercanos."
+        }
+      ],
+
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "GuadalupeGo necesita acceso a la cámara para foto de perfil."
+        }
+      ],
+
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "GuadalupeGo necesita acceso a tus fotos para actualizar tu perfil."
         }
       ]
     ],

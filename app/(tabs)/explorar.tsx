@@ -23,13 +23,11 @@ const SITIOS_TURISTICOS: Lugar[] = [
   { id: 'pm3', nombre: 'Linares',            categoria: 'Pueblos Mágicos', rating: 4.5, imagen: 'https://mexicodesconocidoviajes.mx/wp-content/uploads/2018/10/Catedral-San-Felipe-Apostol_cortesia-secturNL-ok.jpg',                  ubicacion: 'Linares, NL',              costo: 'Gratis' },
 ];
 
-// value = clave interna en español para hacer match con sitio.categoria
-// labelKey = clave de traducción en i18n
 const CATEGORIAS = [
-  { id: '1', value: 'Cerros',          labelKey: 'cat_cerros',         icon: 'image-filter-hdr', color: '#E96928' },
-  { id: '2', value: 'Parques',         labelKey: 'cat_parques',        icon: 'pine-tree',        color: '#4CAF50' },
+  { id: '1', value: 'Cerros',          labelKey: 'cat_cerros',          icon: 'image-filter-hdr', color: '#E96928' },
+  { id: '2', value: 'Parques',         labelKey: 'cat_parques',         icon: 'pine-tree',        color: '#4CAF50' },
   { id: '3', value: 'Pueblos Mágicos', labelKey: 'cat_pueblos_magicos', icon: 'church',           color: '#9C27B0' },
-  { id: '4', value: 'Museos',          labelKey: 'cat_museos',         icon: 'domain',           color: '#4A90E2' },
+  { id: '4', value: 'Museos',          labelKey: 'cat_museos',          icon: 'domain',           color: '#4A90E2' },
 ];
 
 export default function ExplorarScreen() {
@@ -70,6 +68,13 @@ export default function ExplorarScreen() {
     setFilteredData(SITIOS_TURISTICOS.filter(l => l.nombre.toLowerCase().includes(text.toLowerCase())));
   };
 
+  // ─── Limpiar búsqueda ──────────────────────────────────
+  const limpiarSearch = () => {
+    setSearch('');
+    setCategoriaActiva(null);
+    setFilteredData(SITIOS_TURISTICOS);
+  };
+
   const openInMaps = (nombre: string, ubicacion: string) => {
     const query = encodeURIComponent(`${nombre} ${ubicacion}`);
     Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${query}`);
@@ -90,6 +95,12 @@ export default function ExplorarScreen() {
             onChangeText={handleSearch}
             style={s.searchInput}
           />
+          {/* ─── X para limpiar ─── */}
+          {search.length > 0 && (
+            <Pressable onPress={limpiarSearch}>
+              <Ionicons name="close-circle" size={20} color="#94A3B8" />
+            </Pressable>
+          )}
         </View>
 
         {search.length > 0 && (

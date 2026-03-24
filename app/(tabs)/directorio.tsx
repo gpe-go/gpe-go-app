@@ -26,8 +26,6 @@ const LUGARES: Lugar[] = [
   { id: '12', nombre: 'Oxxo Gas Guadalupe',           categoria: 'Gasolineras',   rating: 4.0, imagen: 'https://www.onexpo.com.mx/NOTICIAS/AFECTA-APERTURAS-DE-OXXO-GAS-LA-FALTA-DE-GUIA-REGU/images/AFECTA-APERTURAS-DE-OXXO-GAS-LA-FALTA-DE-GUIA-REGU.jpg', ubicacion: 'Av. Eloy Cavazos', costo: '$$' },
 ];
 
-// value = clave interna en español para hacer match con lugar.categoria
-// labelKey = clave de traducción en i18n
 const CATEGORIAS = [
   { id: '1', value: 'Restaurantes',  labelKey: 'cat_restaurantes',  icon: 'silverware-fork-knife', color: '#FF6B35' },
   { id: '2', value: 'Hoteles',       labelKey: 'cat_hoteles',       icon: 'office-building',       color: '#4A90E2' },
@@ -75,6 +73,12 @@ export default function DirectorioScreen() {
   const handleSearch = (text: string) => { setSearch(text); filtrar(text, categoriaActiva); };
   const seleccionarCategoria = (cat: string) => { const nueva = cat === categoriaActiva ? null : cat; setCategoriaActiva(nueva); filtrar(search, nueva); };
 
+  // ─── Limpiar búsqueda ──────────────────────────────────
+  const limpiarSearch = () => {
+    setSearch('');
+    filtrar('', categoriaActiva);
+  };
+
   const Header = () => (
     <View>
       <View style={s.orangeBanner}>
@@ -91,6 +95,12 @@ export default function DirectorioScreen() {
               onChangeText={handleSearch}
               style={s.searchInput}
             />
+            {/* ─── X para limpiar ─── */}
+            {search.length > 0 && (
+              <Pressable onPress={limpiarSearch}>
+                <Ionicons name="close-circle" size={20} color="#94A3B8" />
+              </Pressable>
+            )}
           </View>
 
           {search.length > 0 && (

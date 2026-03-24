@@ -1,21 +1,21 @@
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import * as Location from "expo-location";
+import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  ImageBackground,
-  Pressable,
-  TextInput,
   Animated,
   Image,
+  ImageBackground,
+  Pressable,
+  ScrollView,
   StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
-import * as Location from "expo-location";
 
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../../src/context/ThemeContext";
@@ -113,6 +113,12 @@ export default function HomeScreen() {
                 value={search}
                 onChangeText={setSearch}
               />
+              {/* ─── X para limpiar ─── */}
+              {search.length > 0 && (
+                <Pressable onPress={() => setSearch('')}>
+                  <Ionicons name="close-circle" size={20} color={colors.subtext} />
+                </Pressable>
+              )}
             </View>
 
             {searchResults.length > 0 && (
@@ -140,10 +146,10 @@ export default function HomeScreen() {
 
         {/* ================= BENTO GRID – 4 FILAS ================= */}
 
-        {/* FILA 1 — igual ancho, altura uniforme */}
-        <View style={s.gridRow}>
+        {/* FILA 1 — altura 220 */}
+        <View style={[s.gridRow, { height: 220 }]}>
           <Pressable
-            style={[s.card, { width: "48%", height: 220 }]}
+            style={[s.card, { width: "48%" }]}
             onPress={() => router.push("/categorias/explorar")}
           >
             <ImageBackground
@@ -159,7 +165,7 @@ export default function HomeScreen() {
           </Pressable>
 
           <Pressable
-            style={[s.card, { width: "48%", height: 220 }]}
+            style={[s.card, { width: "48%" }]}
             onPress={() => router.push("/categorias/Fin de semana")}
           >
             <ImageBackground
@@ -173,10 +179,10 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
-        {/* FILA 2 — izq más ancha */}
-        <View style={s.gridRow}>
+        {/* FILA 2 — altura 160, izq más ancha */}
+        <View style={[s.gridRow, { height: 160 }]}>
           <Pressable
-            style={[s.card, { width: "58%", height: 160 }]}
+            style={[s.card, { width: "58%" }]}
             onPress={() => router.push("/categorias/Naturaleza & Aventura")}
           >
             <ImageBackground
@@ -190,7 +196,7 @@ export default function HomeScreen() {
           </Pressable>
 
           <Pressable
-            style={[s.card, { width: "38%", height: 160 }]}
+            style={[s.card, { width: "38%" }]}
             onPress={() => router.push("/categorias/pueblos Magicos")}
           >
             <ImageBackground
@@ -204,10 +210,10 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
-        {/* FILA 3 — igual ancho */}
-        <View style={s.gridRow}>
+        {/* FILA 3 — altura 150, igual ancho */}
+        <View style={[s.gridRow, { height: 150 }]}>
           <Pressable
-            style={[s.card, { width: "48%", height: 150 }]}
+            style={[s.card, { width: "48%" }]}
             onPress={() => router.push("/categorias/tours")}
           >
             <ImageBackground
@@ -221,7 +227,7 @@ export default function HomeScreen() {
           </Pressable>
 
           <Pressable
-            style={[s.card, { width: "48%", height: 150 }]}
+            style={[s.card, { width: "48%" }]}
             onPress={() => router.push("/categorias/cultura")}
           >
             <ImageBackground
@@ -235,10 +241,10 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
-        {/* FILA 4 — der más ancha */}
-        <View style={s.gridRow}>
+        {/* FILA 4 — altura 180, der más ancha */}
+        <View style={[s.gridRow, { height: 180 }]}>
           <Pressable
-            style={[s.card, { width: "43%", height: 180 }]}
+            style={[s.card, { width: "43%" }]}
             onPress={() => router.push("/categorias/compras")}
           >
             <ImageBackground
@@ -252,11 +258,11 @@ export default function HomeScreen() {
           </Pressable>
 
           <Pressable
-            style={[s.card, { width: "53%", height: 180 }]}
+            style={[s.card, { width: "53%" }]}
             onPress={() => router.push("/categorias/servicios")}
           >
             <ImageBackground
-              source={{ uri: "https://tse2.mm.bing.net/th/id/OIP.8oc6ncJneaAOQzUfbgh46wHaHa" }}
+              source={{ uri: "https://i0.wp.com/www.cuponerapp.com/mexiconoce/wp-content/uploads/2021/05/Captura-de-pantalla-2021-05-31-222254.jpg?resize=600%2C332&ssl=1" }}
               style={s.cardBg} imageStyle={s.rounded}
             >
               <LinearGradient colors={["transparent", "rgba(0,0,0,0.78)"]} style={s.gradient}>
@@ -376,13 +382,14 @@ const makeStyles = (c: any, f: any) =>
 
     gridRow: {
       flexDirection: "row",
-      alignItems: "flex-start",   // alinea al fondo para que se vean las alturas distintas
+      alignItems: "stretch",
       justifyContent: "space-between",
       marginBottom: 10,
       gap: 10,
     },
 
     card: {
+      flex: 1,
       borderRadius: 18,
       overflow: "hidden",
       shadowColor: "#000",
@@ -392,7 +399,13 @@ const makeStyles = (c: any, f: any) =>
       elevation: 8,
     },
 
-    cardBg:  { flex: 1, justifyContent: "flex-end" },
+    cardBg: {
+      flex: 1,
+      width: "100%",
+      height: "100%",
+      justifyContent: "flex-end",
+    },
+
     rounded: { borderRadius: 18 },
 
     gradient: {
