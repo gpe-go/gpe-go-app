@@ -1,10 +1,23 @@
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Constants from "expo-constants";
 
 /* ================= CONFIGURACIÓN API ================= */
 
+// En desarrollo, obtiene la IP del servidor Expo automáticamente.
+// En producción, usa la URL de tu servidor real.
+const getBaseURL = () => {
+  const debuggerHost = Constants.expoConfig?.hostUri ?? Constants.manifest?.debuggerHost;
+  if (debuggerHost) {
+    const ip = debuggerHost.split(":")[0];
+    return `http://${ip}/gpe_go_api/inputs.php`;
+  }
+  // Fallback: URL de producción o IP manual
+  return "http://192.168.100.157/gpe_go_api/inputs.php";
+};
+
 const API = axios.create({
-  baseURL: "http://192.168.100.138/gpe_go_api/inputs.php",
+  baseURL: getBaseURL(),
   timeout: 5000,
 });
 
