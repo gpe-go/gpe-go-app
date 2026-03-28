@@ -13,7 +13,9 @@ export type Reseña = {
 
 type ReseñasContextType = {
   reseñas: Reseña[];
-  agregarReseña: (reseña: Omit<Reseña, 'id' | 'fecha'>) => Promise<void>;
+  agregarReseña:  (reseña: Omit<Reseña, 'id' | 'fecha'>) => Promise<void>;
+  editarReseña:   (id: string, cambios: Partial<Pick<Reseña, 'autor' | 'texto' | 'estrellas' | 'fotos'>>) => Promise<void>;
+  eliminarReseña: (id: string) => Promise<void>;
   obtenerReseñas: (lugarId: string) => Reseña[];
 };
 
@@ -33,6 +35,11 @@ export function ReseñasProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const guardar = async (lista: Reseña[]) => {
+    setReseñas(lista);
+    await AsyncStorage.setItem('reseñas', JSON.stringify(lista));
+  };
+
   const agregarReseña = async (nueva: Omit<Reseña, 'id' | 'fecha'>) => {
     const reseña: Reseña = {
       ...nueva,
@@ -41,16 +48,38 @@ export function ReseñasProvider({ children }: { children: React.ReactNode }) {
         day: '2-digit', month: 'long', year: 'numeric',
       }),
     };
-    const actualizadas = [...reseñas, reseña];
-    setReseñas(actualizadas);
-    await AsyncStorage.setItem('reseñas', JSON.stringify(actualizadas));
+    await guardar([...reseñas, reseña]);
+  };
+
+  // ─── Editar reseña existente ───────────────────────────
+  const editarReseña = async (
+    id: string,
+    cambios: Partial<Pick<Reseña, 'autor' | 'texto' | 'estrellas' | 'fotos'>>
+  ) => {
+    const actualizadas = reseñas.map(r =>
+      r.id === id
+        ? {
+            ...r,
+            ...cambios,
+            fecha: new Date().toLocaleDateString('es-MX', {
+              day: '2-digit', month: 'long', year: 'numeric',
+            }) + ' (editada)',
+          }
+        : r
+    );
+    await guardar(actualizadas);
+  };
+
+  // ─── Eliminar reseña ───────────────────────────────────
+  const eliminarReseña = async (id: string) => {
+    await guardar(reseñas.filter(r => r.id !== id));
   };
 
   const obtenerReseñas = (lugarId: string) =>
     reseñas.filter(r => r.lugarId === lugarId);
 
   return (
-    <ReseñasContext.Provider value={{ reseñas, agregarReseña, obtenerReseñas }}>
+    <ReseñasContext.Provider value={{ reseñas, agregarReseña, editarReseña, eliminarReseña, obtenerReseñas }}>
       {children}
     </ReseñasContext.Provider>
   );

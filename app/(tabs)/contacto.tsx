@@ -1,106 +1,239 @@
-import React from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, Linking, StatusBar } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View, Text, StyleSheet, TextInput, Pressable,
+  ScrollView, Linking, StatusBar, Alert,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../src/context/ThemeContext';
 
+const EMERGENCIAS = [
+  { icon: 'flame',      title: 'Bomberos',            sub: 'Estación Guadalupe',  phone: '+528140400021', color: '#EF4444' },
+  { icon: 'megaphone',  title: 'Protección Civil',    sub: 'Rescate y Auxilio',   phone: '+528117718801', color: '#F97316' },
+  { icon: 'medical',    title: 'Cruz Verde',           sub: 'Ambulancias',         phone: '+528140409080', color: '#10B981' },
+  { icon: 'shield',     title: 'Seguridad Pública',   sub: 'Policía Municipal',   phone: '+528181355900', color: '#3B82F6' },
+  { icon: 'car-sport',  title: 'Tránsito y Vialidad', sub: 'Asistencia Vial',     phone: '+528181355900', color: '#8B5CF6' },
+] as const;
+
 export default function ContactoScreen() {
   const { t } = useTranslation();
-  const { colors, fonts } = useTheme();
-  const s = makeStyles(colors, fonts);
+  const { colors, fonts, isDark } = useTheme();
+  const s = makeStyles(colors, fonts, isDark);
+
+  const [nombre,   setNombre]   = useState('');
+  const [email,    setEmail]    = useState('');
+  const [telefono, setTelefono] = useState('');
+  const [mensaje,  setMensaje]  = useState('');
+  const [enviando, setEnviando] = useState(false);
 
   const handleCall = (numero: string) => Linking.openURL(`tel:${numero}`);
 
-  const EmergencyItem = ({ icon, title, sub, phone, is247 = false }: any) => (
-    <View style={s.emergencyCard}>
-      {/* Fila superior: ícono + info + botón */}
-      <View style={s.emergencyRow}>
-        <Ionicons name={icon} size={26} color="#EF4444" />
-        <View style={s.emergencyInfo}>
-          <View style={s.emergencyTitleRow}>
-            <Text style={s.emergencyText} numberOfLines={1}>{title}</Text>
-            {is247 && (
-              <View style={s.badge247}>
-                <Text style={s.badgeText}>24/7</Text>
-              </View>
-            )}
-          </View>
-          <Text style={s.emergencySub}>{sub}</Text>
-        </View>
-        <Pressable onPress={() => handleCall(phone)} style={s.callBtn}>
-          <Text style={s.callBtnText}>{t('call_btn')}</Text>
-        </Pressable>
-      </View>
-    </View>
-  );
+  const enviarSoporte = async () => {
+    if (!nombre.trim() || !email.trim() || !mensaje.trim()) {
+      Alert.alert(t('required_fields'), t('required_fields_msg'));
+      return;
+    }
+    setEnviando(true);
+    await new Promise(res => setTimeout(res, 1200));
+    setNombre(''); setEmail(''); setTelefono(''); setMensaje('');
+    setEnviando(false);
+    Alert.alert(t('message_sent'), t('message_sent_sub'));
+  };
 
   return (
-    <ScrollView style={s.container} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={s.container}
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{ paddingBottom: 50 }}
+    >
       <StatusBar barStyle="light-content" backgroundColor="#E96928" />
 
-      <View style={s.header}>
-        <Text style={s.headerTitle}>{t('help_center')}</Text>
-      </View>
+      {/* ══ BANNER ══════════════════════════════════════ */}
+      <LinearGradient
+        colors={['#E96928', '#c4511a']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={s.banner}
+      >
+        <View style={s.circle1} />
+        <View style={s.circle2} />
+        <View style={s.bannerContent}>
+          <View style={s.bannerIconWrap}>
+            <Ionicons name="headset" size={24} color="#E96928" />
+          </View>
+          <View>
+            <Text style={[s.bannerTitle, { fontSize: fonts['2xl'] }]}>
+              {t('help_center')}
+            </Text>
+            <Text style={[s.bannerSub, { fontSize: fonts.sm }]}>
+              {t('contact_banner_sub')}
+            </Text>
+          </View>
+        </View>
+      </LinearGradient>
 
+      {/* ══ EMERGENCIAS ════════════════════════════════ */}
       <View style={s.section}>
-        <Text style={s.sectionTitle}>{t('emergency_title')}</Text>
+        <View style={s.sectionHeader}>
+          <View style={s.sectionDot} />
+          <Text style={[s.sectionTitle, { fontSize: fonts.md }]}>
+            {t('emergency_title')}
+          </Text>
+        </View>
 
-        <EmergencyItem icon="flame"      title="Bomberos"          sub="Estación Guadalupe"       phone="+528140400021" is247 />
-        <EmergencyItem icon="megaphone"  title="Protección Civil"  sub="Rescate y Auxilio"        phone="+528117718801" is247 />
-        <EmergencyItem icon="medical"    title="Cruz Verde"        sub="Ambulancias"              phone="+528140409080" is247 />
-        <EmergencyItem icon="shield"     title="Seguridad Pública" sub="Policía Municipal"        phone="+528181355900" is247 />
-        <EmergencyItem icon="car-sport"  title="Tránsito y Vialidad" sub="Asistencia Vial"        phone="+528181355900" is247 />
+        {EMERGENCIAS.map((item, i) => (
+          <View key={i} style={s.emergencyCard}>
+            <View style={[s.emergencyIconWrap, { backgroundColor: item.color + '18' }]}>
+              <Ionicons name={item.icon as any} size={22} color={item.color} />
+            </View>
+            <View style={s.emergencyInfo}>
+              <View style={s.emergencyTitleRow}>
+                <Text style={[s.emergencyTitle, { fontSize: fonts.sm }]} numberOfLines={1}>
+                  {item.title}
+                </Text>
+                <View style={s.badge247}>
+                  <Text style={s.badgeText}>24/7</Text>
+                </View>
+              </View>
+              <Text style={[s.emergencySub, { fontSize: fonts.xs }]}>{item.sub}</Text>
+            </View>
+            <Pressable
+              onPress={() => handleCall(item.phone)}
+              style={({ pressed }) => [s.callBtn, { backgroundColor: item.color, opacity: pressed ? 0.85 : 1 }]}
+            >
+              <Ionicons name="call" size={14} color="#fff" />
+              <Text style={[s.callBtnText, { fontSize: fonts.xs }]}>
+                {t('call_btn')}
+              </Text>
+            </Pressable>
+          </View>
+        ))}
       </View>
 
-      <View style={s.formCard}>
-        <Text style={s.formTitle}>Soporte Técnico GuadalupeGO</Text>
-        <TextInput placeholder={t('tab_profile')} style={s.input} placeholderTextColor={colors.subtext} />
-        <TextInput placeholder={t('email')} style={s.input} placeholderTextColor={colors.subtext} />
-        <TextInput placeholder={t('phone')} style={s.input} placeholderTextColor={colors.subtext} />
-        <TextInput
-          placeholder={t('description')}
-          style={[s.input, { height: 80 }]}
-          multiline
-          placeholderTextColor={colors.subtext}
-        />
+      {/* ══ FORMULARIO SOPORTE ═════════════════════════ */}
+      <View style={s.section}>
+        <View style={s.sectionHeader}>
+          <View style={s.sectionDot} />
+          <Text style={[s.sectionTitle, { fontSize: fonts.md }]}>
+            {t('support_guadalupe')}
+          </Text>
+        </View>
 
-        <Pressable style={s.sendBtn}>
-          <Text style={s.sendText}>{t('share')}</Text>
-        </Pressable>
+        <View style={s.formCard}>
+          <View style={s.inputWrapper}>
+            <Ionicons name="person-outline" size={18} color={colors.subtext} style={s.inputIcon} />
+            <TextInput
+              placeholder={t('contact_name')}
+              placeholderTextColor={colors.subtext}
+              style={[s.input, { fontSize: fonts.base }]}
+              value={nombre}
+              onChangeText={setNombre}
+            />
+          </View>
 
-        <View style={s.directContactContainer}>
-          <Text style={s.formTitle}>{t('tab_contact')}</Text>
+          <View style={s.inputWrapper}>
+            <Ionicons name="mail-outline" size={18} color={colors.subtext} style={s.inputIcon} />
+            <TextInput
+              placeholder={t('email')}
+              placeholderTextColor={colors.subtext}
+              style={[s.input, { fontSize: fonts.base }]}
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
 
-          <View style={s.infoRow}>
-            <View style={[s.iconBox, { backgroundColor: '#FF6B35' }]}>
-              <Ionicons name="mail" size={20} color="white" />
-            </View>
-            <View style={s.infoTextContainer}>
-              <Text style={s.infoLabel}>{t('email')}</Text>
-              <Text style={s.infoValue}>turismo@guadalupe.gob.mx</Text>
-              <Text style={s.infoValue}>info@guadalupe.gob.mx</Text>
+          <View style={s.inputWrapper}>
+            <Ionicons name="call-outline" size={18} color={colors.subtext} style={s.inputIcon} />
+            <TextInput
+              placeholder={t('phone')}
+              placeholderTextColor={colors.subtext}
+              style={[s.input, { fontSize: fonts.base }]}
+              value={telefono}
+              onChangeText={setTelefono}
+              keyboardType="phone-pad"
+            />
+          </View>
+
+          <View style={[s.inputWrapper, s.textAreaWrapper]}>
+            <Ionicons name="chatbubble-outline" size={18} color={colors.subtext} style={[s.inputIcon, { marginTop: 2 }]} />
+            <TextInput
+              placeholder={t('contact_message')}
+              placeholderTextColor={colors.subtext}
+              style={[s.input, s.textArea, { fontSize: fonts.base }]}
+              value={mensaje}
+              onChangeText={setMensaje}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+            />
+          </View>
+
+          <Pressable
+            style={({ pressed }) => [s.sendBtn, { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] }]}
+            onPress={enviarSoporte}
+            disabled={enviando}
+          >
+            <Ionicons name="send" size={16} color="#fff" />
+            <Text style={[s.sendText, { fontSize: fonts.base }]}>
+              {enviando ? t('loading') : t('contact_send')}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+
+      {/* ══ CONTACTO DIRECTO ═══════════════════════════ */}
+      <View style={s.section}>
+        <View style={s.sectionHeader}>
+          <View style={s.sectionDot} />
+          <Text style={[s.sectionTitle, { fontSize: fonts.md }]}>
+            {t('contact_direct')}
+          </Text>
+        </View>
+
+        <View style={s.contactCard}>
+          <View style={s.contactRow}>
+            <LinearGradient colors={['#FF6B35', '#E96928']} style={s.contactIconWrap}>
+              <Ionicons name="mail" size={20} color="#fff" />
+            </LinearGradient>
+            <View style={s.contactInfo}>
+              <Text style={[s.contactLabel, { fontSize: fonts.sm }]}>{t('email')}</Text>
+              <Text style={[s.contactValue, { fontSize: fonts.xs }]}>turismo@guadalupe.gob.mx</Text>
+              <Text style={[s.contactValue, { fontSize: fonts.xs }]}>info@guadalupe.gob.mx</Text>
             </View>
           </View>
 
-          <Pressable style={s.infoRow} onPress={() => handleCall('8112345678')}>
-            <View style={[s.iconBox, { backgroundColor: '#4A90E2' }]}>
-              <Ionicons name="call" size={20} color="white" />
+          <View style={s.contactDivider} />
+
+          <Pressable
+            style={({ pressed }) => [s.contactRow, { opacity: pressed ? 0.8 : 1 }]}
+            onPress={() => handleCall('8112345678')}
+          >
+            <LinearGradient colors={['#4A90E2', '#3B82F6']} style={s.contactIconWrap}>
+              <Ionicons name="call" size={20} color="#fff" />
+            </LinearGradient>
+            <View style={s.contactInfo}>
+              <Text style={[s.contactLabel, { fontSize: fonts.sm }]}>{t('phone')}</Text>
+              <Text style={[s.contactValue, { fontSize: fonts.xs }]}>+52 (81) 1234-5678</Text>
+              <Text style={[s.contactSubValue, { fontSize: fonts.xs }]}>
+                {t('schedule')}: 9:00 AM - 6:00 PM
+              </Text>
             </View>
-            <View style={s.infoTextContainer}>
-              <Text style={s.infoLabel}>{t('phone')}</Text>
-              <Text style={s.infoValue}>+52 (81) 1234-5678</Text>
-              <Text style={s.infoSubValue}>{t('schedule')}: 9:00 AM - 6:00 PM</Text>
-            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.subtext} />
           </Pressable>
 
-          <View style={s.infoRow}>
-            <View style={[s.iconBox, { backgroundColor: '#F5BE41' }]}>
-              <Ionicons name="location" size={20} color="white" />
-            </View>
-            <View style={s.infoTextContainer}>
-              <Text style={s.infoLabel}>{t('address')}</Text>
-              <Text style={s.infoValue}>Palacio Municipal, Centro</Text>
-              <Text style={s.infoSubValue}>Guadalupe, Nuevo León, México</Text>
+          <View style={s.contactDivider} />
+
+          <View style={s.contactRow}>
+            <LinearGradient colors={['#F5BE41', '#F59E0B']} style={s.contactIconWrap}>
+              <Ionicons name="location" size={20} color="#fff" />
+            </LinearGradient>
+            <View style={s.contactInfo}>
+              <Text style={[s.contactLabel, { fontSize: fonts.sm }]}>{t('address')}</Text>
+              <Text style={[s.contactValue, { fontSize: fonts.xs }]}>Palacio Municipal, Centro</Text>
+              <Text style={[s.contactSubValue, { fontSize: fonts.xs }]}>Guadalupe, Nuevo León, México</Text>
             </View>
           </View>
         </View>
@@ -109,74 +242,43 @@ export default function ContactoScreen() {
   );
 }
 
-const makeStyles = (c: any, f: any) => StyleSheet.create({
-  container:  { flex: 1, backgroundColor: c.background },
-  header:     { backgroundColor: '#E96928', padding: 30 },
-  headerTitle:{ color: '#fff', fontSize: f.xl, fontWeight: '900', textAlign: 'center' },
-
-  section:      { padding: 20 },
-  sectionTitle: { fontSize: f.md, fontWeight: 'bold', marginBottom: 15, color: c.text },
-
-  emergencyCard: {
-    backgroundColor: c.card,
-    padding: 14,
-    borderRadius: 18,
-    elevation: 3,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    borderWidth: 1,
-    borderColor: c.border,
-  },
-  // Fila interna: ícono | info | botón
-  emergencyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  emergencyInfo: {
-    flex: 1,           // ocupa todo el espacio disponible
-    minWidth: 0,       // permite que el texto se trunque en lugar de empujar
-  },
-  emergencyTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',  // si no cabe, el badge baja a la siguiente línea
-    gap: 6,
-  },
-  emergencyText: { fontWeight: 'bold', fontSize: f.base, color: c.text, flexShrink: 1 },
-  emergencySub:  { color: c.subtext, fontSize: f.xs, marginTop: 2 },
-
-  badge247:  { backgroundColor: '#DCFCE7', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, borderWidth: 1, borderColor: '#22C55E',flexShrink: 0,  },
-  badgeText: { color: '#166534', fontSize: f.xs, fontWeight: 'bold' },
-
-  // Botón siempre con ancho fijo para que no varíe
-  callBtn: {
-    backgroundColor: '#EF4444',
-    paddingHorizontal: 7,
-    paddingVertical: 8,
-    borderRadius: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    minWidth: 60,
-    justifyContent: 'center',
-  },
-  callBtnText: { color: '#fff', fontWeight: 'bold', fontSize: f.xs },
-
-  formCard:   { margin: 20, backgroundColor: c.card, padding: 20, borderRadius: 25, elevation: 4, marginBottom: 40, borderWidth: 1, borderColor: c.border },
-  formTitle:  { fontSize: f.md, fontWeight: 'bold', marginBottom: 20, color: c.text },
-  input:      { backgroundColor: c.inputBackground, borderRadius: 12, padding: 12, marginBottom: 12, color: c.text, fontSize: f.base, borderWidth: 1, borderColor: c.border },
-  sendBtn:    { backgroundColor: '#E96928', padding: 15, borderRadius: 12, alignItems: 'center', marginBottom: 10 },
-  sendText:   { color: '#fff', fontWeight: 'bold', fontSize: f.base },
-
-  directContactContainer: { marginTop: 25, borderTopWidth: 1, borderTopColor: c.border, paddingTop: 20 },
-  infoRow:            { flexDirection: 'row', marginBottom: 20, alignItems: 'flex-start' },
-  iconBox:            { width: 45, height: 45, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 15, elevation: 2 },
-  infoTextContainer:  { flex: 1 },
-  infoLabel:          { fontSize: f.base, fontWeight: 'bold', color: c.text, marginBottom: 2 },
-  infoValue:          { fontSize: f.sm, color: c.subtext },
-  infoSubValue:       { fontSize: f.xs, color: c.subtext, marginTop: 2 },
+const makeStyles = (c: any, f: any, isDark: boolean) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: c.background },
+  banner: { paddingHorizontal: 22, paddingTop: 28, paddingBottom: 30, overflow: 'hidden', borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
+  circle1: { position: 'absolute', width: 180, height: 180, borderRadius: 90, backgroundColor: 'rgba(255,255,255,0.07)', top: -50, right: -50 },
+  circle2: { position: 'absolute', width: 110, height: 110, borderRadius: 55, backgroundColor: 'rgba(255,255,255,0.05)', bottom: -20, left: -30 },
+  bannerContent:  { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  bannerIconWrap: { width: 52, height: 52, borderRadius: 16, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 6, elevation: 6 },
+  bannerTitle: { color: '#fff', fontWeight: '900', letterSpacing: -0.5 },
+  bannerSub:   { color: 'rgba(255,255,255,0.8)', marginTop: 2, fontWeight: '500' },
+  section: { paddingHorizontal: 20, marginTop: 24 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 },
+  sectionDot:    { width: 4, height: 20, borderRadius: 2, backgroundColor: '#E96928' },
+  sectionTitle:  { fontWeight: '800', color: c.text },
+  emergencyCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: c.card, borderRadius: 18, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: c.border, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: isDark ? 0.3 : 0.07, shadowRadius: 4 },
+  emergencyIconWrap: { width: 44, height: 44, borderRadius: 13, justifyContent: 'center', alignItems: 'center' },
+  emergencyInfo:     { flex: 1, minWidth: 0 },
+  emergencyTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
+  emergencyTitle:    { fontWeight: '700', color: c.text, flexShrink: 1 },
+  emergencySub:      { color: c.subtext, marginTop: 2 },
+  badge247:  { backgroundColor: '#DCFCE7', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, borderWidth: 1, borderColor: '#22C55E' },
+  badgeText: { color: '#166534', fontSize: 10, fontWeight: '800' },
+  callBtn:     { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10, minWidth: 64, justifyContent: 'center' },
+  callBtnText: { color: '#fff', fontWeight: '700' },
+  formCard: { backgroundColor: c.card, borderRadius: 22, padding: 18, borderWidth: 1, borderColor: c.border, elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: isDark ? 0.3 : 0.08, shadowRadius: 6 },
+  inputWrapper:    { flexDirection: 'row', alignItems: 'center', backgroundColor: c.inputBackground, borderRadius: 14, borderWidth: 1, borderColor: c.border, paddingHorizontal: 14, marginBottom: 12, minHeight: 50 },
+  textAreaWrapper: { alignItems: 'flex-start', paddingTop: 14, paddingBottom: 10 },
+  inputIcon: { marginRight: 10 },
+  input:     { flex: 1, color: c.text },
+  textArea:  { minHeight: 90, textAlignVertical: 'top' },
+  sendBtn:   { backgroundColor: '#E96928', borderRadius: 14, paddingVertical: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 4, elevation: 4, shadowColor: '#E96928', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 8 },
+  sendText:  { color: '#fff', fontWeight: '800' },
+  contactCard:     { backgroundColor: c.card, borderRadius: 22, padding: 18, borderWidth: 1, borderColor: c.border, elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: isDark ? 0.3 : 0.08, shadowRadius: 6 },
+  contactRow:      { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 4 },
+  contactIconWrap: { width: 46, height: 46, borderRadius: 14, justifyContent: 'center', alignItems: 'center', elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4 },
+  contactInfo:     { flex: 1 },
+  contactLabel:    { fontWeight: '700', color: c.text, marginBottom: 3 },
+  contactValue:    { color: c.subtext },
+  contactSubValue: { color: c.subtext, marginTop: 2, opacity: 0.75 },
+  contactDivider:  { height: 1, backgroundColor: c.border, marginVertical: 14 },
 });

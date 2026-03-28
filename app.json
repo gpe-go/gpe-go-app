@@ -7,8 +7,8 @@
     "icon": "././assets/images/icon.png",
     "scheme": "guadalupego",
     "userInterfaceStyle": "automatic",
-
     "ios": {
+      "bundleIdentifier": "com.guadalupego.app",
       "supportsTablet": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "GuadalupeGo usa tu ubicación para mostrar restaurantes, lugares turísticos y eventos cercanos.",
@@ -20,7 +20,6 @@
         "NSUserNotificationsUsageDescription": "GuadalupeGo enviará notificaciones sobre eventos y noticias de Guadalupe."
       }
     },
-
     "android": {
       "package": "com.guadalupego.app",
       "permissions": [
@@ -43,40 +42,43 @@
       },
       "predictiveBackGestureEnabled": false
     },
-
     "web": {
       "output": "static",
       "favicon": "./assets/images/icon.png"
     },
-
     "plugins": [
       "expo-router",
-
       [
         "expo-splash-screen",
         {
           "image": "././assets/images/splash-screen1.png",
           "resizeMode": "contain",
-          "backgroundColor": "#F37021"
+          "backgroundColor": "#F37021",
+          "ios": {
+            "image": "././assets/images/splash-screen1.png",
+            "resizeMode": "contain",
+            "backgroundColor": "#F37021"
+          },
+          "android": {
+            "image": "././assets/images/splash-screen1.png",
+            "resizeMode": "contain",
+            "backgroundColor": "#F37021"
+          }
         }
       ],
-
       "expo-video",
-
       [
         "expo-location",
         {
           "locationAlwaysAndWhenInUsePermission": "GuadalupeGo necesita tu ubicación para mostrarte lugares cercanos."
         }
       ],
-
       [
         "expo-camera",
         {
           "cameraPermission": "GuadalupeGo necesita acceso a la cámara para foto de perfil."
         }
       ],
-
       [
         "expo-image-picker",
         {
@@ -84,7 +86,6 @@
         }
       ]
     ],
-
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
