@@ -135,6 +135,35 @@ export const getUsuario = async () => {
   return response.data;
 };
 
+export const editarPerfil = async (nombre: string) => {
+  const response = await API.put("", { nombre }, {
+    params: { modulo: "usuarios", action: "editar" },
+  });
+  return response.data;
+};
+
+/* ================= COMERCIO (LOCATARIO) ================= */
+
+export const registrarComercio = async (data: {
+  nombre: string;
+  id_categoria: number;
+  descripcion?: string;
+  direccion?: string;
+  telefono?: string;
+}) => {
+  const response = await API.post("", data, {
+    params: { modulo: "lugares", action: "registrar" },
+  });
+  return response.data;
+};
+
+export const getMisLugares = async () => {
+  const response = await API.get("", {
+    params: { modulo: "lugares", action: "mis_lugares" },
+  });
+  return response.data;
+};
+
 /* ================= CATEGORIAS ================= */
 
 export const getCategoriasAPI = async () => {

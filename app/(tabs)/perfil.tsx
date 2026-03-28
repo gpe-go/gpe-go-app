@@ -13,9 +13,62 @@ import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { solicitarCodigo, verificarCodigo, registrarUsuario } from '../../src/api/api';
+import { solicitarCodigo, verificarCodigo, registrarUsuario, editarPerfil } from '../../src/api/api';
 
 type Step = 'login' | 'registro' | 'codigo';
+
+// ── Subcomponente: tarjeta para editar el nombre ──────────────────
+function EditarPerfilCard({ nombreInicial, onGuardado }: { nombreInicial: string; onGuardado: (n: string) => void }) {
+  const [nombre, setNombre] = React.useState(nombreInicial);
+  const [loading, setLoading] = React.useState(false);
+  const [editando, setEditando] = React.useState(false);
+
+  const guardar = async () => {
+    if (!nombre.trim() || nombre.trim() === nombreInicial) { setEditando(false); return; }
+    setLoading(true);
+    try {
+      const res = await editarPerfil(nombre.trim());
+      if (res.success) {
+        onGuardado(res.data.nombre);
+        setEditando(false);
+        Alert.alert('Listo', 'Perfil actualizado');
+      } else {
+        Alert.alert('Error', res.error?.mensaje || 'No se pudo actualizar');
+      }
+    } catch {
+      Alert.alert('Error', 'Error de conexión');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <View style={styles.card}>
+      <Text style={styles.sectionLabel}>Editar perfil</Text>
+      <View style={styles.inputWrapper}>
+        <Ionicons name="person-outline" size={20} color="#94a3b8" />
+        <TextInput
+          style={styles.input}
+          value={nombre}
+          onChangeText={(t) => { setNombre(t); setEditando(true); }}
+          placeholder="Tu nombre"
+          placeholderTextColor="#94a3b8"
+          autoCapitalize="words"
+          editable={!loading}
+        />
+      </View>
+      {editando && (
+        <Pressable
+          style={[styles.loginButton, loading && { opacity: 0.6 }]}
+          onPress={guardar}
+          disabled={loading}
+        >
+          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.loginButtonText}>Guardar cambios</Text>}
+        </Pressable>
+      )}
+    </View>
+  );
+}
 
 export default function PerfilScreen() {
   const router = useRouter();
@@ -127,7 +180,42 @@ export default function PerfilScreen() {
             </View>
             <Text style={styles.welcomeText}>{usuario.nombre}</Text>
             <Text style={styles.instructionText}>{usuario.email}</Text>
+            {usuario.rol === 'comercio' && (
+              <View style={styles.rolBadge}>
+                <Ionicons name="storefront" size={13} color="#E96928" />
+                <Text style={styles.rolBadgeText}>Locatario</Text>
+              </View>
+            )}
           </View>
+
+          {/* EDITAR PERFIL */}
+          <EditarPerfilCard
+            nombreInicial={usuario.nombre}
+            onGuardado={(nuevoNombre) => {
+              const updated = { ...usuario, nombre: nuevoNombre };
+              setUsuario(updated);
+              AsyncStorage.setItem('usuario', JSON.stringify(updated));
+            }}
+          />
+
+          {/* SECCIÓN LOCATARIO */}
+          {usuario.rol === 'comercio' ? (
+            <Pressable
+              style={styles.locatarioButton}
+              onPress={() => router.push('/registrar-negocio' as any)}
+            >
+              <Ionicons name="storefront-outline" size={22} color="#fff" />
+              <Text style={styles.locatarioButtonText}>Registrar mi negocio</Text>
+            </Pressable>
+          ) : (
+            <View style={styles.locatarioCard}>
+              <Ionicons name="storefront-outline" size={30} color="#E96928" />
+              <Text style={styles.locatarioTitle}>¿Tienes un negocio?</Text>
+              <Text style={styles.locatarioDesc}>
+                Solicita ser locatario para publicar tu comercio en GuadalupeGO. Contacta al administrador para activar tu cuenta.
+              </Text>
+            </View>
+          )}
 
           <Pressable style={styles.logoutButton} onPress={handleCerrarSesion}>
             <Ionicons name="log-out-outline" size={20} color="#E96928" />
@@ -447,5 +535,64 @@ const styles = StyleSheet.create({
     color: '#E96928',
     fontSize: 16,
     fontWeight: '700',
+  },
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#94a3b8',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 12,
+  },
+  rolBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#FFF3ED',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    marginTop: 8,
+  },
+  rolBadgeText: {
+    color: '#E96928',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  locatarioButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: '#E96928',
+    borderRadius: 18,
+    height: 55,
+    marginBottom: 16,
+    elevation: 4,
+  },
+  locatarioButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  locatarioCard: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    marginBottom: 16,
+    elevation: 2,
+    gap: 8,
+  },
+  locatarioTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#0f172a',
+  },
+  locatarioDesc: {
+    fontSize: 14,
+    color: '#64748b',
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });
