@@ -10,22 +10,22 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
+import { cambiarIdioma, LANGUAGE_LIST, AppLanguage } from '../../src/i18n/i18n';
 
 export default function ConfiguracionScreen() {
   const router = useRouter();
+  const { i18n } = useTranslation();
   const [darkMode, setDarkMode] = useState(false);
   const [fontSize, setFontSize] = useState('Normal');
+  const [selectedLang, setSelectedLang] = useState<AppLanguage>(
+    (i18n.language as AppLanguage) ?? 'es'
+  );
 
-  // Idiomas para el Mundial 2026
-  const [selectedLang, setSelectedLang] = useState('es');
-  const idiomas = [
-    { id: 'es', label: 'Español', flag: '🇲🇽', desc: 'Sede México' },
-    { id: 'en', label: 'English', flag: '🇺🇸', desc: 'Sede USA' },
-    { id: 'fr', label: 'Français', flag: '🇨🇦', desc: 'Sede Canadá' },
-    { id: 'pt', label: 'Português', flag: '🇧🇷', desc: 'Brasil' },
-    { id: 'de', label: 'Deutsch', flag: '🇩🇪', desc: 'Alemania' },
-    { id: 'ja', label: '日本語', flag: '🇯🇵', desc: 'Japón' },
-  ];
+  const handleSelectLang = async (lang: AppLanguage) => {
+    setSelectedLang(lang);
+    await cambiarIdioma(lang);
+  };
 
   return (
     <View style={[styles.container, darkMode && styles.darkContainer]}>
@@ -77,24 +77,21 @@ export default function ConfiguracionScreen() {
         {/* SECCIÓN: IDIOMAS MUNDIALISTAS */}
         <Text style={styles.sectionTitle}>Idiomas Mundial 2026</Text>
         <View style={[styles.card, darkMode && styles.darkCard]}>
-          {idiomas.map((item, index) => (
-            <View key={item.id}>
+          {LANGUAGE_LIST.map((item, index) => (
+            <View key={item.code}>
               <Pressable
                 style={styles.langRow}
-                onPress={() => setSelectedLang(item.id)}
+                onPress={() => handleSelectLang(item.code)}
               >
                 <View style={styles.rowLeft}>
                   <Text style={styles.flagIcon}>{item.flag}</Text>
-                  <View>
-                    <Text style={[styles.langLabel, darkMode && styles.textWhite]}>{item.label}</Text>
-                    <Text style={styles.langDesc}>{item.desc}</Text>
-                  </View>
+                  <Text style={[styles.langLabel, darkMode && styles.textWhite]}>{item.label}</Text>
                 </View>
-                {selectedLang === item.id && (
+                {selectedLang === item.code && (
                   <Ionicons name="checkmark-circle" size={24} color="#E96928" />
                 )}
               </Pressable>
-              {index !== idiomas.length - 1 && <View style={styles.divider} />}
+              {index !== LANGUAGE_LIST.length - 1 && <View style={styles.divider} />}
             </View>
           ))}
         </View>

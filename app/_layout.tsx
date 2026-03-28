@@ -1,6 +1,7 @@
 import { Stack } from "expo-router";
 import { ThemeProvider } from '../src/context/ThemeContext';
 import { FavoritosProvider } from '../src/context/FavoritosContext';
+import '../src/i18n/i18n';
 
 export default function RootLayout() {
   return (
