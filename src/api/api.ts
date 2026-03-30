@@ -173,6 +173,34 @@ export const getCategoriasAPI = async () => {
   return response.data;
 };
 
+/* ================= CONTACTO / EMERGENCIAS ================= */
+
+export const getEmergencias = async () => {
+  const response = await API.get("", {
+    params: { modulo: "contactos", action: "emergencias" },
+  });
+  return response.data;
+};
+
+export const getContactoInfo = async () => {
+  const response = await API.get("", {
+    params: { modulo: "contactos", action: "info" },
+  });
+  return response.data;
+};
+
+export const enviarMensajeSoporte = async (data: {
+  nombre: string;
+  email: string;
+  telefono?: string;
+  mensaje: string;
+}) => {
+  const response = await API.post("", data, {
+    params: { modulo: "contactos", action: "mensaje" },
+  });
+  return response.data;
+};
+
 /* ================= CATEGORIAS EVENTOS ================= */
 
 export const getCategoriasEventos = async () => {
