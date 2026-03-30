@@ -88,21 +88,35 @@ export default function Reseñas({ lugarId }: Props) {
 
   const listaReseñas = obtenerReseñas(lugarId);
 
-  const seleccionarFoto = async (fotosActuales: string[], setFn: (f: string[]) => void) => {
+  const seleccionarFoto = (fotosActuales: string[], setFn: (f: string[]) => void) => {
     if (fotosActuales.length >= 3) {
       Alert.alert('Máximo 3 fotos', 'Solo puedes agregar hasta 3 fotos por reseña.');
       return;
     }
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert(t('profile_permission_gallery'));
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: 'images',
-      allowsEditing: true, aspect: [4, 3], quality: 0.7,
-    });
-    if (!result.canceled) setFn([...fotosActuales, result.assets[0].uri]);
+    Alert.alert('Agregar foto', '', [
+      {
+        text: '📷 Cámara',
+        onPress: async () => {
+          const result = await ImagePicker.launchCameraAsync({
+            allowsEditing: true, aspect: [4, 3], quality: 0.7,
+          });
+          if (!result.canceled) setFn([...fotosActuales, result.assets[0].uri]);
+        },
+      },
+      {
+        text: '🖼️ Galería',
+        onPress: async () => {
+          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (status !== 'granted') { Alert.alert(t('profile_permission_gallery')); return; }
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: 'images',
+            allowsEditing: true, aspect: [4, 3], quality: 0.7,
+          });
+          if (!result.canceled) setFn([...fotosActuales, result.assets[0].uri]);
+        },
+      },
+      { text: 'Cancelar', style: 'cancel' },
+    ]);
   };
 
   const enviarReseña = async () => {
