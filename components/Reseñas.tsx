@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, TextInput, Pressable,
-  Image, Alert, ScrollView,
+  Image, Alert, ScrollView, Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useReseñas, Reseña } from '../src/context/ReseñasContext';
 import { useTheme } from '../src/context/ThemeContext';
+import { useAuth } from '../src/context/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { useRouter } from 'expo-router';
 
 type Props = { lugarId: string };
 
@@ -23,17 +25,59 @@ function Estrellas({ valor, onSelect }: { valor: number; onSelect?: (n: number) 
   );
 }
 
+// ── Modal: solicitud de login ────────────────────────────────
+function LoginRequiredModal({
+  visible, onClose, onGoLogin,
+}: { visible: boolean; onClose: () => void; onGoLogin: () => void }) {
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={m.backdrop}>
+        <View style={m.sheet}>
+          <View style={m.iconWrap}>
+            <Ionicons name="lock-closed" size={32} color="#E96928" />
+          </View>
+          <Text style={m.title}>Inicia sesión</Text>
+          <Text style={m.body}>
+            Para escribir una reseña necesitas tener una cuenta en GuadalupeGO.
+          </Text>
+          <Pressable style={m.primaryBtn} onPress={onGoLogin}>
+            <Text style={m.primaryBtnText}>Iniciar sesión</Text>
+          </Pressable>
+          <Pressable style={m.cancelBtn} onPress={onClose}>
+            <Text style={m.cancelBtnText}>Cancelar</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const m = StyleSheet.create({
+  backdrop:      { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' },
+  sheet:         { backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 28, alignItems: 'center', gap: 12 },
+  iconWrap:      { width: 64, height: 64, borderRadius: 20, backgroundColor: 'rgba(233,105,40,0.1)', justifyContent: 'center', alignItems: 'center' },
+  title:         { fontSize: 20, fontWeight: '800', color: '#1A1A1A' },
+  body:          { fontSize: 14, color: '#6B7280', textAlign: 'center', lineHeight: 20 },
+  primaryBtn:    { width: '100%', height: 52, borderRadius: 16, backgroundColor: '#E96928', justifyContent: 'center', alignItems: 'center' },
+  primaryBtnText:{ color: '#fff', fontWeight: '800', fontSize: 16 },
+  cancelBtn:     { width: '100%', height: 44, justifyContent: 'center', alignItems: 'center' },
+  cancelBtnText: { color: '#6B7280', fontWeight: '600', fontSize: 15 },
+});
+
 export default function Reseñas({ lugarId }: Props) {
   const { colors, fonts } = useTheme();
   const { t } = useTranslation();
   const s = makeStyles(colors, fonts);
   const { agregarReseña, editarReseña, eliminarReseña, obtenerReseñas } = useReseñas();
+  const { isAuthenticated, usuario } = useAuth();
+  const router = useRouter();
 
   const [autor,     setAutor]     = useState('');
   const [texto,     setTexto]     = useState('');
   const [estrellas, setEstrellas] = useState(0);
   const [fotos,     setFotos]     = useState<string[]>([]);
   const [enviando,  setEnviando]  = useState(false);
+  const [loginModal, setLoginModal] = useState(false);
 
   const [editandoId,       setEditandoId]       = useState<string | null>(null);
   const [editAutor,        setEditAutor]        = useState('');
@@ -62,11 +106,12 @@ export default function Reseñas({ lugarId }: Props) {
   };
 
   const enviarReseña = async () => {
-    if (!autor.trim())   { Alert.alert(t('review_name'));    return; }
+    if (!isAuthenticated) { setLoginModal(true); return; }
+    const nombreAutor = autor.trim() || usuario?.nombre || 'Anónimo';
     if (!texto.trim())   { Alert.alert(t('review_write'));   return; }
     if (estrellas === 0) { Alert.alert(t('review_rating'));  return; }
     setEnviando(true);
-    await agregarReseña({ lugarId, autor, texto, estrellas, fotos });
+    await agregarReseña({ lugarId, autor: nombreAutor, texto, estrellas, fotos });
     setAutor(''); setTexto(''); setEstrellas(0); setFotos([]);
     setEnviando(false);
     Alert.alert('¡Gracias!', t('review_publish'));
@@ -126,51 +171,69 @@ export default function Reseñas({ lugarId }: Props) {
 
   return (
     <View style={s.container}>
+      <LoginRequiredModal
+        visible={loginModal}
+        onClose={() => setLoginModal(false)}
+        onGoLogin={() => { setLoginModal(false); router.push('/perfil'); }}
+      />
+
       <Text style={s.sectionTitle}>
         {t('review_count')} ({listaReseñas.length})
       </Text>
 
-      {/* ══ FORMULARIO NUEVA RESEÑA ══ */}
-      <View style={s.form}>
-        <Text style={s.formTitle}>{t('review_write')}</Text>
+      {/* ══ FORMULARIO ══ */}
+      {isAuthenticated ? (
+        <View style={s.form}>
+          <Text style={s.formTitle}>{t('review_write')}</Text>
 
-        <View style={s.inputWrapper}>
-          <Ionicons name="person-outline" size={18} color={colors.subtext} />
+          <View style={s.inputWrapper}>
+            <Ionicons name="person-outline" size={18} color={colors.subtext} />
+            <TextInput
+              style={s.input}
+              placeholder={usuario?.nombre || t('review_name')}
+              placeholderTextColor={colors.subtext}
+              value={autor}
+              onChangeText={setAutor}
+            />
+          </View>
+
+          <View style={s.starsRow}>
+            <Text style={s.starsLabel}>{t('review_rating')}:</Text>
+            <Estrellas valor={estrellas} onSelect={setEstrellas} />
+          </View>
+
           <TextInput
-            style={s.input}
-            placeholder={t('review_name')}
+            style={s.textArea}
+            placeholder={t('review_experience')}
             placeholderTextColor={colors.subtext}
-            value={autor}
-            onChangeText={setAutor}
+            value={texto}
+            onChangeText={setTexto}
+            multiline
+            numberOfLines={4}
           />
+
+          <FotosRow fotosActuales={fotos} setFn={setFotos} />
+
+          <Pressable style={s.submitBtn} onPress={enviarReseña} disabled={enviando}>
+            <Ionicons name="send" size={18} color="#fff" />
+            <Text style={s.submitText}>
+              {enviando ? t('loading') : t('review_publish')}
+            </Text>
+          </Pressable>
         </View>
-
-        <View style={s.starsRow}>
-          <Text style={s.starsLabel}>{t('review_rating')}:</Text>
-          <Estrellas valor={estrellas} onSelect={setEstrellas} />
-        </View>
-
-        <TextInput
-          style={s.textArea}
-          placeholder={t('review_experience')}
-          placeholderTextColor={colors.subtext}
-          value={texto}
-          onChangeText={setTexto}
-          multiline
-          numberOfLines={4}
-        />
-
-        <FotosRow fotosActuales={fotos} setFn={setFotos} />
-
-        <Pressable style={s.submitBtn} onPress={enviarReseña} disabled={enviando}>
-          <Ionicons name="send" size={18} color="#fff" />
-          <Text style={s.submitText}>
-            {enviando ? t('loading') : t('review_publish')}
-          </Text>
+      ) : (
+        /* Invitación a iniciar sesión */
+        <Pressable style={s.loginPrompt} onPress={() => setLoginModal(true)}>
+          <Ionicons name="pencil-outline" size={22} color="#E96928" />
+          <View style={{ flex: 1 }}>
+            <Text style={s.loginPromptTitle}>¿Quieres dejar una reseña?</Text>
+            <Text style={s.loginPromptSub}>Inicia sesión para compartir tu experiencia</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.subtext} />
         </Pressable>
-      </View>
+      )}
 
-      {/* ══ LISTA DE RESEÑAS ══ */}
+      {/* ══ LISTA ══ */}
       {listaReseñas.length === 0 ? (
         <View style={s.empty}>
           <Ionicons name="chatbubble-outline" size={40} color={colors.subtext} />
@@ -273,6 +336,13 @@ const makeStyles = (c: any, f: any) => StyleSheet.create({
   form:      { backgroundColor: c.card, borderRadius: 20, padding: 18, marginBottom: 20, borderWidth: 1, borderColor: c.border },
   formTitle: { fontSize: f.md, fontWeight: 'bold', color: c.text, marginBottom: 14 },
   editTitle: { fontSize: f.md, fontWeight: 'bold', color: '#E96928', marginBottom: 14 },
+  loginPrompt: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: c.card, borderRadius: 20, padding: 18,
+    marginBottom: 20, borderWidth: 1, borderColor: c.border,
+  },
+  loginPromptTitle: { fontWeight: '700', color: c.text, fontSize: f.sm },
+  loginPromptSub:   { color: c.subtext, fontSize: f.xs, marginTop: 2 },
   inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: c.inputBackground, borderRadius: 12, paddingHorizontal: 14, height: 48, borderWidth: 1, borderColor: c.border, marginBottom: 12 },
   input:      { flex: 1, marginLeft: 10, fontSize: f.base, color: c.text },
   starsRow:   { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },

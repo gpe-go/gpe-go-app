@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, TextInput, Pressable,
-  ScrollView, StatusBar, Image, Alert, ActivityIndicator,
+  ScrollView, StatusBar, Image, Alert, ActivityIndicator, Modal,
 } from 'react-native';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,7 +9,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../src/context/ThemeContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from '../../src/context/AuthContext';
 import * as ImagePicker from 'expo-image-picker';
 import { solicitarCodigo, verificarCodigo, registrarUsuario, editarPerfil } from '../../src/api/api';
 
@@ -17,8 +17,8 @@ type Step = 'login' | 'registro' | 'codigo';
 
 // ── Avatar superior con cámara ─────────────────────────────
 function AvatarSection({
-  fotoPerfil, onCambiarFoto, t,
-}: { fotoPerfil: string | null; onCambiarFoto: () => void; t: any }) {
+  fotoPerfil, onCambiarFoto,
+}: { fotoPerfil: string | null; onCambiarFoto: () => void }) {
   return (
     <Pressable onPress={onCambiarFoto} style={styles.avatarWrapper}>
       {fotoPerfil ? (
@@ -35,10 +35,15 @@ function AvatarSection({
   );
 }
 
-// ── Tarjeta editar nombre (usuario logueado) ──────────────
+// ── Tarjeta editar datos personales ────────────────────────
 function EditarPerfilCard({
-  nombreInicial, onGuardado, colors, fonts, isDark,
-}: { nombreInicial: string; onGuardado: (n: string) => void; colors: any; fonts: any; isDark: boolean }) {
+  nombreInicial, emailInicial, onGuardado, colors, fonts, isDark,
+}: {
+  nombreInicial: string;
+  emailInicial: string;
+  onGuardado: (nombre: string) => void;
+  colors: any; fonts: any; isDark: boolean;
+}) {
   const [nombre,   setNombre]   = React.useState(nombreInicial);
   const [loading,  setLoading]  = React.useState(false);
   const [editando, setEditando] = React.useState(false);
@@ -68,9 +73,11 @@ function EditarPerfilCard({
       <View style={styles.sectionLabelRow}>
         <View style={styles.sectionDot} />
         <Text style={[styles.sectionLabelText, { fontSize: fonts.xs, color: colors.subtext }]}>
-          Editar perfil
+          Mis datos
         </Text>
       </View>
+
+      {/* Nombre */}
       <View style={s.inputWrapper}>
         <View style={s.inputIconWrap}>
           <Ionicons name="person-outline" size={18} color="#E96928" />
@@ -79,15 +86,31 @@ function EditarPerfilCard({
           style={[s.input, { fontSize: fonts.base }]}
           value={nombre}
           onChangeText={(t) => { setNombre(t); setEditando(true); }}
-          placeholder="Tu nombre"
+          placeholder="Nombre completo"
           placeholderTextColor={colors.subtext}
           autoCapitalize="words"
           editable={!loading}
         />
       </View>
+
+      {/* Email (solo lectura) */}
+      <View style={[s.inputWrapper, { opacity: 0.6 }]}>
+        <View style={s.inputIconWrap}>
+          <Ionicons name="mail-outline" size={18} color="#E96928" />
+        </View>
+        <TextInput
+          style={[s.input, { fontSize: fonts.base }]}
+          value={emailInicial}
+          placeholder="Correo electrónico"
+          placeholderTextColor={colors.subtext}
+          editable={false}
+        />
+        <Ionicons name="lock-closed-outline" size={14} color={colors.subtext} style={{ marginRight: 4 }} />
+      </View>
+
       {editando && (
         <Pressable
-          style={[s.loginBtn, { opacity: loading ? 0.6 : 1, marginTop: 4 }]}
+          style={[s.loginBtn, { opacity: loading ? 0.6 : 1 }]}
           onPress={guardar}
           disabled={loading}
         >
@@ -116,23 +139,17 @@ export default function PerfilScreen() {
   const s = makeStyles(colors, fonts, isDark);
   const router = useRouter();
 
-  const [step,       setStep]       = useState<Step>('login');
-  const [email,      setEmail]      = useState('');
-  const [nombre,     setNombre]     = useState('');
-  const [codigo,     setCodigo]     = useState('');
-  const [loading,    setLoading]    = useState(false);
-  const [usuario,    setUsuario]    = useState<any>(null);
-  const [fotoPerfil, setFotoPerfil] = useState<string | null>(null);
+  const { usuario, fotoPerfil, isAuthenticated, login, logout, actualizarUsuario, actualizarFoto } = useAuth();
 
-  useEffect(() => {
-    AsyncStorage.getItem('usuario').then((data) => {
-      if (data) setUsuario(JSON.parse(data));
-    });
-  }, []);
+  const [step,    setStep]    = useState<Step>('login');
+  const [email,   setEmail]   = useState('');
+  const [nombre,  setNombre]  = useState('');
+  const [codigo,  setCodigo]  = useState('');
+  const [loading, setLoading] = useState(false);
 
   // ── Foto de perfil ─────────────────────────────────────
   const cambiarFoto = () => {
-    Alert.alert(t('profile_photo'), t('profile_photo'), [
+    Alert.alert(t('profile_photo'), '', [
       { text: `📷 ${t('profile_camera')}`,  onPress: tomarFoto },
       { text: `🖼️ ${t('profile_gallery')}`, onPress: seleccionarDeGaleria },
       { text: t('profile_cancel'), style: 'cancel' },
@@ -146,14 +163,14 @@ export default function PerfilScreen() {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true, aspect: [1, 1], quality: 0.8,
     });
-    if (!result.canceled) setFotoPerfil(result.assets[0].uri);
+    if (!result.canceled) actualizarFoto(result.assets[0].uri);
   };
 
   const tomarFoto = async () => {
     const result = await ImagePicker.launchCameraAsync({
       allowsEditing: true, aspect: [1, 1], quality: 0.8,
     });
-    if (!result.canceled) setFotoPerfil(result.assets[0].uri);
+    if (!result.canceled) actualizarFoto(result.assets[0].uri);
   };
 
   // ── Auth handlers ──────────────────────────────────────
@@ -200,9 +217,8 @@ export default function PerfilScreen() {
     try {
       const res = await verificarCodigo(email.trim().toLowerCase(), codigo.trim());
       if (res.success) {
-        await AsyncStorage.setItem('token', res.data.token);
-        await AsyncStorage.setItem('usuario', JSON.stringify(res.data.usuario));
-        setUsuario(res.data.usuario);
+        await login(res.data.token, res.data.usuario);
+        setCodigo(''); setEmail(''); setNombre('');
       } else {
         Alert.alert('Error', res.error?.mensaje || 'Código incorrecto');
       }
@@ -214,14 +230,13 @@ export default function PerfilScreen() {
   };
 
   const handleCerrarSesion = async () => {
-    await AsyncStorage.multiRemove(['token', 'usuario']);
-    setUsuario(null);
+    await logout();
     setStep('login');
     setEmail(''); setNombre(''); setCodigo('');
   };
 
   // ════════════════ VISTA: USUARIO LOGUEADO ═══════════════
-  if (usuario) {
+  if (isAuthenticated && usuario) {
     return (
       <SafeAreaView style={s.safeArea} edges={['top']}>
         <StatusBar barStyle="light-content" backgroundColor="#E96928" />
@@ -237,7 +252,7 @@ export default function PerfilScreen() {
             <Pressable style={s.closeBtn} onPress={() => router.back()}>
               <Ionicons name="close" size={20} color="#fff" />
             </Pressable>
-            <AvatarSection fotoPerfil={fotoPerfil} onCambiarFoto={cambiarFoto} t={t} />
+            <AvatarSection fotoPerfil={fotoPerfil} onCambiarFoto={cambiarFoto} />
             <Text style={[s.welcomeText, { fontSize: fonts['2xl'] }]}>{usuario.nombre}</Text>
             <Text style={[s.instructionText, { fontSize: fonts.sm }]}>{usuario.email}</Text>
             {usuario.rol === 'comercio' && (
@@ -249,16 +264,27 @@ export default function PerfilScreen() {
           </LinearGradient>
 
           <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
-            {/* Editar nombre */}
+            {/* Editar datos personales */}
             <EditarPerfilCard
               nombreInicial={usuario.nombre}
+              emailInicial={usuario.email}
               colors={colors} fonts={fonts} isDark={isDark}
-              onGuardado={(nuevoNombre) => {
-                const updated = { ...usuario, nombre: nuevoNombre };
-                setUsuario(updated);
-                AsyncStorage.setItem('usuario', JSON.stringify(updated));
-              }}
+              onGuardado={(nuevoNombre) => actualizarUsuario({ nombre: nuevoNombre })}
             />
+
+            {/* Cambiar foto */}
+            <Pressable
+              style={[styles.actionRow, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={cambiarFoto}
+            >
+              <View style={[styles.actionIconWrap, { backgroundColor: 'rgba(233,105,40,0.1)' }]}>
+                <Ionicons name="camera-outline" size={20} color="#E96928" />
+              </View>
+              <Text style={[styles.actionLabel, { color: colors.text, fontSize: fonts.base }]}>
+                Cambiar foto de perfil
+              </Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.subtext} />
+            </Pressable>
 
             {/* Sección locatario */}
             {usuario.rol === 'comercio' ? (
@@ -349,9 +375,7 @@ export default function PerfilScreen() {
                 {loading ? <ActivityIndicator color="#fff" /> : (
                   <>
                     <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
-                    <Text style={[s.loginBtnText, { fontSize: fonts.md }]}>
-                      {t('confirm')}
-                    </Text>
+                    <Text style={[s.loginBtnText, { fontSize: fonts.md }]}>{t('confirm')}</Text>
                   </>
                 )}
               </LinearGradient>
@@ -386,7 +410,7 @@ export default function PerfilScreen() {
             <Pressable style={s.closeBtn} onPress={() => router.back()}>
               <Ionicons name="close" size={20} color="#fff" />
             </Pressable>
-            <AvatarSection fotoPerfil={fotoPerfil} onCambiarFoto={cambiarFoto} t={t} />
+            <AvatarSection fotoPerfil={fotoPerfil} onCambiarFoto={cambiarFoto} />
             <Text style={[s.welcomeText, { fontSize: fonts['2xl'] }]}>Crear cuenta</Text>
             <Text style={[s.instructionText, { fontSize: fonts.sm }]}>
               Regístrate para guardar favoritos y recibir noticias.
@@ -458,13 +482,12 @@ export default function PerfilScreen() {
     );
   }
 
-  // ════════════════ VISTA: LOGIN (EMAIL + CÓDIGO) ══════════
+  // ════════════════ VISTA: LOGIN ═══════════════════════════
   return (
     <SafeAreaView style={s.safeArea} edges={['top']}>
       <StatusBar barStyle="light-content" backgroundColor="#E96928" />
       <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
 
-        {/* Banner */}
         <LinearGradient
           colors={['#E96928', '#c4511a']}
           start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
@@ -474,12 +497,13 @@ export default function PerfilScreen() {
           <Pressable style={s.closeBtn} onPress={() => router.back()}>
             <Ionicons name="close" size={20} color="#fff" />
           </Pressable>
-          <AvatarSection fotoPerfil={fotoPerfil} onCambiarFoto={cambiarFoto} t={t} />
+          <AvatarSection fotoPerfil={fotoPerfil} onCambiarFoto={cambiarFoto} />
           <Text style={[s.welcomeText, { fontSize: fonts['2xl'] }]}>{t('welcome')}</Text>
-          <Text style={[s.instructionText, { fontSize: fonts.sm }]}>{t('Per')}</Text>
+          <Text style={[s.instructionText, { fontSize: fonts.sm }]}>
+            Inicia sesión para guardar tus lugares favoritos
+          </Text>
         </LinearGradient>
 
-        {/* Formulario */}
         <View style={[s.formCard, { marginTop: 24 }]}>
           <View style={s.inputWrapper}>
             <View style={s.inputIconWrap}>
@@ -525,14 +549,17 @@ export default function PerfilScreen() {
         <View style={s.divider}>
           <View style={s.dividerLine} />
           <View style={s.dividerBadge}>
-            <Text style={[s.dividerText, { fontSize: fonts.xs }]}>All</Text>
+            <Text style={[s.dividerText, { fontSize: fonts.xs }]}>o continúa con</Text>
           </View>
           <View style={s.dividerLine} />
         </View>
 
         {/* Botones sociales */}
         <View style={s.socialButtons}>
-          <Pressable style={({ pressed }) => [s.socialBtn, s.googleBtn, { opacity: pressed ? 0.85 : 1 }]}>
+          <Pressable
+            style={({ pressed }) => [s.socialBtn, s.googleBtn, { opacity: pressed ? 0.85 : 1 }]}
+            onPress={() => Alert.alert('Google Sign-In', 'Próximamente disponible.\nRequiere configuración de Google Cloud Console.')}
+          >
             <View style={s.socialIconWrap}>
               <FontAwesome5 name="google" size={16} color="#ea4335" />
             </View>
@@ -542,7 +569,10 @@ export default function PerfilScreen() {
             <Ionicons name="chevron-forward" size={16} color={colors.subtext} />
           </Pressable>
 
-          <Pressable style={({ pressed }) => [s.socialBtn, s.appleBtn, { opacity: pressed ? 0.85 : 1 }]}>
+          <Pressable
+            style={({ pressed }) => [s.socialBtn, s.appleBtn, { opacity: pressed ? 0.85 : 1 }]}
+            onPress={() => Alert.alert('Apple Sign-In', 'Próximamente disponible.\nRequiere cuenta de Apple Developer.')}
+          >
             <View style={[s.socialIconWrap, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
               <Ionicons name="logo-apple" size={18} color="#fff" />
             </View>
@@ -586,7 +616,7 @@ function AppInfoFooter({ fonts, colors }: { fonts: any; colors: any }) {
   );
 }
 
-// ── Estilos estáticos (no dependen del tema) ────────────────
+// ── Estilos estáticos ───────────────────────────────────────
 const styles = StyleSheet.create({
   avatarWrapper:  { marginBottom: 16, position: 'relative' },
   avatarCircle:   {
@@ -616,22 +646,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 4, marginTop: 8,
   },
   rolBadgeText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  actionRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    borderRadius: 16, padding: 14, marginBottom: 10,
+    borderWidth: 1,
+  },
+  actionIconWrap: {
+    width: 38, height: 38, borderRadius: 12,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  actionLabel: { flex: 1, fontWeight: '600' },
   locatarioButton: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: 10, backgroundColor: '#E96928', borderRadius: 18,
     height: 55, marginBottom: 14, elevation: 4,
+    marginTop: 4,
   },
   locatarioButtonText: { color: '#fff', fontSize: 16, fontWeight: '800' },
   locatarioCard: {
     borderRadius: 20, padding: 24, alignItems: 'center',
-    marginBottom: 14, elevation: 2, gap: 8,
-    borderWidth: 1,
+    marginBottom: 14, elevation: 2, gap: 8, borderWidth: 1, marginTop: 4,
   },
   locatarioTitle: { fontSize: 17, fontWeight: '800' },
   locatarioDesc:  { fontSize: 14, textAlign: 'center', lineHeight: 20 },
   logoutButton: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 8, borderRadius: 18, height: 55, borderWidth: 1,
+    gap: 8, borderRadius: 18, height: 55, borderWidth: 1, marginTop: 4,
   },
   logoutText: { color: '#E96928', fontSize: 16, fontWeight: '700' },
   appInfo:        { marginTop: 32, alignItems: 'center', gap: 4, paddingBottom: 20 },
@@ -644,7 +684,7 @@ const styles = StyleSheet.create({
   appInfoVersion: {},
 });
 
-// ── Estilos dinámicos (dependen del tema) ────────────────────
+// ── Estilos dinámicos ────────────────────────────────────────
 const makeStyles = (c: any, f: any, isDark: boolean) => StyleSheet.create({
   safeArea:      { flex: 1, backgroundColor: c.background },
   scrollContent: { paddingBottom: 40 },

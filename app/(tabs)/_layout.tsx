@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   View, Text, StyleSheet,
-  Dimensions, TouchableOpacity,
+  Dimensions, TouchableOpacity, Image,
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Drawer } from 'expo-router/drawer';
@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import CustomDrawer from '../../components/CustomDrawer';
 import { useTheme } from '../../src/context/ThemeContext';
+import { useAuth } from '../../src/context/AuthContext';
 
 const { width } = Dimensions.get('window');
 
@@ -25,24 +26,46 @@ function NotifDot() {
   );
 }
 
-function HeaderBtn({
-  icon, onPress, badge = false, color, bg,
+function ProfileBtn({
+  onPress, fotoPerfil, isAuthenticated, color, bg,
 }: {
-  icon: any; onPress: () => void; badge?: boolean;
-  color: string; bg: string;
+  onPress: () => void;
+  fotoPerfil: string | null;
+  isAuthenticated: boolean;
+  color: string;
+  bg: string;
 }) {
   return (
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.75}
-      style={{
-        width: 36, height: 36,
-        backgroundColor: bg,
-        justifyContent: 'center', alignItems: 'center',
-      }}
+      style={{ width: 36, height: 36, justifyContent: 'center', alignItems: 'center' }}
+    >
+      {fotoPerfil ? (
+        <Image
+          source={{ uri: fotoPerfil }}
+          style={{ width: 30, height: 30, borderRadius: 15, borderWidth: 2, borderColor: '#E96928' }}
+        />
+      ) : (
+        <Ionicons name="person-outline" size={20} color={color} />
+      )}
+      {!isAuthenticated && <NotifDot />}
+    </TouchableOpacity>
+  );
+}
+
+function HeaderBtn({
+  icon, onPress, color,
+}: {
+  icon: any; onPress: () => void; color: string;
+}) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.75}
+      style={{ width: 36, height: 36, justifyContent: 'center', alignItems: 'center' }}
     >
       <Ionicons name={icon} size={20} color={color} />
-      {badge && <NotifDot />}
     </TouchableOpacity>
   );
 }
@@ -52,6 +75,7 @@ const HEADER_CONTENT_H = 52;
 export default function Layout() {
   const router = useRouter();
   const { colors, fonts, isDark } = useTheme();
+  const { fotoPerfil, isAuthenticated } = useAuth();
   const insets = useSafeAreaInsets();
   const STATUS_BAR_H = insets.top;
   const HEADER_H     = STATUS_BAR_H + HEADER_CONTENT_H;
@@ -104,15 +128,14 @@ export default function Layout() {
                   <HeaderBtn
                     icon="settings-outline"
                     color="#E96928"
-                    bg="transparent"
                     onPress={() => router.push('/configuracion')}
                   />
-                  <HeaderBtn
-                    icon="person-outline"
+                  <ProfileBtn
+                    fotoPerfil={fotoPerfil}
+                    isAuthenticated={isAuthenticated}
                     color="#E96928"
                     bg="transparent"
                     onPress={() => router.push('/perfil')}
-                    badge
                   />
                 </View>
               </View>

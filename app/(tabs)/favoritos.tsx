@@ -4,9 +4,10 @@ import { useRouter } from 'expo-router';
 import React, { useCallback, useRef } from 'react';
 import {
   Animated, FlatList, Image, Platform, Pressable,
-  StatusBar, StyleSheet, Text, View, Alert,
+  StatusBar, StyleSheet, Text, View, Alert, Modal,
 } from 'react-native';
 import { useFavoritos } from '../../src/context/FavoritosContext';
+import { useAuth } from '../../src/context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../src/context/ThemeContext';
 import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
@@ -109,12 +110,53 @@ function SwipeableCard({
   );
 }
 
+// ── Modal de login requerido ─────────────────────────────────
+function LoginModal({ visible, onClose, onGoLogin }: {
+  visible: boolean; onClose: () => void; onGoLogin: () => void;
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={lm.backdrop}>
+        <View style={lm.sheet}>
+          <LinearGradient colors={['#E96928', '#c4511a']} style={lm.iconWrap}>
+            <Ionicons name="heart" size={28} color="#fff" />
+          </LinearGradient>
+          <Text style={lm.title}>¡Guarda tus lugares!</Text>
+          <Text style={lm.body}>
+            Inicia sesión para guardar tus lugares y comercios favoritos en GuadalupeGO.
+          </Text>
+          <Pressable style={lm.primaryBtn} onPress={onGoLogin}>
+            <Text style={lm.primaryBtnText}>Iniciar sesión</Text>
+          </Pressable>
+          <Pressable style={lm.cancelBtn} onPress={onClose}>
+            <Text style={lm.cancelBtnText}>Cancelar</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const lm = StyleSheet.create({
+  backdrop:      { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' },
+  sheet:         { backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 28, alignItems: 'center', gap: 14 },
+  iconWrap:      { width: 64, height: 64, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  title:         { fontSize: 20, fontWeight: '800', color: '#1A1A1A' },
+  body:          { fontSize: 14, color: '#6B7280', textAlign: 'center', lineHeight: 20 },
+  primaryBtn:    { width: '100%', height: 52, borderRadius: 16, backgroundColor: '#E96928', justifyContent: 'center', alignItems: 'center' },
+  primaryBtnText:{ color: '#fff', fontWeight: '800', fontSize: 16 },
+  cancelBtn:     { width: '100%', height: 44, justifyContent: 'center', alignItems: 'center' },
+  cancelBtnText: { color: '#6B7280', fontWeight: '600', fontSize: 15 },
+});
+
 export default function FavoritosScreen() {
   const { t } = useTranslation();
   const { colors, fonts, isDark } = useTheme();
   const s = makeStyles(colors, fonts);
   const { favoritos, toggleFavorito } = useFavoritos();
+  const { isAuthenticated } = useAuth();
   const router = useRouter();
+  const [loginModal, setLoginModal] = React.useState(false);
 
   const irAlInicio = () => router.replace('/');
 
@@ -160,6 +202,46 @@ export default function FavoritosScreen() {
     </View>
   );
 
+  // ── Vista: no autenticado ──────────────────────────────────
+  if (!isAuthenticated) {
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <LoginModal
+          visible={loginModal}
+          onClose={() => setLoginModal(false)}
+          onGoLogin={() => { setLoginModal(false); router.push('/perfil'); }}
+        />
+        <View style={s.emptyContainer}>
+          <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
+          <LinearGradient colors={['#E96928', '#c4511a']} style={s.emptyIconWrap}>
+            <Ionicons name="heart-outline" size={44} color="#fff" />
+          </LinearGradient>
+          <Text style={[s.emptyTitle, { fontSize: fonts.xl }]}>
+            Guarda tus favoritos
+          </Text>
+          <Text style={[s.emptyText, { fontSize: fonts.sm }]}>
+            Inicia sesión para guardar los lugares y comercios que más te gustan.
+          </Text>
+          <Pressable
+            style={({ pressed }) => [s.exploreBtn, { opacity: pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] }]}
+            onPress={() => setLoginModal(true)}
+          >
+            <Ionicons name="person-outline" size={18} color="#fff" />
+            <Text style={[s.exploreBtnText, { fontSize: fonts.base }]}>
+              Iniciar sesión
+            </Text>
+          </Pressable>
+          <Pressable style={{ marginTop: 12 }} onPress={irAlInicio}>
+            <Text style={{ color: colors.subtext, fontSize: fonts.sm }}>
+              Explorar sin cuenta
+            </Text>
+          </Pressable>
+        </View>
+      </GestureHandlerRootView>
+    );
+  }
+
+  // ── Vista: sin favoritos ───────────────────────────────────
   if (favoritos.length === 0) {
     return (
       <GestureHandlerRootView style={{ flex: 1 }}>
@@ -188,6 +270,7 @@ export default function FavoritosScreen() {
     );
   }
 
+  // ── Vista: lista de favoritos ──────────────────────────────
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={s.container}>
@@ -246,33 +329,8 @@ const makeStyles = (c: any, f: any) => StyleSheet.create({
   swipeHint:    { position: 'absolute', right: 10, top: '50%', transform: [{ translateY: -10 }] },
   emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40, backgroundColor: c.background },
   emptyIconWrap:  { width: 90, height: 90, borderRadius: 28, justifyContent: 'center', alignItems: 'center', marginBottom: 20, shadowColor: '#E96928', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 8 },
-  emptyTitle:     { fontWeight: '900', color: c.text, marginBottom: 8 },
+  emptyTitle:     { fontWeight: '900', color: c.text, marginBottom: 8, textAlign: 'center' },
   emptyText:      { color: c.subtext, textAlign: 'center', lineHeight: f.sm * 1.6, marginBottom: 8 },
   exploreBtn:     { marginTop: 20, backgroundColor: '#E96928', paddingVertical: 14, paddingHorizontal: 30, borderRadius: 30, elevation: 4, flexDirection: 'row', alignItems: 'center', gap: 8, shadowColor: '#E96928', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 8 },
   exploreBtnText: { color: '#fff', fontWeight: '800' },
 });
-/* ====================== Cuando exista backend reemplazar ===================== */
-
-// import { getFavoritos } from "@/src/api/api";
-// const [favoritos, setFavoritos] = useState(FAVORITOS_DATA);
-
-/*
-import { useEffect } from "react";
-
-useEffect(() => {
-
-  const cargarFavoritos = async () => {
-    try {
-      const data = await getFavoritos();
-      setFavoritos(data);
-    } catch (error) {
-      console.log("Usando datos locales");
-    }
-  };
-
-  cargarFavoritos();
-
-}, []);
-*/
-
-/* ============================================================================ */

@@ -8,8 +8,10 @@ import {
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../../src/context/ThemeContext";
+import { useAuth } from "../../src/context/AuthContext";
 import Reseñas from "../../components/Reseñas";
 import { useFavoritos } from "../../src/context/FavoritosContext";
+import { Modal } from "react-native";
 
 const CATEGORIA_KEYS: Record<string, string> = {
   'Naturaleza & Aventura': 'cat_nature',
@@ -48,9 +50,16 @@ export default function DetalleLugar() {
   const lugar = lugarParam ? JSON.parse(lugarParam as string) : {};
 
   const { toggleFavorito, esFavorito } = useFavoritos();
+  const { isAuthenticated } = useAuth();
   const isFav = esFavorito(lugar.id);
 
-  const [activeTab, setActiveTab] = useState<'info' | 'reseñas'>('info');
+  const [activeTab,  setActiveTab]  = useState<'info' | 'reseñas'>('info');
+  const [loginModal, setLoginModal] = useState(false);
+
+  const handleToggleFavorito = () => {
+    if (!isAuthenticated) { setLoginModal(true); return; }
+    toggleFavorito({ ...lugar, origen: 'detalle' });
+  };
 
   const abrirMapa = () => {
     const query = encodeURIComponent(`${lugar.nombre} ${lugar.ubicacion}`);
@@ -76,6 +85,31 @@ export default function DetalleLugar() {
   return (
     <View style={s.container}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+
+      {/* Modal login para favoritos */}
+      <Modal visible={loginModal} transparent animationType="fade">
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 28, alignItems: 'center', gap: 14 }}>
+            <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: 'rgba(233,105,40,0.1)', justifyContent: 'center', alignItems: 'center' }}>
+              <Ionicons name="heart" size={30} color="#E96928" />
+            </View>
+            <Text style={{ fontSize: 20, fontWeight: '800', color: '#1A1A1A' }}>Guarda este lugar</Text>
+            <Text style={{ fontSize: 14, color: '#6B7280', textAlign: 'center', lineHeight: 20 }}>
+              Inicia sesión para guardar tus lugares favoritos en GuadalupeGO.
+            </Text>
+            <Pressable
+              style={{ width: '100%', height: 52, borderRadius: 16, backgroundColor: '#E96928', justifyContent: 'center', alignItems: 'center' }}
+              onPress={() => { setLoginModal(false); router.push('/perfil'); }}
+            >
+              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>Iniciar sesión</Text>
+            </Pressable>
+            <Pressable style={{ width: '100%', height: 44, justifyContent: 'center', alignItems: 'center' }} onPress={() => setLoginModal(false)}>
+              <Text style={{ color: '#6B7280', fontWeight: '600', fontSize: 15 }}>Cancelar</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
       <ScrollView showsVerticalScrollIndicator={false}>
 
         <View style={s.hero}>
@@ -89,7 +123,7 @@ export default function DetalleLugar() {
           </Pressable>
           <Pressable
             style={[s.favBtn, isFav && { backgroundColor: 'rgba(225,29,72,0.85)' }]}
-            onPress={() => toggleFavorito({ ...lugar, origen: 'detalle' })}
+            onPress={handleToggleFavorito}
           >
             <Ionicons name={isFav ? 'heart' : 'heart-outline'} size={20} color="#fff" />
           </Pressable>
