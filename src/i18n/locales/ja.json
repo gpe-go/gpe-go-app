@@ -269,5 +269,8 @@
   "profile_register_sub": "お気に入りを保存してニュースを受け取るために登録してください。",
   "profile_already_account": "すでにアカウントをお持ちですか？",
   "profile_or_continue": "または続行",
-  "profile_code_sent_to": "コードを送信しました"
+  "profile_code_sent_to": "コードを送信しました",
+  "cat_general": "一般",
+  "event_badge": "イベント",
+  "event_cost_consultar": "お問い合わせ"
 }

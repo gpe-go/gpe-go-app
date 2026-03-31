@@ -269,5 +269,8 @@
   "profile_register_sub": "Registrera dig för att spara favoriter och ta emot nyheter.",
   "profile_already_account": "Har du redan ett konto?",
   "profile_or_continue": "eller fortsätt med",
-  "profile_code_sent_to": "Kod skickad till"
+  "profile_code_sent_to": "Kod skickad till",
+  "cat_general": "Allmänt",
+  "event_badge": "Evenemang",
+  "event_cost_consultar": "Förfrågan"
 }

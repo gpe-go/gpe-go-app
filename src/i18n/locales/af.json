@@ -269,5 +269,8 @@
   "profile_register_sub": "Registreer om gunstelinge te stoor en nuus te ontvang.",
   "profile_already_account": "Het jy al 'n rekening?",
   "profile_or_continue": "of gaan voort met",
-  "profile_code_sent_to": "Kode gestuur na"
+  "profile_code_sent_to": "Kode gestuur na",
+  "cat_general": "Algemeen",
+  "event_badge": "Geleentheid",
+  "event_cost_consultar": "Navraag"
 }

@@ -269,5 +269,8 @@
   "profile_register_sub": "Registreer om favorieten op te slaan en nieuws te ontvangen.",
   "profile_already_account": "Heb je al een account?",
   "profile_or_continue": "of ga verder met",
-  "profile_code_sent_to": "Code verzonden naar"
+  "profile_code_sent_to": "Code verzonden naar",
+  "cat_general": "Algemeen",
+  "event_badge": "Evenement",
+  "event_cost_consultar": "Informeren"
 }

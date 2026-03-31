@@ -269,5 +269,8 @@
   "profile_register_sub": "즐겨찾기를 저장하고 소식을 받으려면 가입하세요.",
   "profile_already_account": "이미 계정이 있으신가요?",
   "profile_or_continue": "또는 계속하기",
-  "profile_code_sent_to": "코드 발송됨"
+  "profile_code_sent_to": "코드 발송됨",
+  "cat_general": "일반",
+  "event_badge": "이벤트",
+  "event_cost_consultar": "문의"
 }

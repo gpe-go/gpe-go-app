@@ -269,5 +269,8 @@
   "profile_register_sub": "Зареєструйтесь, щоб зберегти улюблені та отримувати новини.",
   "profile_already_account": "Вже є акаунт?",
   "profile_or_continue": "або продовжити з",
-  "profile_code_sent_to": "Код надіслано до"
+  "profile_code_sent_to": "Код надіслано до",
+  "cat_general": "Загальне",
+  "event_badge": "Подія",
+  "event_cost_consultar": "Дізнатися"
 }

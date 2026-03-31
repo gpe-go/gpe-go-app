@@ -269,5 +269,8 @@
   "profile_register_sub": "Regjistrohu për të ruajtur të preferuarat dhe për të marrë lajme.",
   "profile_already_account": "Keni tashmë një llogari?",
   "profile_or_continue": "ose vazhdoni me",
-  "profile_code_sent_to": "Kodi u dërgua te"
+  "profile_code_sent_to": "Kodi u dërgua te",
+  "cat_general": "E përgjithshme",
+  "event_badge": "Ngjarje",
+  "event_cost_consultar": "Kërkoni"
 }

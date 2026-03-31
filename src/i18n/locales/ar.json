@@ -269,5 +269,8 @@
   "profile_register_sub": "سجّل للحفاظ على المفضلات واستقبال الأخبار.",
   "profile_already_account": "هل لديك حساب بالفعل؟",
   "profile_or_continue": "أو تابع مع",
-  "profile_code_sent_to": "تم إرسال الرمز إلى"
+  "profile_code_sent_to": "تم إرسال الرمز إلى",
+  "cat_general": "عام",
+  "event_badge": "فعالية",
+  "event_cost_consultar": "استفسار"
 }
