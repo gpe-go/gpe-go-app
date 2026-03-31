@@ -101,7 +101,7 @@ export default function DetalleLugar() {
             </Text>
             <Pressable
               style={{ width: '100%', height: 52, borderRadius: 16, backgroundColor: '#E96928', justifyContent: 'center', alignItems: 'center' }}
-              onPress={() => { setLoginModal(false); router.push('/perfil'); }}
+              onPress={() => { setLoginModal(false); router.push('/(stack)/perfil'); }}
             >
               <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>{t('profile_login')}</Text>
             </Pressable>

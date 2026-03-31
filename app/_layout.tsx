@@ -14,6 +14,14 @@ export default function RootLayout() {
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="welcome" />
               <Stack.Screen name="(tabs)" />
+              <Stack.Screen
+                name="(stack)/perfil"
+                options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+              />
+              <Stack.Screen
+                name="(stack)/configuracion"
+                options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+              />
             </Stack>
           </ReseñasProvider>
         </FavoritosProvider>

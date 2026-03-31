@@ -209,7 +209,7 @@ export default function FavoritosScreen() {
         <LoginModal
           visible={loginModal}
           onClose={() => setLoginModal(false)}
-          onGoLogin={() => { setLoginModal(false); router.push('/perfil'); }}
+          onGoLogin={() => { setLoginModal(false); router.push('/(stack)/perfil'); }}
         />
         <View style={s.emptyContainer}>
           <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />

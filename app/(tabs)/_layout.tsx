@@ -128,14 +128,14 @@ export default function Layout() {
                   <HeaderBtn
                     icon="settings-outline"
                     color="#E96928"
-                    onPress={() => router.push('/configuracion')}
+                    onPress={() => router.push('/(stack)/configuracion')}
                   />
                   <ProfileBtn
                     fotoPerfil={fotoPerfil}
                     isAuthenticated={isAuthenticated}
                     color="#E96928"
                     bg="transparent"
-                    onPress={() => router.push('/perfil')}
+                    onPress={() => router.push('/(stack)/perfil')}
                   />
                 </View>
               </View>
@@ -150,8 +150,6 @@ export default function Layout() {
         <Drawer.Screen name="explorar"      options={{ drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="favoritos"     options={{ drawerItemStyle: { display: 'none' } }} />
         <Drawer.Screen name="contacto"      options={{ drawerItemStyle: { display: 'none' } }} />
-        <Drawer.Screen name="perfil"        options={{ drawerItemStyle: { display: 'none' }, headerShown: false }} />
-        <Drawer.Screen name="configuracion" options={{ drawerItemStyle: { display: 'none' }, headerShown: false }} />
         <Drawer.Screen name="detalleNoticia" options={{ drawerItemStyle: { display: 'none' }, headerShown: false }} />
       </Drawer>
     </GestureHandlerRootView>
