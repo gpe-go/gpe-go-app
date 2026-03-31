@@ -3,7 +3,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Image, Linking, Platform, Pressable,
+  Image, Linking, Platform, Pressable, Share,
   ScrollView, StatusBar, StyleSheet, Text, View,
 } from "react-native";
 import { useTheme } from "../../src/context/ThemeContext";
@@ -14,6 +14,7 @@ const CAT_KEYS: Record<string, string> = {
   'Cultural':    'cat_cultural',
   'Gastronomía': 'cat_gastronomia',
   'Sociales':    'cat_sociales',
+  'General':     'cat_general',
 };
 
 // ── Mapa sub → clave i18n ──────────────────────────────
@@ -29,10 +30,32 @@ const SUB_KEYS: Record<string, string> = {
   'Comunitario':  'sub_comunitario',
   'Festival':     'sub_festival',
   'Mundial 2026': 'sub_mundial',
+  'General':      'cat_general',
+  'Evento':       'event_badge',
+  'Noticia':      'news_latest',
 };
 
-// ── Costos gratis ──────────────────────────────────────
-const COSTOS_GRATIS = ['Gratis', 'Entrada Libre', 'Gratis (entrada)'];
+// ── Costos gratis / consultar ──────────────────────────
+const COSTOS_GRATIS    = ['Gratis', 'Entrada Libre', 'Gratis (entrada)'];
+const COSTOS_CONSULTAR = ['Consultar', 'Consultar precio', 'A consultar'];
+
+// ── Formateador de fecha ───────────────────────────────
+const formatSingleDate = (raw: string): string => {
+  try {
+    const d = new Date(raw.trim() + 'T12:00:00');
+    return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+  } catch {
+    return raw;
+  }
+};
+const formatFecha = (fecha: string): string => {
+  if (!fecha) return '';
+  if (fecha.includes(' - ')) {
+    const [a, b] = fecha.split(' - ');
+    return `${formatSingleDate(a)} – ${formatSingleDate(b)}`;
+  }
+  return formatSingleDate(fecha);
+};
 
 export default function DetalleEvento() {
   const { t } = useTranslation();
@@ -48,16 +71,24 @@ export default function DetalleEvento() {
   const getSubTexto = (sub: string) =>
     SUB_KEYS[sub] ? t(SUB_KEYS[sub]) : sub;
 
-  const getCostoTexto = (costo: string) =>
-    !costo || COSTOS_GRATIS.includes(costo) ? t('detail_free') : costo;
+  const getCostoTexto = (costo: string) => {
+    if (!costo || COSTOS_GRATIS.includes(costo))    return t('detail_free');
+    if (COSTOS_CONSULTAR.includes(costo))           return t('event_cost_consultar');
+    return costo;
+  };
 
   const abrirMapa = () => {
     const query = encodeURIComponent(`${evento.titulo} ${evento.lugar}`);
     Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${query}`);
   };
 
-  const compartir = () => {
-    Linking.openURL(`https://wa.me/?text=${encodeURIComponent(`¡Mira este evento! ${evento.titulo} - ${evento.fecha} en ${evento.lugar}`)}`);
+  const compartir = async () => {
+    try {
+      await Share.share({
+        title: evento.titulo,
+        message: `¡Mira este evento!\n🎉 ${evento.titulo}\n📅 ${formatFecha(evento.fecha)}\n📍 ${evento.lugar}\n\nDescúbrelo en GuadalupeGO`,
+      });
+    } catch { /* ignore */ }
   };
 
   return (
@@ -118,7 +149,7 @@ export default function DetalleEvento() {
             <MaterialCommunityIcons name="calendar-month" size={24} color="#E96928" />
             <View style={s.infoTextWrapper}>
               <Text style={s.infoLabel}>{t('event_detail_date')}</Text>
-              <Text style={s.infoText}>{evento.fecha}</Text>
+              <Text style={s.infoText}>{formatFecha(evento.fecha)}</Text>
             </View>
           </View>
 

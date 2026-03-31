@@ -269,5 +269,8 @@
   "profile_register_sub": "Regístrate para guardar favoritos y recibir noticias.",
   "profile_already_account": "¿Ya tienes cuenta?",
   "profile_or_continue": "o continúa con",
-  "profile_code_sent_to": "Código enviado a"
+  "profile_code_sent_to": "Código enviado a",
+  "cat_general": "General",
+  "event_badge": "Evento",
+  "event_cost_consultar": "Consultar"
 }
