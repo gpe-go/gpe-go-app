@@ -28,6 +28,10 @@ export default function StackLayout() {
         name="detalleNoticia"
         options={{ animation: "slide_from_right", gestureEnabled: true, contentStyle: { backgroundColor: colors.background } }}
       />
+      <Stack.Screen
+        name="editarPerfil"
+        options={{ animation: "slide_from_right", gestureEnabled: true, contentStyle: { backgroundColor: colors.background } }}
+      />
     </Stack>
   );
 }

@@ -11,16 +11,17 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useAuth } from '../../src/context/AuthContext';
 import * as ImagePicker from 'expo-image-picker';
-import { solicitarCodigo, verificarCodigo, registrarUsuario, editarPerfil } from '../../src/api/api';
+import { solicitarCodigo, verificarCodigo, registrarUsuario } from '../../src/api/api';
 
 type Step = 'login' | 'registro' | 'codigo';
 
-// ── Avatar superior con cámara ─────────────────────────────
+// ── Avatar superior ─────────────────────────────────────────
+// showCamera=true solo cuando el usuario ya tiene sesión
 function AvatarSection({
-  fotoPerfil, onCambiarFoto,
-}: { fotoPerfil: string | null; onCambiarFoto: () => void }) {
+  fotoPerfil, onCambiarFoto, showCamera = false,
+}: { fotoPerfil: string | null; onCambiarFoto: () => void; showCamera?: boolean }) {
   return (
-    <Pressable onPress={onCambiarFoto} style={styles.avatarWrapper}>
+    <Pressable onPress={showCamera ? onCambiarFoto : undefined} style={styles.avatarWrapper}>
       {fotoPerfil ? (
         <Image source={{ uri: fotoPerfil }} style={styles.avatarImage} />
       ) : (
@@ -28,107 +29,12 @@ function AvatarSection({
           <Ionicons name="person" size={38} color="#E96928" />
         </View>
       )}
-      <View style={styles.cameraOverlay}>
-        <Ionicons name="camera" size={13} color="#fff" />
-      </View>
-    </Pressable>
-  );
-}
-
-// ── Tarjeta editar datos personales ────────────────────────
-function EditarPerfilCard({
-  nombreInicial, emailInicial, onGuardado, colors, fonts, isDark,
-}: {
-  nombreInicial: string;
-  emailInicial: string;
-  onGuardado: (nombre: string) => void;
-  colors: any; fonts: any; isDark: boolean;
-}) {
-  const [nombre,   setNombre]   = React.useState(nombreInicial);
-  const [loading,  setLoading]  = React.useState(false);
-  const [editando, setEditando] = React.useState(false);
-  const s = makeStyles(colors, fonts, isDark);
-
-  const guardar = async () => {
-    if (!nombre.trim() || nombre.trim() === nombreInicial) { setEditando(false); return; }
-    setLoading(true);
-    try {
-      const res = await editarPerfil(nombre.trim());
-      if (res.success) {
-        onGuardado(res.data.nombre);
-        setEditando(false);
-        Alert.alert('Listo', 'Perfil actualizado');
-      } else {
-        Alert.alert('Error', res.error?.mensaje || 'No se pudo actualizar');
-      }
-    } catch {
-      Alert.alert('Error', 'Error de conexión');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <View style={[s.formCard, { marginBottom: 14 }]}>
-      <View style={styles.sectionLabelRow}>
-        <View style={styles.sectionDot} />
-        <Text style={[styles.sectionLabelText, { fontSize: fonts.xs, color: colors.subtext }]}>
-          Mis datos
-        </Text>
-      </View>
-
-      {/* Nombre */}
-      <View style={s.inputWrapper}>
-        <View style={s.inputIconWrap}>
-          <Ionicons name="person-outline" size={18} color="#E96928" />
+      {showCamera && (
+        <View style={styles.cameraOverlay}>
+          <Ionicons name="camera" size={13} color="#fff" />
         </View>
-        <TextInput
-          style={[s.input, { fontSize: fonts.base }]}
-          value={nombre}
-          onChangeText={(t) => { setNombre(t); setEditando(true); }}
-          placeholder="Nombre completo"
-          placeholderTextColor={colors.subtext}
-          autoCapitalize="words"
-          editable={!loading}
-        />
-      </View>
-
-      {/* Email (solo lectura) */}
-      <View style={[s.inputWrapper, { opacity: 0.6 }]}>
-        <View style={s.inputIconWrap}>
-          <Ionicons name="mail-outline" size={18} color="#E96928" />
-        </View>
-        <TextInput
-          style={[s.input, { fontSize: fonts.base }]}
-          value={emailInicial}
-          placeholder="Correo electrónico"
-          placeholderTextColor={colors.subtext}
-          editable={false}
-        />
-        <Ionicons name="lock-closed-outline" size={14} color={colors.subtext} style={{ marginRight: 4 }} />
-      </View>
-
-      {editando && (
-        <Pressable
-          style={[s.loginBtn, { opacity: loading ? 0.6 : 1 }]}
-          onPress={guardar}
-          disabled={loading}
-        >
-          <LinearGradient
-            colors={['#E96928', '#c4511a']}
-            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-            style={s.loginBtnGradient}
-          >
-            {loading ? <ActivityIndicator color="#fff" /> : (
-              <>
-                <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
-                <Text style={[s.loginBtnText, { fontSize: fonts.md }]}>Guardar cambios</Text>
-              </>
-            )}
-          </LinearGradient>
-        </Pressable>
       )}
-    </View>
+    </Pressable>
   );
 }
 
@@ -252,7 +158,7 @@ export default function PerfilScreen() {
             <Pressable style={s.closeBtn} onPress={() => router.back()}>
               <Ionicons name="close" size={20} color="#fff" />
             </Pressable>
-            <AvatarSection fotoPerfil={fotoPerfil} onCambiarFoto={cambiarFoto} />
+            <AvatarSection fotoPerfil={fotoPerfil} onCambiarFoto={cambiarFoto} showCamera />
             <Text style={[s.welcomeText, { fontSize: fonts['2xl'] }]}>{usuario.nombre}</Text>
             <Text style={[s.instructionText, { fontSize: fonts.sm }]}>{usuario.email}</Text>
             {usuario.rol === 'comercio' && (
@@ -264,24 +170,16 @@ export default function PerfilScreen() {
           </LinearGradient>
 
           <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
-            {/* Editar datos personales */}
-            <EditarPerfilCard
-              nombreInicial={usuario.nombre}
-              emailInicial={usuario.email}
-              colors={colors} fonts={fonts} isDark={isDark}
-              onGuardado={(nuevoNombre) => actualizarUsuario({ nombre: nuevoNombre })}
-            />
-
-            {/* Cambiar foto */}
+            {/* Editar datos y foto → nueva pantalla */}
             <Pressable
               style={[styles.actionRow, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={cambiarFoto}
+              onPress={() => router.push('/(stack)/editarPerfil')}
             >
               <View style={[styles.actionIconWrap, { backgroundColor: 'rgba(233,105,40,0.1)' }]}>
-                <Ionicons name="camera-outline" size={20} color="#E96928" />
+                <Ionicons name="create-outline" size={20} color="#E96928" />
               </View>
               <Text style={[styles.actionLabel, { color: colors.text, fontSize: fonts.base }]}>
-                Cambiar foto de perfil
+                Editar datos personales
               </Text>
               <Ionicons name="chevron-forward" size={18} color={colors.subtext} />
             </Pressable>
