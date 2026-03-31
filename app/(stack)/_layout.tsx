@@ -32,6 +32,14 @@ export default function StackLayout() {
         name="editarPerfil"
         options={{ animation: "slide_from_right", gestureEnabled: true, contentStyle: { backgroundColor: colors.background } }}
       />
+      <Stack.Screen
+        name="perfil"
+        options={{ animation: "slide_from_bottom", presentation: "modal", gestureEnabled: true, gestureDirection: "vertical", contentStyle: { backgroundColor: colors.background } }}
+      />
+      <Stack.Screen
+        name="configuracion"
+        options={{ animation: "slide_from_bottom", presentation: "modal", gestureEnabled: true, gestureDirection: "vertical", contentStyle: { backgroundColor: colors.background } }}
+      />
     </Stack>
   );
 }
