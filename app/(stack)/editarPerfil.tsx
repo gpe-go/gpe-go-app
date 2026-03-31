@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, TextInput, Pressable,
-  ScrollView, StatusBar, Image, Alert, ActivityIndicator,
+  ScrollView, StatusBar, Image, Alert, ActivityIndicator, Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -11,18 +11,46 @@ import { useTheme } from '../../src/context/ThemeContext';
 import { useAuth } from '../../src/context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
-import { editarPerfil } from '../../src/api/api';
+import { editarPerfil, eliminarCuenta } from '../../src/api/api';
 
 export default function EditarPerfilScreen() {
   const { colors, fonts, isDark } = useTheme();
-  const { usuario, fotoPerfil, actualizarUsuario, actualizarFoto } = useAuth();
+  const { usuario, fotoPerfil, actualizarUsuario, actualizarFoto, logout } = useAuth();
   const { t } = useTranslation();
   const router = useRouter();
   const s = makeStyles(colors, fonts, isDark);
 
-  const [nombre,  setNombre]  = useState(usuario?.nombre ?? '');
-  const [loading, setLoading] = useState(false);
+  const [nombre,       setNombre]       = useState(usuario?.nombre ?? '');
+  const [loading,      setLoading]      = useState(false);
+  const [deleting,     setDeleting]     = useState(false);
+  const [goodbyeModal, setGoodbyeModal] = useState(false);
+  const [countdown,    setCountdown]    = useState(3);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const haycambios = nombre.trim() !== (usuario?.nombre ?? '');
+
+  // Cuenta regresiva del modal de despedida
+  useEffect(() => {
+    if (goodbyeModal) {
+      setCountdown(3);
+      countdownRef.current = setInterval(() => {
+        setCountdown(prev => (prev <= 1 ? 0 : prev - 1));
+      }, 1000);
+    }
+    return () => {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    };
+  }, [goodbyeModal]);
+
+  // Navegar cuando el countdown llega a 0 (fuera del render)
+  useEffect(() => {
+    if (countdown === 0 && goodbyeModal) {
+      clearInterval(countdownRef.current!);
+      setGoodbyeModal(false);
+      // dismissAll regresa al perfil YA existente en el stack (sin duplicarlo)
+      // El useEffect en perfil.tsx resetea el step a 'login' al detectar !isAuthenticated
+      setTimeout(() => router.dismissAll(), 100);
+    }
+  }, [countdown, goodbyeModal]);
 
   // ── Foto ───────────────────────────────────────────────
   const cambiarFoto = () => {
@@ -57,6 +85,42 @@ export default function EditarPerfilScreen() {
       { text: t('profile_cancel'), style: 'cancel' },
       { text: t('photo_remove_btn'), style: 'destructive', onPress: () => actualizarFoto(null) },
     ]);
+  };
+
+  // ── Eliminar cuenta ────────────────────────────────────
+  const confirmarEliminarCuenta = () => {
+    Alert.alert(
+      t('delete_account_title'),
+      t('delete_account_confirm'),
+      [
+        { text: t('profile_cancel'), style: 'cancel' },
+        {
+          text: t('delete_account_btn'),
+          style: 'destructive',
+          onPress: ejecutarEliminarCuenta,
+        },
+      ]
+    );
+  };
+
+  const ejecutarEliminarCuenta = async () => {
+    setDeleting(true);
+    try {
+      const res = await eliminarCuenta();
+      if (!res.success) {
+        // El servidor respondió pero con error — avisamos pero igual limpiamos local
+        console.warn('[eliminarCuenta] servidor respondió con error:', res.error?.mensaje);
+      }
+    } catch (e) {
+      // Error de red — igualmente limpiamos localmente
+      console.warn('[eliminarCuenta] error de red:', e);
+    } finally {
+      // Limpiar sesión + foto localmente siempre
+      await actualizarFoto(null);
+      await logout();
+      setDeleting(false);
+      setGoodbyeModal(true);
+    }
   };
 
   // ── Guardar cambios ────────────────────────────────────
@@ -99,9 +163,9 @@ export default function EditarPerfilScreen() {
             <Text style={[s.backLabel, { fontSize: fonts.sm }]}>{t('back')}</Text>
           </Pressable>
 
-          {/* Avatar editable */}
+          {/* Avatar — solo visual (los controles están abajo en el formulario) */}
           <View style={s.avatarArea}>
-            <Pressable onPress={cambiarFoto} style={s.avatarWrap}>
+            <View style={s.avatarWrap}>
               {fotoPerfil ? (
                 <Image source={{ uri: fotoPerfil }} style={s.avatarImg} />
               ) : (
@@ -109,21 +173,7 @@ export default function EditarPerfilScreen() {
                   <Ionicons name="person" size={40} color="#E96928" />
                 </View>
               )}
-              <View style={s.cameraOverlay}>
-                <Ionicons name="camera" size={13} color="#fff" />
-              </View>
-            </Pressable>
-
-            <Text style={[s.avatarHint, { fontSize: fonts.xs }]}>
-              {t('edit_profile_photo_hint')}
-            </Text>
-
-            {fotoPerfil && (
-              <Pressable onPress={quitarFoto} style={s.removePhotoBtn}>
-                <Ionicons name="trash-outline" size={14} color="rgba(255,255,255,0.85)" />
-                <Text style={[s.removePhotoText, { fontSize: fonts.xs }]}>{t('edit_profile_remove_photo')}</Text>
-              </Pressable>
-            )}
+            </View>
           </View>
 
           <View style={s.bannerTitleRow}>
@@ -246,8 +296,60 @@ export default function EditarPerfilScreen() {
           </LinearGradient>
         </Pressable>
 
+        {/* ══ BOTÓN ELIMINAR CUENTA ══ */}
+        <Pressable
+          style={s.deleteBtn}
+          onPress={confirmarEliminarCuenta}
+          disabled={deleting}
+        >
+          {deleting ? (
+            <ActivityIndicator color="#EF4444" />
+          ) : (
+            <>
+              <Ionicons name="trash-outline" size={18} color="#EF4444" />
+              <Text style={[s.deleteBtnText, { fontSize: fonts.sm }]}>
+                {t('delete_account_btn')}
+              </Text>
+            </>
+          )}
+        </Pressable>
+
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* ══ MODAL DESPEDIDA ══ */}
+      <Modal visible={goodbyeModal} transparent animationType="fade">
+        <View style={s.goodbyeBackdrop}>
+          <View style={s.goodbyeSheet}>
+            <View style={s.goodbyeIconWrap}>
+              <Text style={{ fontSize: 40 }}>👋</Text>
+            </View>
+            <Text style={[s.goodbyeTitle, { fontSize: fonts.xl }]}>
+              {t('delete_account_goodbye_title')}
+            </Text>
+            <Text style={[s.goodbyeBody, { fontSize: fonts.sm }]}>
+              {t('delete_account_goodbye_body')}
+            </Text>
+            <View style={s.goodbyeCountdownWrap}>
+              <Text style={[s.goodbyeCountdown, { fontSize: fonts['2xl'] }]}>
+                {countdown}
+              </Text>
+            </View>
+            <Pressable
+              style={s.goodbyeBtn}
+              onPress={() => {
+                if (countdownRef.current) clearInterval(countdownRef.current);
+                setGoodbyeModal(false);
+                setTimeout(() => router.dismissAll(), 100);
+              }}
+            >
+              <Text style={[s.goodbyeBtnText, { fontSize: fonts.base }]}>
+                {t('delete_account_goodbye_close')}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -266,14 +368,10 @@ const makeStyles = (c: any, f: any, isDark: boolean) => StyleSheet.create({
   backBtn:   { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.2)', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20, marginBottom: 20 },
   backLabel: { color: '#fff', fontWeight: '600' },
 
-  avatarArea:    { alignItems: 'center', marginBottom: 20 },
-  avatarWrap:    { position: 'relative', marginBottom: 8 },
-  avatarImg:     { width: 90, height: 90, borderRadius: 45, borderWidth: 3, borderColor: 'rgba(255,255,255,0.6)' },
-  avatarCircle:  { width: 90, height: 90, borderRadius: 45, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: 'rgba(255,255,255,0.6)', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 6 },
-  cameraOverlay: { position: 'absolute', bottom: 2, right: 2, backgroundColor: '#c4511a', borderRadius: 14, width: 26, height: 26, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff' },
-  avatarHint:    { color: 'rgba(255,255,255,0.8)', fontWeight: '500' },
-  removePhotoBtn:  { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6, backgroundColor: 'rgba(0,0,0,0.2)', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20 },
-  removePhotoText: { color: 'rgba(255,255,255,0.85)', fontWeight: '600' },
+  avatarArea:   { alignItems: 'center', marginBottom: 20 },
+  avatarWrap:   { marginBottom: 8 },
+  avatarImg:    { width: 90, height: 90, borderRadius: 45, borderWidth: 3, borderColor: 'rgba(255,255,255,0.6)' },
+  avatarCircle: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: 'rgba(255,255,255,0.6)', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 6 },
 
   bannerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   bannerIconWrap: { width: 52, height: 52, borderRadius: 16, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 6 },
@@ -335,4 +433,47 @@ const makeStyles = (c: any, f: any, isDark: boolean) => StyleSheet.create({
     justifyContent: 'center', alignItems: 'center', gap: 10,
   },
   applyBtnText: { color: '#fff', fontWeight: '900' },
+
+  // Eliminar cuenta
+  deleteBtn: {
+    marginHorizontal: 20, marginTop: 14,
+    flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8,
+    paddingVertical: 16, borderRadius: 18,
+    borderWidth: 1, borderColor: '#EF4444',
+    backgroundColor: isDark ? 'rgba(239,68,68,0.08)' : 'rgba(239,68,68,0.05)',
+  },
+  deleteBtnText: { color: '#EF4444', fontWeight: '700' },
+
+  // Modal despedida
+  goodbyeBackdrop: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center', alignItems: 'center', padding: 30,
+  },
+  goodbyeSheet: {
+    backgroundColor: c.card, borderRadius: 28,
+    padding: 28, alignItems: 'center', gap: 12, width: '100%',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3, shadowRadius: 20, elevation: 20,
+  },
+  goodbyeIconWrap: {
+    width: 72, height: 72, borderRadius: 24,
+    backgroundColor: isDark ? 'rgba(233,105,40,0.12)' : 'rgba(233,105,40,0.08)',
+    justifyContent: 'center', alignItems: 'center', marginBottom: 4,
+  },
+  goodbyeTitle: { fontWeight: '900', color: c.text, textAlign: 'center' },
+  goodbyeBody:  { color: c.subtext, textAlign: 'center', lineHeight: 22 },
+  goodbyeCountdownWrap: {
+    width: 56, height: 56, borderRadius: 28,
+    backgroundColor: '#E96928',
+    justifyContent: 'center', alignItems: 'center',
+    marginVertical: 4,
+  },
+  goodbyeCountdown: { color: '#fff', fontWeight: '900' },
+  goodbyeBtn: {
+    width: '100%', height: 52, borderRadius: 16,
+    backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#F3F4F6',
+    justifyContent: 'center', alignItems: 'center',
+    borderWidth: 1, borderColor: c.border,
+  },
+  goodbyeBtnText: { color: c.text, fontWeight: '700' },
 });

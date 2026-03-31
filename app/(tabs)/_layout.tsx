@@ -41,7 +41,7 @@ function ProfileBtn({
       activeOpacity={0.75}
       style={{ width: 36, height: 36, justifyContent: 'center', alignItems: 'center' }}
     >
-      {fotoPerfil ? (
+      {isAuthenticated && fotoPerfil ? (
         <Image
           source={{ uri: fotoPerfil }}
           style={{ width: 30, height: 30, borderRadius: 15, borderWidth: 2, borderColor: '#E96928' }}

@@ -142,6 +142,13 @@ export const editarPerfil = async (nombre: string) => {
   return response.data;
 };
 
+export const eliminarCuenta = async () => {
+  const response = await API.post("", {}, {
+    params: { modulo: "usuarios", action: "eliminar_cuenta" },
+  });
+  return response.data;
+};
+
 /* ================= COMERCIO (LOCATARIO) ================= */
 
 export const registrarComercio = async (data: {

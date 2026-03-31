@@ -325,16 +325,18 @@ export default function Reseñas({ lugarId }: Props) {
                   </ScrollView>
                 )}
 
-                <View style={s.accionesRow}>
-                  <Pressable style={s.editarBtn} onPress={() => abrirEdicion(reseña)}>
-                    <Ionicons name="pencil-outline" size={15} color="#E96928" />
-                    <Text style={s.editarBtnText}>{t('review_edit')}</Text>
-                  </Pressable>
-                  <Pressable style={s.eliminarBtn} onPress={() => confirmarEliminar(reseña.id)}>
-                    <Ionicons name="trash-outline" size={15} color="#E11D48" />
-                    <Text style={s.eliminarBtnText}>{t('review_delete')}</Text>
-                  </Pressable>
-                </View>
+                {isAuthenticated && (
+                  <View style={s.accionesRow}>
+                    <Pressable style={s.editarBtn} onPress={() => abrirEdicion(reseña)}>
+                      <Ionicons name="pencil-outline" size={15} color="#E96928" />
+                      <Text style={s.editarBtnText}>{t('review_edit')}</Text>
+                    </Pressable>
+                    <Pressable style={s.eliminarBtn} onPress={() => confirmarEliminar(reseña.id)}>
+                      <Ionicons name="trash-outline" size={15} color="#E11D48" />
+                      <Text style={s.eliminarBtnText}>{t('review_delete')}</Text>
+                    </Pressable>
+                  </View>
+                )}
               </>
             )}
           </View>

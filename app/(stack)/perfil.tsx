@@ -53,6 +53,16 @@ export default function PerfilScreen() {
   const [codigo,  setCodigo]  = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Al cerrar sesión o eliminar cuenta: resetear siempre al step de login
+  React.useEffect(() => {
+    if (!isAuthenticated) {
+      setStep('login');
+      setEmail('');
+      setNombre('');
+      setCodigo('');
+    }
+  }, [isAuthenticated]);
+
   // ── Foto de perfil ─────────────────────────────────────
   const cambiarFoto = () => {
     Alert.alert(t('profile_photo'), '', [
@@ -105,8 +115,10 @@ export default function PerfilScreen() {
     try {
       const res = await registrarUsuario(nombre.trim(), email.trim().toLowerCase());
       if (res.success) {
-        Alert.alert('Cuenta creada', 'Ahora te enviaremos un código de verificación');
-        await handleSolicitarCodigo();
+        // Primero se muestra el alert; el código se solicita SOLO cuando el usuario presiona OK
+        Alert.alert('Cuenta creada', 'Ahora te enviaremos un código de verificación', [
+          { text: 'OK', onPress: handleSolicitarCodigo },
+        ]);
       } else {
         Alert.alert('Error', res.error?.mensaje || 'No se pudo crear la cuenta');
       }
@@ -308,7 +320,7 @@ export default function PerfilScreen() {
             <Pressable style={s.closeBtn} onPress={() => router.back()}>
               <Ionicons name="close" size={20} color="#fff" />
             </Pressable>
-            <AvatarSection fotoPerfil={fotoPerfil} onCambiarFoto={cambiarFoto} />
+            <AvatarSection fotoPerfil={null} onCambiarFoto={cambiarFoto} />
             <Text style={[s.welcomeText, { fontSize: fonts['2xl'] }]}>{t('profile_create_account')}</Text>
             <Text style={[s.instructionText, { fontSize: fonts.sm }]}>
               {t('profile_register_sub')}
@@ -395,7 +407,7 @@ export default function PerfilScreen() {
           <Pressable style={s.closeBtn} onPress={() => router.back()}>
             <Ionicons name="close" size={20} color="#fff" />
           </Pressable>
-          <AvatarSection fotoPerfil={fotoPerfil} onCambiarFoto={cambiarFoto} />
+          <AvatarSection fotoPerfil={null} onCambiarFoto={cambiarFoto} />
           <Text style={[s.welcomeText, { fontSize: fonts['2xl'] }]}>{t('welcome')}</Text>
           <Text style={[s.instructionText, { fontSize: fonts.sm }]}>
             {t('profile_login_sub')}

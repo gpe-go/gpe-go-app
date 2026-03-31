@@ -10,8 +10,49 @@ import {
 } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { useTranslation } from "react-i18next";
+import i18n from "../../src/i18n/i18n";
 import { useTheme } from "../../src/context/ThemeContext";
 import { useLugares } from "../../src/hooks/useLugares";
+
+// ── Hook: fecha y hora en vivo (reactivo al idioma) ──────
+function useDateTime() {
+  const [now,    setNow]    = useState(new Date());
+  const [locale, setLocale] = useState(i18n.language ?? "es");
+
+  // Reloj: se sincroniza al minuto exacto
+  useEffect(() => {
+    const msHastaProxMinuto = (60 - new Date().getSeconds()) * 1000;
+    const t0 = setTimeout(() => {
+      setNow(new Date());
+      const interval = setInterval(() => setNow(new Date()), 60_000);
+      return () => clearInterval(interval);
+    }, msHastaProxMinuto);
+    return () => clearTimeout(t0);
+  }, []);
+
+  // Escucha cambios de idioma en i18n y actualiza locale inmediatamente
+  useEffect(() => {
+    const onLangChange = (lng: string) => setLocale(lng);
+    i18n.on("languageChanged", onLangChange);
+    return () => i18n.off("languageChanged", onLangChange);
+  }, []);
+
+  const fecha = now.toLocaleDateString(locale, {
+    weekday: "long",
+    day: "numeric",
+    month: "short",
+  });
+
+  const hora = now.toLocaleTimeString(locale, {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  // Primera letra en mayúscula (algunos idiomas devuelven minúscula)
+  const fechaFormatted = fecha.charAt(0).toUpperCase() + fecha.slice(1);
+
+  return { fecha: fechaFormatted, hora };
+}
 
 function RefreshLogo({ refreshing }: { refreshing: boolean }) {
   const spinAnim  = useRef(new Animated.Value(0)).current;
@@ -63,6 +104,8 @@ export default function HomeScreen() {
   const { t } = useTranslation();
   const { colors, fonts, isDark } = useTheme();
   const s = makeStyles(colors, fonts, isDark);
+
+  const { fecha, hora } = useDateTime();
 
   const mapRef = useRef<MapView>(null);
   const [search, setSearch]         = useState("");
@@ -141,6 +184,18 @@ export default function HomeScreen() {
           <Text style={[s.searchTitle, { fontSize: fonts["2xl"] }]}>
             {t("welcome1")} 👋
           </Text>
+
+          {/* Fecha y hora en vivo */}
+          <View style={s.dateTimeRow}>
+            <View style={s.dateChip}>
+              <Ionicons name="calendar-outline" size={13} color="#E96928" />
+              <Text style={[s.dateChipText, { fontSize: fonts.xs }]}>{fecha}</Text>
+            </View>
+            <View style={s.timeChip}>
+              <Ionicons name="time-outline" size={13} color="#E96928" />
+              <Text style={[s.timeChipText, { fontSize: fonts.xs }]}>{hora}</Text>
+            </View>
+          </View>
 
           <View style={s.searchWrapper}>
             <View style={s.searchBox}>
@@ -440,4 +495,27 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       paddingHorizontal: 24, paddingVertical: 13, gap: 8,
     },
     btnText: { color: "#fff", fontWeight: "800" },
+
+    // Fecha y hora
+    dateTimeRow: {
+      flexDirection: "row", alignItems: "center",
+      justifyContent: "center", gap: 8,
+      marginBottom: 14,
+    },
+    dateChip: {
+      flexDirection: "row", alignItems: "center", gap: 5,
+      backgroundColor: isDark ? "rgba(233,105,40,0.12)" : "rgba(233,105,40,0.08)",
+      paddingHorizontal: 12, paddingVertical: 6,
+      borderRadius: 20, borderWidth: 1,
+      borderColor: isDark ? "rgba(233,105,40,0.3)" : "rgba(233,105,40,0.2)",
+    },
+    dateChipText: { color: isDark ? "#E96928" : "#c4511a", fontWeight: "600" },
+    timeChip: {
+      flexDirection: "row", alignItems: "center", gap: 5,
+      backgroundColor: isDark ? "rgba(233,105,40,0.12)" : "rgba(233,105,40,0.08)",
+      paddingHorizontal: 12, paddingVertical: 6,
+      borderRadius: 20, borderWidth: 1,
+      borderColor: isDark ? "rgba(233,105,40,0.3)" : "rgba(233,105,40,0.2)",
+    },
+    timeChipText: { color: isDark ? "#E96928" : "#c4511a", fontWeight: "700" },
   });

@@ -49,9 +49,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
-    await AsyncStorage.multiRemove(['token', 'usuario', 'fotoPerfil']);
+    await AsyncStorage.multiRemove(['token', 'usuario']);
     setUsuario(null);
-    setFotoPerfil(null);
   }, []);
 
   const actualizarUsuario = useCallback(async (cambios: Partial<Usuario>) => {
