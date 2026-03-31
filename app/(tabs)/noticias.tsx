@@ -9,11 +9,56 @@ import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../src/context/ThemeContext';
 
+const BASE_MX = 'https://guadalupe.gob.mx';
+
 const RSS_SOURCES = [
-  { url: 'https://www.milenio.com/rss',                   label: 'Milenio'      },
-  { url: 'https://www.elfinanciero.com.mx/rss/feed.xml',  label: 'El Financiero'},
-  { url: 'https://www.infobae.com/rss/mexico.xml',        label: 'Infobae MX'   },
+  { url: 'https://www.milenio.com/rss',                  label: 'Milenio'      },
+  { url: 'https://www.elfinanciero.com.mx/rss/feed.xml', label: 'El Financiero'},
 ];
+
+// ── Scraper HTML del municipio de Guadalupe ─────────────────
+async function fetchGuadalupe(page = 1): Promise<any[]> {
+  try {
+    const url = page === 1 ? `${BASE_MX}/noticias` : `${BASE_MX}/noticias?page=${page}`;
+    const res  = await fetch(url, { headers: { 'User-Agent': 'GuadalupeGO/1.0' } });
+    const html = await res.text();
+    const items: any[] = [];
+
+    // Cada noticia: <a href="/noticia/SLUG">...<img src="IMG">...<div class="text-xl...">TITULO</div>...<div class="text-sm text-gray-400...">DESC</div>...<div class="text-primary...">FECHA</div>
+    const cardRegex = /<a href="(\/noticia\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/g;
+    let m;
+    while ((m = cardRegex.exec(html)) !== null) {
+      const slug  = m[1];
+      const block = m[2];
+
+      const imgM  = block.match(/src="(\/assets\/noticias\/[^"]+)"/);
+      const titM  = block.match(/class="text-xl[^"]*"[^>]*>([\s\S]*?)<\/div>/);
+      const descM = block.match(/class="text-sm text-gray-400[^"]*"[^>]*>([\s\S]*?)<\/div>/);
+      const dateM = block.match(/class="text-primary[^"]*"[^>]*>([\s\S]*?)<\/div>/);
+
+      const title       = titM  ? titM[1].trim()  : '';
+      const description = descM ? descM[1].trim() : '';
+      const rawDate     = dateM ? dateM[1].trim()  : '';
+      const image       = imgM  ? `${BASE_MX}${imgM[1]}` : '';
+      const link        = `${BASE_MX}${slug}`;
+
+      if (title) {
+        items.push({
+          title,
+          description,
+          pubDate:  rawDate,
+          link,
+          image,
+          source:   'Guadalupe Gob',
+          isLocal:  true,
+        });
+      }
+    }
+    return items;
+  } catch {
+    return [];
+  }
+}
 
 async function fetchRSS(url: string, label: string): Promise<any[]> {
   try {
@@ -49,7 +94,8 @@ async function fetchRSS(url: string, label: string): Promise<any[]> {
   }
 }
 
-function detectarCategoria(titulo: string): { label: string; color: string; bg: string } {
+function detectarCategoria(titulo: string, isLocal?: boolean): { label: string; color: string; bg: string } {
+  if (isLocal) return { label: 'Guadalupe', color: '#E96928', bg: 'rgba(233,105,40,0.12)' };
   const t = titulo.toLowerCase();
   if (t.includes('futbol') || t.includes('liga') || t.includes('mundial') || t.includes('deporte'))
     return { label: 'Deportes', color: '#E96928', bg: 'rgba(233,105,40,0.12)' };
@@ -118,12 +164,18 @@ export default function NoticiasScreen() {
 
   const cargarNoticias = useCallback(async () => {
     try {
-      const resultados = await Promise.all(
-        RSS_SOURCES.map(src => fetchRSS(src.url, src.label))
-      );
-      const mezcladas = resultados
+      // Municipio de Guadalupe tiene prioridad — se carga primero
+      const [guadalupeItems, ...rssResultados] = await Promise.all([
+        fetchGuadalupe(1),
+        ...RSS_SOURCES.map(src => fetchRSS(src.url, src.label)),
+      ]);
+
+      // Las noticias locales van primero, luego el resto ordenadas por fecha
+      const rssPlanas = rssResultados
         .flat()
         .sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
+
+      const mezcladas = [...guadalupeItems, ...rssPlanas];
       setTodas(mezcladas);
       setVisible(mezcladas.slice(0, PAGE_SIZE));
       setPage(1);
@@ -260,7 +312,7 @@ export default function NoticiasScreen() {
           </View>
         }
         renderItem={({ item, index }) => {
-          const cat = detectarCategoria(item.title);
+          const cat = detectarCategoria(item.title, item.isLocal);
           const fechaFormateada = item.pubDate
             ? new Date(item.pubDate).toLocaleDateString('es-MX', {
                 day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
