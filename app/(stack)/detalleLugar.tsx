@@ -93,18 +93,18 @@ export default function DetalleLugar() {
             <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: 'rgba(233,105,40,0.1)', justifyContent: 'center', alignItems: 'center' }}>
               <Ionicons name="heart" size={30} color="#E96928" />
             </View>
-            <Text style={{ fontSize: 20, fontWeight: '800', color: '#1A1A1A' }}>Guarda este lugar</Text>
+            <Text style={{ fontSize: 20, fontWeight: '800', color: '#1A1A1A' }}>{t('favorites_save_place_title')}</Text>
             <Text style={{ fontSize: 14, color: '#6B7280', textAlign: 'center', lineHeight: 20 }}>
-              Inicia sesión para guardar tus lugares favoritos en GuadalupeGO.
+              {t('favorites_save_place_sub')}
             </Text>
             <Pressable
               style={{ width: '100%', height: 52, borderRadius: 16, backgroundColor: '#E96928', justifyContent: 'center', alignItems: 'center' }}
               onPress={() => { setLoginModal(false); router.push('/perfil'); }}
             >
-              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>Iniciar sesión</Text>
+              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>{t('profile_login')}</Text>
             </Pressable>
             <Pressable style={{ width: '100%', height: 44, justifyContent: 'center', alignItems: 'center' }} onPress={() => setLoginModal(false)}>
-              <Text style={{ color: '#6B7280', fontWeight: '600', fontSize: 15 }}>Cancelar</Text>
+              <Text style={{ color: '#6B7280', fontWeight: '600', fontSize: 15 }}>{t('profile_cancel')}</Text>
             </Pressable>
           </View>
         </View>
