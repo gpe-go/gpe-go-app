@@ -21,18 +21,10 @@ export default function RootLayout() {
             >
               <Stack.Screen name="welcome"    options={{ animation: 'fade' }} />
               <Stack.Screen name="(tabs)"     options={{ animation: 'none' }} />
-              <Stack.Screen name="login"      options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="login"             options={{ animation: 'slide_from_right' }} />
               <Stack.Screen name="registrar-negocio" options={{ animation: 'slide_from_right' }} />
               <Stack.Screen name="categorias/[tipo]" options={{ animation: 'slide_from_right' }} />
               <Stack.Screen name="lugar/[id]"        options={{ animation: 'slide_from_right' }} />
-              <Stack.Screen
-                name="(stack)/perfil"
-                options={{ presentation: 'modal', animation: 'slide_from_bottom', gestureDirection: 'vertical' }}
-              />
-              <Stack.Screen
-                name="(stack)/configuracion"
-                options={{ presentation: 'modal', animation: 'slide_from_bottom', gestureDirection: 'vertical' }}
-              />
             </Stack>
           </ReseñasProvider>
         </FavoritosProvider>
