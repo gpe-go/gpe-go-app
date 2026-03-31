@@ -263,5 +263,11 @@
   "photo_title": "صورة الملف الشخصي",
   "photo_remove_confirm_title": "إزالة الصورة",
   "photo_remove_confirm_body": "هل تريد حذف صورة ملفك الشخصي؟",
-  "photo_remove_btn": "إزالة"
+  "photo_remove_btn": "إزالة",
+  "profile_logout": "تسجيل الخروج",
+  "profile_create_account": "إنشاء حساب",
+  "profile_register_sub": "سجّل للحفاظ على المفضلات واستقبال الأخبار.",
+  "profile_already_account": "هل لديك حساب بالفعل؟",
+  "profile_or_continue": "أو تابع مع",
+  "profile_code_sent_to": "تم إرسال الرمز إلى"
 }

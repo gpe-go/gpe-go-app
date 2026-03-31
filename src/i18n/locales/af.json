@@ -263,5 +263,11 @@
   "photo_title": "Profielfoto",
   "photo_remove_confirm_title": "Verwyder foto",
   "photo_remove_confirm_body": "Wil jy jou profielfoto verwyder?",
-  "photo_remove_btn": "Verwyder"
+  "photo_remove_btn": "Verwyder",
+  "profile_logout": "Teken uit",
+  "profile_create_account": "Skep rekening",
+  "profile_register_sub": "Registreer om gunstelinge te stoor en nuus te ontvang.",
+  "profile_already_account": "Het jy al 'n rekening?",
+  "profile_or_continue": "of gaan voort met",
+  "profile_code_sent_to": "Kode gestuur na"
 }

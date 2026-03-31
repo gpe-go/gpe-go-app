@@ -179,7 +179,7 @@ export default function PerfilScreen() {
                 <Ionicons name="create-outline" size={20} color="#E96928" />
               </View>
               <Text style={[styles.actionLabel, { color: colors.text, fontSize: fonts.base }]}>
-                Editar datos personales
+                {t('edit_profile_btn')}
               </Text>
               <Ionicons name="chevron-forward" size={18} color={colors.subtext} />
             </Pressable>
@@ -209,7 +209,7 @@ export default function PerfilScreen() {
               onPress={handleCerrarSesion}
             >
               <Ionicons name="log-out-outline" size={20} color="#E96928" />
-              <Text style={styles.logoutText}>Cerrar sesión</Text>
+              <Text style={styles.logoutText}>{t('profile_logout')}</Text>
             </Pressable>
           </View>
 
@@ -237,9 +237,9 @@ export default function PerfilScreen() {
             <View style={styles.avatarCircle}>
               <Ionicons name="key" size={36} color="#E96928" />
             </View>
-            <Text style={[s.welcomeText, { fontSize: fonts['2xl'] }]}>Verificar código</Text>
+            <Text style={[s.welcomeText, { fontSize: fonts['2xl'] }]}>{t('verification_title')}</Text>
             <Text style={[s.instructionText, { fontSize: fonts.sm }]}>
-              Código enviado a {email}
+              {t('profile_code_sent_to')} {email}
             </Text>
           </LinearGradient>
 
@@ -280,7 +280,7 @@ export default function PerfilScreen() {
             </Pressable>
 
             <Pressable onPress={handleSolicitarCodigo} disabled={loading}>
-              <Text style={[s.forgotText, { fontSize: fonts.sm }]}>Reenviar código</Text>
+              <Text style={[s.forgotText, { fontSize: fonts.sm }]}>{t('verification_resend')}</Text>
             </Pressable>
             <Pressable onPress={() => { setStep('login'); setCodigo(''); }}>
               <Text style={[s.forgotText, { fontSize: fonts.sm }]}>{t('back')}</Text>
@@ -309,9 +309,9 @@ export default function PerfilScreen() {
               <Ionicons name="close" size={20} color="#fff" />
             </Pressable>
             <AvatarSection fotoPerfil={fotoPerfil} onCambiarFoto={cambiarFoto} />
-            <Text style={[s.welcomeText, { fontSize: fonts['2xl'] }]}>Crear cuenta</Text>
+            <Text style={[s.welcomeText, { fontSize: fonts['2xl'] }]}>{t('profile_create_account')}</Text>
             <Text style={[s.instructionText, { fontSize: fonts.sm }]}>
-              Regístrate para guardar favoritos y recibir noticias.
+              {t('profile_register_sub')}
             </Text>
           </LinearGradient>
 
@@ -322,7 +322,7 @@ export default function PerfilScreen() {
               </View>
               <TextInput
                 style={[s.input, { fontSize: fonts.base }]}
-                placeholder="Nombre completo"
+                placeholder={t('edit_profile_full_name')}
                 autoCapitalize="words"
                 value={nombre}
                 onChangeText={setNombre}
@@ -360,7 +360,7 @@ export default function PerfilScreen() {
                 {loading ? <ActivityIndicator color="#fff" /> : (
                   <>
                     <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
-                    <Text style={[s.loginBtnText, { fontSize: fonts.md }]}>Crear cuenta</Text>
+                    <Text style={[s.loginBtnText, { fontSize: fonts.md }]}>{t('profile_create_account')}</Text>
                   </>
                 )}
               </LinearGradient>
@@ -369,7 +369,7 @@ export default function PerfilScreen() {
 
           <Pressable style={s.registerContainer} onPress={() => setStep('login')}>
             <Text style={[s.registerText, { fontSize: fonts.base }]}>
-              ¿Ya tienes cuenta?{' '}
+              {t('profile_already_account')}{' '}
               <Text style={s.orangeLink}>{t('profile_login')}</Text>
             </Text>
           </Pressable>
@@ -398,7 +398,7 @@ export default function PerfilScreen() {
           <AvatarSection fotoPerfil={fotoPerfil} onCambiarFoto={cambiarFoto} />
           <Text style={[s.welcomeText, { fontSize: fonts['2xl'] }]}>{t('welcome')}</Text>
           <Text style={[s.instructionText, { fontSize: fonts.sm }]}>
-            Inicia sesión para guardar tus lugares favoritos
+            {t('profile_login_sub')}
           </Text>
         </LinearGradient>
 
@@ -447,7 +447,7 @@ export default function PerfilScreen() {
         <View style={s.divider}>
           <View style={s.dividerLine} />
           <View style={s.dividerBadge}>
-            <Text style={[s.dividerText, { fontSize: fonts.xs }]}>o continúa con</Text>
+            <Text style={[s.dividerText, { fontSize: fonts.xs }]}>{t('profile_or_continue')}</Text>
           </View>
           <View style={s.dividerLine} />
         </View>

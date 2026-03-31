@@ -263,5 +263,11 @@
   "photo_title": "Фото профілю",
   "photo_remove_confirm_title": "Видалити фото",
   "photo_remove_confirm_body": "Ви хочете видалити фото профілю?",
-  "photo_remove_btn": "Видалити"
+  "photo_remove_btn": "Видалити",
+  "profile_logout": "Вийти",
+  "profile_create_account": "Створити акаунт",
+  "profile_register_sub": "Зареєструйтесь, щоб зберегти улюблені та отримувати новини.",
+  "profile_already_account": "Вже є акаунт?",
+  "profile_or_continue": "або продовжити з",
+  "profile_code_sent_to": "Код надіслано до"
 }

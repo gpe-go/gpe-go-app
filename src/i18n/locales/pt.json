@@ -263,5 +263,11 @@
   "photo_title": "Foto de perfil",
   "photo_remove_confirm_title": "Remover foto",
   "photo_remove_confirm_body": "Deseja remover sua foto de perfil?",
-  "photo_remove_btn": "Remover"
+  "photo_remove_btn": "Remover",
+  "profile_logout": "Sair",
+  "profile_create_account": "Criar conta",
+  "profile_register_sub": "Cadastre-se para salvar favoritos e receber novidades.",
+  "profile_already_account": "Já tem uma conta?",
+  "profile_or_continue": "ou continue com",
+  "profile_code_sent_to": "Código enviado para"
 }

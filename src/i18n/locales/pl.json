@@ -263,5 +263,11 @@
   "photo_title": "Zdjęcie profilowe",
   "photo_remove_confirm_title": "Usuń zdjęcie",
   "photo_remove_confirm_body": "Czy chcesz usunąć swoje zdjęcie profilowe?",
-  "photo_remove_btn": "Usuń"
+  "photo_remove_btn": "Usuń",
+  "profile_logout": "Wyloguj się",
+  "profile_create_account": "Utwórz konto",
+  "profile_register_sub": "Zarejestruj się, aby zapisywać ulubione i otrzymywać aktualności.",
+  "profile_already_account": "Masz już konto?",
+  "profile_or_continue": "lub kontynuuj z",
+  "profile_code_sent_to": "Kod wysłany do"
 }

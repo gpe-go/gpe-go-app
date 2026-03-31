@@ -263,5 +263,11 @@
   "photo_title": "Foto e profilit",
   "photo_remove_confirm_title": "Hiq foton",
   "photo_remove_confirm_body": "Dëshironi të hiqni foton e profilit?",
-  "photo_remove_btn": "Hiq"
+  "photo_remove_btn": "Hiq",
+  "profile_logout": "Dil",
+  "profile_create_account": "Krijo llogari",
+  "profile_register_sub": "Regjistrohu për të ruajtur të preferuarat dhe për të marrë lajme.",
+  "profile_already_account": "Keni tashmë një llogari?",
+  "profile_or_continue": "ose vazhdoni me",
+  "profile_code_sent_to": "Kodi u dërgua te"
 }

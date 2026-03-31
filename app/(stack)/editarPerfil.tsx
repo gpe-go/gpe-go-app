@@ -26,9 +26,9 @@ export default function EditarPerfilScreen() {
 
   // ── Foto ───────────────────────────────────────────────
   const cambiarFoto = () => {
-    Alert.alert('Foto de perfil', '', [
+    Alert.alert(t('photo_title'), '', [
       {
-        text: '📷 Cámara',
+        text: t('photo_option_camera'),
         onPress: async () => {
           const result = await ImagePicker.launchCameraAsync({
             allowsEditing: true, aspect: [1, 1], quality: 0.8,
@@ -37,10 +37,10 @@ export default function EditarPerfilScreen() {
         },
       },
       {
-        text: '🖼️ Galería',
+        text: t('photo_option_gallery'),
         onPress: async () => {
           const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-          if (status !== 'granted') { Alert.alert('Permiso requerido', 'Necesitas permitir acceso a la galería.'); return; }
+          if (status !== 'granted') { Alert.alert(t('profile_permission_gallery')); return; }
           const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: 'images',
             allowsEditing: true, aspect: [1, 1], quality: 0.8,
@@ -48,14 +48,14 @@ export default function EditarPerfilScreen() {
           if (!result.canceled) actualizarFoto(result.assets[0].uri);
         },
       },
-      { text: 'Cancelar', style: 'cancel' },
+      { text: t('profile_cancel'), style: 'cancel' },
     ]);
   };
 
   const quitarFoto = () => {
-    Alert.alert('Quitar foto', '¿Deseas eliminar tu foto de perfil?', [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Quitar', style: 'destructive', onPress: () => actualizarFoto(null) },
+    Alert.alert(t('photo_remove_confirm_title'), t('photo_remove_confirm_body'), [
+      { text: t('profile_cancel'), style: 'cancel' },
+      { text: t('photo_remove_btn'), style: 'destructive', onPress: () => actualizarFoto(null) },
     ]);
   };
 
@@ -115,13 +115,13 @@ export default function EditarPerfilScreen() {
             </Pressable>
 
             <Text style={[s.avatarHint, { fontSize: fonts.xs }]}>
-              Toca para cambiar foto
+              {t('edit_profile_photo_hint')}
             </Text>
 
             {fotoPerfil && (
               <Pressable onPress={quitarFoto} style={s.removePhotoBtn}>
                 <Ionicons name="trash-outline" size={14} color="rgba(255,255,255,0.85)" />
-                <Text style={[s.removePhotoText, { fontSize: fonts.xs }]}>Quitar foto</Text>
+                <Text style={[s.removePhotoText, { fontSize: fonts.xs }]}>{t('edit_profile_remove_photo')}</Text>
               </Pressable>
             )}
           </View>
@@ -132,10 +132,10 @@ export default function EditarPerfilScreen() {
             </View>
             <View>
               <Text style={[s.bannerTitle, { fontSize: fonts['2xl'] }]}>
-                Editar perfil
+                {t('edit_profile_title')}
               </Text>
               <Text style={[s.bannerSub, { fontSize: fonts.sm }]}>
-                Actualiza tus datos personales
+                {t('edit_profile_sub')}
               </Text>
             </View>
           </View>
@@ -147,11 +147,11 @@ export default function EditarPerfilScreen() {
           {/* Sección label */}
           <View style={s.sectionRow}>
             <View style={s.sectionBar} />
-            <Text style={[s.sectionLabel, { fontSize: fonts.xs }]}>DATOS PERSONALES</Text>
+            <Text style={[s.sectionLabel, { fontSize: fonts.xs }]}>{t('edit_profile_section_data').toUpperCase()}</Text>
           </View>
 
           {/* Nombre */}
-          <Text style={[s.fieldLabel, { fontSize: fonts.sm }]}>Nombre completo</Text>
+          <Text style={[s.fieldLabel, { fontSize: fonts.sm }]}>{t('edit_profile_full_name')}</Text>
           <View style={s.inputWrap}>
             <View style={s.inputIcon}>
               <Ionicons name="person-outline" size={18} color="#E96928" />
@@ -160,7 +160,7 @@ export default function EditarPerfilScreen() {
               style={[s.input, { fontSize: fonts.base }]}
               value={nombre}
               onChangeText={setNombre}
-              placeholder="Tu nombre"
+              placeholder={t('edit_profile_full_name')}
               placeholderTextColor={colors.subtext}
               autoCapitalize="words"
               editable={!loading}
@@ -172,7 +172,7 @@ export default function EditarPerfilScreen() {
 
           {/* Email — solo lectura */}
           <Text style={[s.fieldLabel, { fontSize: fonts.sm, marginTop: 4 }]}>
-            Correo electrónico
+            {t('email')}
           </Text>
           <View style={[s.inputWrap, s.inputWrapDisabled]}>
             <View style={s.inputIcon}>
@@ -186,13 +186,13 @@ export default function EditarPerfilScreen() {
             <Ionicons name="lock-closed-outline" size={15} color={colors.subtext} style={{ marginRight: 12 }} />
           </View>
           <Text style={[s.emailNote, { fontSize: fonts.xs }]}>
-            El correo no se puede cambiar ya que se usa para iniciar sesión.
+            {t('edit_profile_email_note')}
           </Text>
 
           {/* Foto */}
           <View style={[s.sectionRow, { marginTop: 20 }]}>
             <View style={s.sectionBar} />
-            <Text style={[s.sectionLabel, { fontSize: fonts.xs }]}>FOTO DE PERFIL</Text>
+            <Text style={[s.sectionLabel, { fontSize: fonts.xs }]}>{t('edit_profile_section_photo').toUpperCase()}</Text>
           </View>
 
           <Pressable style={s.fotoRow} onPress={cambiarFoto}>
@@ -207,10 +207,10 @@ export default function EditarPerfilScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[s.fotoRowTitle, { fontSize: fonts.base }]}>
-                {fotoPerfil ? 'Cambiar foto' : 'Agregar foto'}
+                {fotoPerfil ? t('edit_profile_change_photo') : t('edit_profile_add_photo')}
               </Text>
               <Text style={[s.fotoRowSub, { fontSize: fonts.xs }]}>
-                Cámara o galería · cuadrado recomendado
+                {t('edit_profile_photo_hint2')}
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.subtext} />
@@ -219,7 +219,7 @@ export default function EditarPerfilScreen() {
           {fotoPerfil && (
             <Pressable style={s.removeRow} onPress={quitarFoto}>
               <Ionicons name="trash-outline" size={16} color="#EF4444" />
-              <Text style={[s.removeRowText, { fontSize: fonts.sm }]}>Quitar foto de perfil</Text>
+              <Text style={[s.removeRowText, { fontSize: fonts.sm }]}>{t('edit_profile_remove_photo_row')}</Text>
             </Pressable>
           )}
         </View>
@@ -240,7 +240,7 @@ export default function EditarPerfilScreen() {
             ) : (
               <>
                 <Ionicons name="checkmark-circle-outline" size={22} color="#fff" />
-                <Text style={[s.applyBtnText, { fontSize: fonts.md }]}>Aplicar cambios</Text>
+                <Text style={[s.applyBtnText, { fontSize: fonts.md }]}>{t('edit_profile_apply')}</Text>
               </>
             )}
           </LinearGradient>

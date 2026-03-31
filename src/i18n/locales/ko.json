@@ -263,5 +263,11 @@
   "photo_title": "프로필 사진",
   "photo_remove_confirm_title": "사진 제거",
   "photo_remove_confirm_body": "프로필 사진을 제거하시겠습니까?",
-  "photo_remove_btn": "제거"
+  "photo_remove_btn": "제거",
+  "profile_logout": "로그아웃",
+  "profile_create_account": "계정 만들기",
+  "profile_register_sub": "즐겨찾기를 저장하고 소식을 받으려면 가입하세요.",
+  "profile_already_account": "이미 계정이 있으신가요?",
+  "profile_or_continue": "또는 계속하기",
+  "profile_code_sent_to": "코드 발송됨"
 }

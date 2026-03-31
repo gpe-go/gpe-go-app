@@ -263,5 +263,11 @@
   "photo_title": "Profilfoto",
   "photo_remove_confirm_title": "Ta bort foto",
   "photo_remove_confirm_body": "Vill du ta bort ditt profilfoto?",
-  "photo_remove_btn": "Ta bort"
+  "photo_remove_btn": "Ta bort",
+  "profile_logout": "Logga ut",
+  "profile_create_account": "Skapa konto",
+  "profile_register_sub": "Registrera dig för att spara favoriter och ta emot nyheter.",
+  "profile_already_account": "Har du redan ett konto?",
+  "profile_or_continue": "eller fortsätt med",
+  "profile_code_sent_to": "Kod skickad till"
 }

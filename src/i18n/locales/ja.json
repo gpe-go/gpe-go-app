@@ -263,5 +263,11 @@
   "photo_title": "プロフィール写真",
   "photo_remove_confirm_title": "写真を削除",
   "photo_remove_confirm_body": "プロフィール写真を削除しますか？",
-  "photo_remove_btn": "削除"
+  "photo_remove_btn": "削除",
+  "profile_logout": "ログアウト",
+  "profile_create_account": "アカウント作成",
+  "profile_register_sub": "お気に入りを保存してニュースを受け取るために登録してください。",
+  "profile_already_account": "すでにアカウントをお持ちですか？",
+  "profile_or_continue": "または続行",
+  "profile_code_sent_to": "コードを送信しました"
 }
