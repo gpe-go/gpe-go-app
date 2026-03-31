@@ -158,7 +158,7 @@ export default function PerfilScreen() {
             <Pressable style={s.closeBtn} onPress={() => router.back()}>
               <Ionicons name="close" size={20} color="#fff" />
             </Pressable>
-            <AvatarSection fotoPerfil={fotoPerfil} onCambiarFoto={cambiarFoto} showCamera />
+            <AvatarSection fotoPerfil={fotoPerfil} onCambiarFoto={cambiarFoto} />
             <Text style={[s.welcomeText, { fontSize: fonts['2xl'] }]}>{usuario.nombre}</Text>
             <Text style={[s.instructionText, { fontSize: fonts.sm }]}>{usuario.email}</Text>
             {usuario.rol === 'comercio' && (
