@@ -3,7 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  Image, Linking, Platform, Pressable,
+  Image, Linking, Platform, Pressable, Share,
   ScrollView, StatusBar, StyleSheet, Text, View,
 } from "react-native";
 import { useTranslation } from "react-i18next";
@@ -68,8 +68,10 @@ export default function DetalleLugar() {
 
   const compartir = async () => {
     try {
-      const { Share } = await import('react-native');
-      await Share.share({ message: `¡Visita ${lugar.nombre}! ${lugar.ubicacion} - GuadalupeGO` });
+      await Share.share({
+        title: lugar.nombre,
+        message: `¡Visita ${lugar.nombre}!\n📍 ${lugar.ubicacion}\n\nDescúbrelo en GuadalupeGO`,
+      });
     } catch { /* ignore */ }
   };
 

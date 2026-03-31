@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, Image, ScrollView,
-  Pressable, StatusBar, Platform, ActivityIndicator, Linking,
+  Pressable, StatusBar, Platform, ActivityIndicator, Linking, Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -99,8 +99,10 @@ export default function LugarDetalle() {
 
   const compartir = async () => {
     try {
-      const { Share } = await import('react-native');
-      await Share.share({ message: `¡Visita ${lugar.nombre}! ${lugar.ubicacion} - GuadalupeGO` });
+      await Share.share({
+        title: lugar.nombre,
+        message: `¡Visita ${lugar.nombre}!\n📍 ${lugar.ubicacion}\n\nDescúbrelo en GuadalupeGO`,
+      });
     } catch { /* ignore */ }
   };
 
