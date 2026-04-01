@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../src/context/ThemeContext';
-import { getEmergencias, enviarMensajeSoporte } from '../../src/api/api';
+import { getEmergencias, enviarMensajeSoporte, getContactoInfo } from '../../src/api/api';
 
 // ── Datos por defecto (fallback si la API no responde) ───
 const EMERGENCIAS_DEFAULT = [
