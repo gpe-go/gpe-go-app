@@ -152,11 +152,22 @@ export default function EditarPerfilScreen() {
     try {
       // 1. Subir foto a S3 si hay una pendiente
       if (pendingPhoto) {
-        const fotoRes = await subirFotoPerfil(pendingPhoto.base64);
-        if (fotoRes.success && fotoRes.data?.url) {
-          await actualizarFoto(fotoRes.data.url);
-          // También actualizar el objeto usuario con foto_url
-          await actualizarUsuario({ foto_url: fotoRes.data.url });
+        try {
+          const fotoRes = await subirFotoPerfil(pendingPhoto.base64);
+          if (fotoRes.success && fotoRes.data?.url) {
+            await actualizarFoto(fotoRes.data.url);
+            await actualizarUsuario({ foto_url: fotoRes.data.url });
+          }
+        } catch (e: any) {
+          // S3 puede no estar configurado en desarrollo — avisamos pero continuamos con el nombre
+          const codigo = e?.response?.data?.error?.codigo;
+          if (codigo === 'S3_ERROR' || e?.response?.status === 500) {
+            Alert.alert(
+              'Foto no subida',
+              'No se pudo subir la foto (servidor de imágenes no disponible). El nombre se guardará de todos modos.',
+            );
+          }
+          // No hacemos return — seguimos guardando el nombre
         }
         setPendingPhoto(null);
       }

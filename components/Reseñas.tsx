@@ -175,15 +175,21 @@ export default function Reseñas({ lugarId }: Props) {
       if (res?.success) {
         const idResena: number = res.data?.id;
         // Subir fotos a S3 en secuencia
+        let fotosFallidas = 0;
         for (const foto of fotos) {
           try {
             await subirFotoResena(idResena, foto.base64);
           } catch (e) {
             console.warn('[Reseñas] error subiendo foto:', e);
+            fotosFallidas++;
           }
         }
         setTexto(''); setEstrellas(0); setFotos([]);
-        Alert.alert('¡Gracias!', t('review_publish'));
+        if (fotosFallidas > 0 && fotosFallidas === fotos.length) {
+          Alert.alert('Reseña publicada', 'Tu reseña se publicó pero las fotos no pudieron subirse (servidor de imágenes no disponible).');
+        } else {
+          Alert.alert('¡Gracias!', t('review_publish'));
+        }
         cargarResenas();
       } else {
         Alert.alert('Error', res?.error?.mensaje || 'No se pudo publicar la reseña');
