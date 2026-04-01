@@ -6,6 +6,7 @@ export type Usuario = {
   nombre: string;
   email: string;
   rol?: string;
+  foto_url?: string | null;
 };
 
 interface AuthContextValue {
@@ -32,7 +33,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           AsyncStorage.getItem('fotoPerfil'),
         ]);
         if (uData) setUsuario(JSON.parse(uData));
-        if (foto)  setFotoPerfil(foto);
+        if (foto) setFotoPerfil(foto);
+        else if (uData) {
+          // fallback: usar foto_url guardada en el objeto usuario
+          const parsed = JSON.parse(uData);
+          if (parsed.foto_url) setFotoPerfil(parsed.foto_url);
+        }
       } catch (e) {
         console.warn('[AuthContext] Error cargando sesión:', e);
       }
@@ -41,10 +47,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = useCallback(async (token: string, u: Usuario) => {
-    await AsyncStorage.multiSet([
+    const items: [string, string][] = [
       ['token',   token],
       ['usuario', JSON.stringify(u)],
-    ]);
+    ];
+    if (u.foto_url) {
+      items.push(['fotoPerfil', u.foto_url]);
+      setFotoPerfil(u.foto_url);
+    }
+    await AsyncStorage.multiSet(items);
     setUsuario(u);
   }, []);
 

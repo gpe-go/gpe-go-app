@@ -1,17 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TextInput, Pressable,
-  Image, Alert, ScrollView, Modal,
+  Image, Alert, ScrollView, Modal, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { useReseñas, Reseña } from '../src/context/ReseñasContext';
 import { useTheme } from '../src/context/ThemeContext';
 import { useAuth } from '../src/context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
+import {
+  getResenas, crearResena, editarResena, eliminarResena, subirFotoResena,
+} from '../src/api/api';
 
 type Props = { lugarId: string };
+
+// Foto local pendiente de subir
+type FotoLocal = { uri: string; base64: string };
+
+type ReseñaAPI = {
+  id: number;
+  id_usuario: number;
+  usuario_nombre: string;
+  comentario: string | null;
+  calificacion: number;
+  fecha: string;
+  fotos: string[]; // URLs S3
+};
 
 function Estrellas({ valor, onSelect }: { valor: number; onSelect?: (n: number) => void }) {
   return (
@@ -68,27 +83,47 @@ export default function Reseñas({ lugarId }: Props) {
   const { colors, fonts } = useTheme();
   const { t } = useTranslation();
   const s = makeStyles(colors, fonts);
-  const { agregarReseña, editarReseña, eliminarReseña, obtenerReseñas } = useReseñas();
   const { isAuthenticated, usuario } = useAuth();
   const router = useRouter();
 
-  const [autor,     setAutor]     = useState('');
+  const [lista,      setLista]      = useState<ReseñaAPI[]>([]);
+  const [cargando,   setCargando]   = useState(true);
+  const [promedio,   setPromedio]   = useState<number | null>(null);
+
+  // ── Formulario nuevo ──
   const [texto,     setTexto]     = useState('');
   const [estrellas, setEstrellas] = useState(0);
-  const [fotos,     setFotos]     = useState<string[]>([]);
+  const [fotos,     setFotos]     = useState<FotoLocal[]>([]);
   const [enviando,  setEnviando]  = useState(false);
   const [loginModal, setLoginModal] = useState(false);
 
-  const [editandoId,       setEditandoId]       = useState<string | null>(null);
-  const [editAutor,        setEditAutor]        = useState('');
+  // ── Edición ──
+  const [editandoId,       setEditandoId]       = useState<number | null>(null);
   const [editTexto,        setEditTexto]        = useState('');
   const [editEstrellas,    setEditEstrellas]    = useState(0);
-  const [editFotos,        setEditFotos]        = useState<string[]>([]);
+  const [editFotos,        setEditFotos]        = useState<FotoLocal[]>([]);
   const [guardandoEdicion, setGuardandoEdicion] = useState(false);
 
-  const listaReseñas = obtenerReseñas(lugarId);
+  // ── Cargar reseñas ──────────────────────────────────────
+  const cargarResenas = useCallback(async () => {
+    setCargando(true);
+    try {
+      const res = await getResenas(Number(lugarId));
+      if (res?.success) {
+        setLista(res.data?.resenas ?? []);
+        setPromedio(res.data?.promedio ?? null);
+      }
+    } catch (e) {
+      console.warn('[Reseñas] error al cargar:', e);
+    } finally {
+      setCargando(false);
+    }
+  }, [lugarId]);
 
-  const seleccionarFoto = (fotosActuales: string[], setFn: (f: string[]) => void) => {
+  useEffect(() => { cargarResenas(); }, [cargarResenas]);
+
+  // ── Seleccionar foto (base64) ───────────────────────────
+  const seleccionarFoto = (fotosActuales: FotoLocal[], setFn: (f: FotoLocal[]) => void) => {
     if (fotosActuales.length >= 3) {
       Alert.alert('Máximo 3 fotos', 'Solo puedes agregar hasta 3 fotos por reseña.');
       return;
@@ -98,9 +133,12 @@ export default function Reseñas({ lugarId }: Props) {
         text: '📷 Cámara',
         onPress: async () => {
           const result = await ImagePicker.launchCameraAsync({
-            allowsEditing: true, aspect: [4, 3], quality: 0.7,
+            allowsEditing: true, aspect: [4, 3], quality: 0.7, base64: true,
           });
-          if (!result.canceled) setFn([...fotosActuales, result.assets[0].uri]);
+          if (!result.canceled && result.assets[0].base64) {
+            const a = result.assets[0];
+            setFn([...fotosActuales, { uri: a.uri, base64: `data:image/jpeg;base64,${a.base64}` }]);
+          }
         },
       },
       {
@@ -110,65 +148,125 @@ export default function Reseñas({ lugarId }: Props) {
           if (status !== 'granted') { Alert.alert(t('profile_permission_gallery')); return; }
           const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: 'images',
-            allowsEditing: true, aspect: [4, 3], quality: 0.7,
+            allowsEditing: true, aspect: [4, 3], quality: 0.7, base64: true,
           });
-          if (!result.canceled) setFn([...fotosActuales, result.assets[0].uri]);
+          if (!result.canceled && result.assets[0].base64) {
+            const a = result.assets[0];
+            setFn([...fotosActuales, { uri: a.uri, base64: `data:image/jpeg;base64,${a.base64}` }]);
+          }
         },
       },
       { text: 'Cancelar', style: 'cancel' },
     ]);
   };
 
+  // ── Enviar reseña ────────────────────────────────────────
   const enviarReseña = async () => {
     if (!isAuthenticated) { setLoginModal(true); return; }
-    const nombreAutor = autor.trim() || usuario?.nombre || 'Anónimo';
-    if (!texto.trim())   { Alert.alert(t('review_write'));   return; }
-    if (estrellas === 0) { Alert.alert(t('review_rating'));  return; }
+    if (!texto.trim())   { Alert.alert(t('review_write'));  return; }
+    if (estrellas === 0) { Alert.alert(t('review_rating')); return; }
     setEnviando(true);
-    await agregarReseña({ lugarId, autor: nombreAutor, texto, estrellas, fotos });
-    setAutor(''); setTexto(''); setEstrellas(0); setFotos([]);
-    setEnviando(false);
-    Alert.alert('¡Gracias!', t('review_publish'));
+    try {
+      const res = await crearResena({
+        id_lugar: Number(lugarId),
+        calificacion: estrellas,
+        comentario: texto.trim(),
+      });
+      if (res?.success) {
+        const idResena: number = res.data?.id;
+        // Subir fotos a S3 en secuencia
+        for (const foto of fotos) {
+          try {
+            await subirFotoResena(idResena, foto.base64);
+          } catch (e) {
+            console.warn('[Reseñas] error subiendo foto:', e);
+          }
+        }
+        setTexto(''); setEstrellas(0); setFotos([]);
+        Alert.alert('¡Gracias!', t('review_publish'));
+        cargarResenas();
+      } else {
+        Alert.alert('Error', res?.error?.mensaje || 'No se pudo publicar la reseña');
+      }
+    } catch (e: any) {
+      const msg = e?.response?.data?.error?.mensaje || 'Error de conexión. Intenta de nuevo.';
+      Alert.alert('Error', msg);
+    } finally {
+      setEnviando(false);
+    }
   };
 
-  const abrirEdicion = (r: Reseña) => {
-    setEditandoId(r.id); setEditAutor(r.autor);
-    setEditTexto(r.texto); setEditEstrellas(r.estrellas);
-    setEditFotos([...r.fotos]);
+  // ── Abrir edición ────────────────────────────────────────
+  const abrirEdicion = (r: ReseñaAPI) => {
+    setEditandoId(r.id);
+    setEditTexto(r.comentario ?? '');
+    setEditEstrellas(r.calificacion);
+    setEditFotos([]);
   };
 
   const cancelarEdicion = () => {
     setEditandoId(null);
-    setEditAutor(''); setEditTexto(''); setEditEstrellas(0); setEditFotos([]);
+    setEditTexto(''); setEditEstrellas(0); setEditFotos([]);
   };
 
   const guardarEdicion = async () => {
-    if (!editAutor.trim())   { Alert.alert(t('review_name'));   return; }
     if (!editTexto.trim())   { Alert.alert(t('review_write'));  return; }
     if (editEstrellas === 0) { Alert.alert(t('review_rating')); return; }
     setGuardandoEdicion(true);
-    await editarReseña(editandoId!, { autor: editAutor, texto: editTexto, estrellas: editEstrellas, fotos: editFotos });
-    cancelarEdicion();
-    setGuardandoEdicion(false);
-    Alert.alert('¡Listo!', t('review_save'));
+    try {
+      const res = await editarResena(editandoId!, {
+        calificacion: editEstrellas,
+        comentario: editTexto.trim(),
+      });
+      if (res?.success) {
+        // Subir nuevas fotos si las hay
+        for (const foto of editFotos) {
+          try {
+            await subirFotoResena(editandoId!, foto.base64);
+          } catch (e) {
+            console.warn('[Reseñas] error subiendo foto edición:', e);
+          }
+        }
+        cancelarEdicion();
+        Alert.alert('¡Listo!', t('review_save'));
+        cargarResenas();
+      } else {
+        Alert.alert('Error', res?.error?.mensaje || 'No se pudo guardar la edición');
+      }
+    } catch {
+      Alert.alert('Error', 'Error de conexión. Intenta de nuevo.');
+    } finally {
+      setGuardandoEdicion(false);
+    }
   };
 
-  const confirmarEliminar = (id: string) => {
+  const confirmarEliminar = (id: number) => {
     Alert.alert(
       t('review_delete'),
       t('review_delete_confirm'),
       [
         { text: t('profile_cancel'), style: 'cancel' },
-        { text: t('review_delete'), style: 'destructive', onPress: () => eliminarReseña(id) },
+        {
+          text: t('review_delete'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await eliminarResena(id);
+              cargarResenas();
+            } catch {
+              Alert.alert('Error', 'No se pudo eliminar la reseña.');
+            }
+          },
+        },
       ]
     );
   };
 
-  const FotosRow = ({ fotosActuales, setFn }: { fotosActuales: string[]; setFn: (f: string[]) => void }) => (
+  const FotosRow = ({ fotosActuales, setFn }: { fotosActuales: FotoLocal[]; setFn: (f: FotoLocal[]) => void }) => (
     <View style={s.fotosRow}>
-      {fotosActuales.map((uri, index) => (
+      {fotosActuales.map((foto, index) => (
         <View key={index} style={s.fotoWrapper}>
-          <Image source={{ uri }} style={s.fotoPreview} />
+          <Image source={{ uri: foto.uri }} style={s.fotoPreview} />
           <Pressable style={s.eliminarFoto} onPress={() => setFn(fotosActuales.filter((_, i) => i !== index))}>
             <Ionicons name="close-circle" size={20} color="#E11D48" />
           </Pressable>
@@ -191,25 +289,22 @@ export default function Reseñas({ lugarId }: Props) {
         onGoLogin={() => { setLoginModal(false); router.push('/perfil'); }}
       />
 
-      <Text style={s.sectionTitle}>
-        {t('review_count')} ({listaReseñas.length})
-      </Text>
+      <View style={s.headerRow}>
+        <Text style={s.sectionTitle}>
+          {t('review_count')} ({lista.length})
+        </Text>
+        {promedio !== null && (
+          <View style={s.promedioWrap}>
+            <Ionicons name="star" size={14} color="#FFD700" />
+            <Text style={s.promedioText}>{promedio.toFixed(1)}</Text>
+          </View>
+        )}
+      </View>
 
       {/* ══ FORMULARIO ══ */}
       {isAuthenticated ? (
         <View style={s.form}>
           <Text style={s.formTitle}>{t('review_write')}</Text>
-
-          <View style={s.inputWrapper}>
-            <Ionicons name="person-outline" size={18} color={colors.subtext} />
-            <TextInput
-              style={s.input}
-              placeholder={usuario?.nombre || t('review_name')}
-              placeholderTextColor={colors.subtext}
-              value={autor}
-              onChangeText={setAutor}
-            />
-          </View>
 
           <View style={s.starsRow}>
             <Text style={s.starsLabel}>{t('review_rating')}:</Text>
@@ -229,14 +324,13 @@ export default function Reseñas({ lugarId }: Props) {
           <FotosRow fotosActuales={fotos} setFn={setFotos} />
 
           <Pressable style={s.submitBtn} onPress={enviarReseña} disabled={enviando}>
-            <Ionicons name="send" size={18} color="#fff" />
+            {enviando ? <ActivityIndicator color="#fff" size="small" /> : <Ionicons name="send" size={18} color="#fff" />}
             <Text style={s.submitText}>
               {enviando ? t('loading') : t('review_publish')}
             </Text>
           </Pressable>
         </View>
       ) : (
-        /* Invitación a iniciar sesión */
         <Pressable style={s.loginPrompt} onPress={() => setLoginModal(true)}>
           <Ionicons name="pencil-outline" size={22} color="#E96928" />
           <View style={{ flex: 1 }}>
@@ -248,29 +342,22 @@ export default function Reseñas({ lugarId }: Props) {
       )}
 
       {/* ══ LISTA ══ */}
-      {listaReseñas.length === 0 ? (
+      {cargando ? (
+        <View style={s.empty}>
+          <ActivityIndicator color="#E96928" />
+        </View>
+      ) : lista.length === 0 ? (
         <View style={s.empty}>
           <Ionicons name="chatbubble-outline" size={40} color={colors.subtext} />
           <Text style={s.emptyText}>{t('review_first')}</Text>
         </View>
       ) : (
-        listaReseñas.slice().reverse().map(reseña => (
+        lista.map(reseña => (
           <View key={reseña.id} style={s.reseñaCard}>
 
             {editandoId === reseña.id ? (
               <View>
                 <Text style={s.editTitle}>{t('review_edit_title')}</Text>
-
-                <View style={s.inputWrapper}>
-                  <Ionicons name="person-outline" size={18} color={colors.subtext} />
-                  <TextInput
-                    style={s.input}
-                    placeholder={t('review_name')}
-                    placeholderTextColor={colors.subtext}
-                    value={editAutor}
-                    onChangeText={setEditAutor}
-                  />
-                </View>
 
                 <View style={s.starsRow}>
                   <Text style={s.starsLabel}>{t('review_rating')}:</Text>
@@ -295,7 +382,10 @@ export default function Reseñas({ lugarId }: Props) {
                     <Text style={[s.submitText, { color: colors.text }]}>{t('profile_cancel')}</Text>
                   </Pressable>
                   <Pressable style={[s.submitBtn, { flex: 1 }]} onPress={guardarEdicion} disabled={guardandoEdicion}>
-                    <Ionicons name="checkmark" size={18} color="#fff" />
+                    {guardandoEdicion
+                      ? <ActivityIndicator color="#fff" size="small" />
+                      : <Ionicons name="checkmark" size={18} color="#fff" />
+                    }
                     <Text style={s.submitText}>
                       {guardandoEdicion ? t('loading') : t('review_save')}
                     </Text>
@@ -306,16 +396,18 @@ export default function Reseñas({ lugarId }: Props) {
               <>
                 <View style={s.reseñaHeader}>
                   <View style={s.avatarCircle}>
-                    <Text style={s.avatarLetter}>{reseña.autor.charAt(0).toUpperCase()}</Text>
+                    <Text style={s.avatarLetter}>{(reseña.usuario_nombre || '?').charAt(0).toUpperCase()}</Text>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={s.autorText}>{reseña.autor}</Text>
+                    <Text style={s.autorText}>{reseña.usuario_nombre}</Text>
                     <Text style={s.fechaText}>{reseña.fecha}</Text>
                   </View>
-                  <Estrellas valor={reseña.estrellas} />
+                  <Estrellas valor={reseña.calificacion} />
                 </View>
 
-                <Text style={s.reseñaTexto}>{reseña.texto}</Text>
+                {!!reseña.comentario && (
+                  <Text style={s.reseñaTexto}>{reseña.comentario}</Text>
+                )}
 
                 {reseña.fotos.length > 0 && (
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }}>
@@ -325,7 +417,8 @@ export default function Reseñas({ lugarId }: Props) {
                   </ScrollView>
                 )}
 
-                {isAuthenticated && (
+                {/* Solo mostrar acciones si es la reseña propia */}
+                {isAuthenticated && usuario?.id && reseña.id_usuario == usuario.id && (
                   <View style={s.accionesRow}>
                     <Pressable style={s.editarBtn} onPress={() => abrirEdicion(reseña)}>
                       <Ionicons name="pencil-outline" size={15} color="#E96928" />
@@ -348,7 +441,10 @@ export default function Reseñas({ lugarId }: Props) {
 
 const makeStyles = (c: any, f: any) => StyleSheet.create({
   container:    { paddingHorizontal: 16, paddingBottom: 20 },
-  sectionTitle: { fontSize: f.lg, fontWeight: 'bold', color: c.text, marginBottom: 16, marginTop: 10 },
+  headerRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, marginTop: 10 },
+  sectionTitle: { fontSize: f.lg, fontWeight: 'bold', color: c.text },
+  promedioWrap: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,215,0,0.12)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+  promedioText: { fontWeight: '700', color: c.text, fontSize: f.sm },
   form:      { backgroundColor: c.card, borderRadius: 20, padding: 18, marginBottom: 20, borderWidth: 1, borderColor: c.border },
   formTitle: { fontSize: f.md, fontWeight: 'bold', color: c.text, marginBottom: 14 },
   editTitle: { fontSize: f.md, fontWeight: 'bold', color: '#E96928', marginBottom: 14 },
@@ -359,8 +455,6 @@ const makeStyles = (c: any, f: any) => StyleSheet.create({
   },
   loginPromptTitle: { fontWeight: '700', color: c.text, fontSize: f.sm },
   loginPromptSub:   { color: c.subtext, fontSize: f.xs, marginTop: 2 },
-  inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: c.inputBackground, borderRadius: 12, paddingHorizontal: 14, height: 48, borderWidth: 1, borderColor: c.border, marginBottom: 12 },
-  input:      { flex: 1, marginLeft: 10, fontSize: f.base, color: c.text },
   starsRow:   { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
   starsLabel: { fontSize: f.sm, color: c.text, fontWeight: '600' },
   textArea:   { backgroundColor: c.inputBackground, borderRadius: 12, padding: 14, fontSize: f.base, color: c.text, borderWidth: 1, borderColor: c.border, minHeight: 100, textAlignVertical: 'top', marginBottom: 12 },

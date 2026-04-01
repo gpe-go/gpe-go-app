@@ -11,7 +11,7 @@ import { useTheme } from '../../src/context/ThemeContext';
 import { useAuth } from '../../src/context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
-import { editarPerfil, eliminarCuenta } from '../../src/api/api';
+import { editarPerfil, eliminarCuenta, subirFotoPerfil } from '../../src/api/api';
 
 export default function EditarPerfilScreen() {
   const { colors, fonts, isDark } = useTheme();
@@ -25,8 +25,12 @@ export default function EditarPerfilScreen() {
   const [deleting,     setDeleting]     = useState(false);
   const [goodbyeModal, setGoodbyeModal] = useState(false);
   const [countdown,    setCountdown]    = useState(3);
+  const [pendingPhoto, setPendingPhoto] = useState<{ uri: string; base64: string } | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const haycambios = nombre.trim() !== (usuario?.nombre ?? '');
+
+  // Foto a mostrar: pendiente (no subida aún) o la guardada en contexto
+  const fotoDisplay = pendingPhoto?.uri ?? fotoPerfil;
+  const haycambios = nombre.trim() !== (usuario?.nombre ?? '') || pendingPhoto !== null;
 
   // Cuenta regresiva del modal de despedida
   useEffect(() => {
@@ -59,9 +63,12 @@ export default function EditarPerfilScreen() {
         text: t('photo_option_camera'),
         onPress: async () => {
           const result = await ImagePicker.launchCameraAsync({
-            allowsEditing: true, aspect: [1, 1], quality: 0.8,
+            allowsEditing: true, aspect: [1, 1], quality: 0.8, base64: true,
           });
-          if (!result.canceled) actualizarFoto(result.assets[0].uri);
+          if (!result.canceled && result.assets[0].base64) {
+            const asset = result.assets[0];
+            setPendingPhoto({ uri: asset.uri, base64: `data:image/jpeg;base64,${asset.base64}` });
+          }
         },
       },
       {
@@ -71,9 +78,12 @@ export default function EditarPerfilScreen() {
           if (status !== 'granted') { Alert.alert(t('profile_permission_gallery')); return; }
           const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: 'images',
-            allowsEditing: true, aspect: [1, 1], quality: 0.8,
+            allowsEditing: true, aspect: [1, 1], quality: 0.8, base64: true,
           });
-          if (!result.canceled) actualizarFoto(result.assets[0].uri);
+          if (!result.canceled && result.assets[0].base64) {
+            const asset = result.assets[0];
+            setPendingPhoto({ uri: asset.uri, base64: `data:image/jpeg;base64,${asset.base64}` });
+          }
         },
       },
       { text: t('profile_cancel'), style: 'cancel' },
@@ -83,7 +93,19 @@ export default function EditarPerfilScreen() {
   const quitarFoto = () => {
     Alert.alert(t('photo_remove_confirm_title'), t('photo_remove_confirm_body'), [
       { text: t('profile_cancel'), style: 'cancel' },
-      { text: t('photo_remove_btn'), style: 'destructive', onPress: () => actualizarFoto(null) },
+      {
+        text: t('photo_remove_btn'),
+        style: 'destructive',
+        onPress: () => {
+          if (pendingPhoto) {
+            // Solo limpiar la selección pendiente
+            setPendingPhoto(null);
+          } else {
+            // Quitar foto guardada
+            actualizarFoto(null);
+          }
+        },
+      },
     ]);
   };
 
@@ -128,15 +150,32 @@ export default function EditarPerfilScreen() {
     if (!nombre.trim()) { Alert.alert('Error', 'El nombre no puede estar vacío'); return; }
     setLoading(true);
     try {
-      const res = await editarPerfil(nombre.trim());
-      if (res.success) {
-        await actualizarUsuario({ nombre: res.data?.nombre ?? nombre.trim() });
-        Alert.alert('¡Listo!', 'Tus datos han sido actualizados.', [
-          { text: 'OK', onPress: () => router.back() },
-        ]);
-      } else {
-        Alert.alert('Error', res.error?.mensaje || 'No se pudo actualizar');
+      // 1. Subir foto a S3 si hay una pendiente
+      if (pendingPhoto) {
+        const fotoRes = await subirFotoPerfil(pendingPhoto.base64);
+        if (fotoRes.success && fotoRes.data?.url) {
+          await actualizarFoto(fotoRes.data.url);
+          // También actualizar el objeto usuario con foto_url
+          await actualizarUsuario({ foto_url: fotoRes.data.url });
+        }
+        setPendingPhoto(null);
       }
+
+      // 2. Guardar nombre si cambió
+      const nombreCambio = nombre.trim() !== (usuario?.nombre ?? '');
+      if (nombreCambio) {
+        const res = await editarPerfil(nombre.trim());
+        if (res.success) {
+          await actualizarUsuario({ nombre: res.data?.nombre ?? nombre.trim() });
+        } else {
+          Alert.alert('Error', res.error?.mensaje || 'No se pudo actualizar el nombre');
+          return;
+        }
+      }
+
+      Alert.alert('¡Listo!', 'Tus datos han sido actualizados.', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
     } catch {
       Alert.alert('Error', 'Error de conexión. Intenta de nuevo.');
     } finally {
@@ -166,8 +205,8 @@ export default function EditarPerfilScreen() {
           {/* Avatar — solo visual (los controles están abajo en el formulario) */}
           <View style={s.avatarArea}>
             <View style={s.avatarWrap}>
-              {fotoPerfil ? (
-                <Image source={{ uri: fotoPerfil }} style={s.avatarImg} />
+              {fotoDisplay ? (
+                <Image source={{ uri: fotoDisplay }} style={s.avatarImg} />
               ) : (
                 <View style={s.avatarCircle}>
                   <Ionicons name="person" size={40} color="#E96928" />
@@ -247,8 +286,8 @@ export default function EditarPerfilScreen() {
 
           <Pressable style={s.fotoRow} onPress={cambiarFoto}>
             <View style={s.fotoPreviewWrap}>
-              {fotoPerfil ? (
-                <Image source={{ uri: fotoPerfil }} style={s.fotoPreview} />
+              {fotoDisplay ? (
+                <Image source={{ uri: fotoDisplay }} style={s.fotoPreview} />
               ) : (
                 <View style={[s.fotoPreview, s.fotoPreviewEmpty]}>
                   <Ionicons name="person" size={22} color={colors.subtext} />
@@ -257,7 +296,7 @@ export default function EditarPerfilScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[s.fotoRowTitle, { fontSize: fonts.base }]}>
-                {fotoPerfil ? t('edit_profile_change_photo') : t('edit_profile_add_photo')}
+                {fotoDisplay ? t('edit_profile_change_photo') : t('edit_profile_add_photo')}
               </Text>
               <Text style={[s.fotoRowSub, { fontSize: fonts.xs }]}>
                 {t('edit_profile_photo_hint2')}
@@ -266,7 +305,7 @@ export default function EditarPerfilScreen() {
             <Ionicons name="chevron-forward" size={18} color={colors.subtext} />
           </Pressable>
 
-          {fotoPerfil && (
+          {fotoDisplay && (
             <Pressable style={s.removeRow} onPress={quitarFoto}>
               <Ionicons name="trash-outline" size={16} color="#EF4444" />
               <Text style={[s.removeRowText, { fontSize: fonts.sm }]}>{t('edit_profile_remove_photo_row')}</Text>

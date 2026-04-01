@@ -26,6 +26,19 @@ type Emergencia = {
   color: string;
 };
 
+// ── Mapea la respuesta de la API al formato que espera la UI ───
+const ICONS_CICLO  = ['flame', 'megaphone', 'medical', 'shield', 'car-sport', 'alert-circle'];
+const COLORS_CICLO = ['#EF4444', '#F97316', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899'];
+
+const mapearEmergencias = (data: any[]): Emergencia[] =>
+  data.map((item, i) => ({
+    icon:  ICONS_CICLO[i % ICONS_CICLO.length],
+    title: item.nombre ?? '',
+    sub:   item.descripcion ?? '',
+    phone: item.telefono ?? '',
+    color: COLORS_CICLO[i % COLORS_CICLO.length],
+  }));
+
 export default function ContactoScreen() {
   const { t } = useTranslation();
   const { colors, fonts, isDark } = useTheme();
@@ -43,7 +56,7 @@ export default function ContactoScreen() {
     getEmergencias()
       .then(res => {
         if (res?.success && Array.isArray(res.data) && res.data.length > 0) {
-          setEmergencias(res.data);
+          setEmergencias(mapearEmergencias(res.data));
         }
       })
       .catch(() => {
