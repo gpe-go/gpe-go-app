@@ -52,6 +52,23 @@ export default function ContactoScreen() {
   const [enviando,     setEnviando]     = useState(false);
   const [emergencias,  setEmergencias]  = useState<Emergencia[]>(EMERGENCIAS_DEFAULT);
 
+  // Info de contacto institucional desde la BD
+  const [contactoInfo, setContactoInfo] = useState<{
+    emails: string[];
+    telefono: string | null;
+    telefono_nombre: string;
+    horario: string | null;
+    direccion: string | null;
+    maps_url: string | null;
+  }>({
+    emails: ['turismo@guadalupe.gob.mx', 'info@guadalupe.gob.mx'],
+    telefono: '+528180306000',
+    telefono_nombre: 'Alcaldía de Guadalupe',
+    horario: 'Lunes a viernes de 8:00 a 17:00 horas',
+    direccion: 'Palacio Municipal, Hidalgo S/N Col. Centro, Guadalupe, Nuevo León, México',
+    maps_url: 'https://maps.google.com/?q=Palacio+Municipal+Guadalupe+Nuevo+Leon+Mexico',
+  });
+
   // ── Cargar emergencias desde la API ───────────────────
   useEffect(() => {
     getEmergencias()
@@ -60,12 +77,23 @@ export default function ContactoScreen() {
           setEmergencias(mapearEmergencias(res.data));
         }
       })
-      .catch(() => {
-        // Sin conexión → usa los datos por defecto
-      });
+      .catch(() => { /* Sin conexión → usa datos por defecto */ });
   }, []);
 
-  const handleCall = (numero: string) => Linking.openURL(`tel:${numero}`);
+  // ── Cargar info de contacto institucional desde la API ─
+  useEffect(() => {
+    getContactoInfo()
+      .then(res => {
+        if (res?.success && res.data) {
+          setContactoInfo(prev => ({ ...prev, ...res.data }));
+        }
+      })
+      .catch(() => { /* Sin conexión → usa datos por defecto */ });
+  }, []);
+
+  const handleCall  = (numero: string) => Linking.openURL(`tel:${numero}`);
+  const handleEmail = (correo: string) => Linking.openURL(`mailto:${correo}`);
+  const handleMaps  = (url: string)    => Linking.openURL(url);
 
   const enviarSoporte = async () => {
     if (!nombre.trim() || !email.trim() || !mensaje.trim()) {
@@ -242,48 +270,80 @@ export default function ContactoScreen() {
         </View>
 
         <View style={s.contactCard}>
+
+          {/* Correos electrónicos — toca para abrir app de correo */}
           <View style={s.contactRow}>
             <LinearGradient colors={['#FF6B35', '#E96928']} style={s.contactIconWrap}>
               <Ionicons name="mail" size={20} color="#fff" />
             </LinearGradient>
             <View style={s.contactInfo}>
               <Text style={[s.contactLabel, { fontSize: fonts.sm }]}>{t('email')}</Text>
-              <Text style={[s.contactValue, { fontSize: fonts.xs }]}>turismo@guadalupe.gob.mx</Text>
-              <Text style={[s.contactValue, { fontSize: fonts.xs }]}>info@guadalupe.gob.mx</Text>
+              {contactoInfo.emails.map(correo => (
+                <Pressable key={correo} onPress={() => handleEmail(correo)}
+                  style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}>
+                  <Text style={[s.contactValue, s.contactLink, { fontSize: fonts.xs }]}>
+                    {correo}
+                  </Text>
+                </Pressable>
+              ))}
             </View>
           </View>
 
           <View style={s.contactDivider} />
 
-          <Pressable
-            style={({ pressed }) => [s.contactRow, { opacity: pressed ? 0.8 : 1 }]}
-            onPress={() => handleCall('8112345678')}
-          >
-            <LinearGradient colors={['#4A90E2', '#3B82F6']} style={s.contactIconWrap}>
-              <Ionicons name="call" size={20} color="#fff" />
-            </LinearGradient>
-            <View style={s.contactInfo}>
-              <Text style={[s.contactLabel, { fontSize: fonts.sm }]}>{t('phone')}</Text>
-              <Text style={[s.contactValue, { fontSize: fonts.xs }]}>+52 (81) 1234-5678</Text>
-              <Text style={[s.contactSubValue, { fontSize: fonts.xs }]}>
-                {t('schedule')}: 9:00 AM - 6:00 PM
-              </Text>
+          {/* Teléfono — botón llamar */}
+          {contactoInfo.telefono && (
+            <View style={s.contactRow}>
+              <LinearGradient colors={['#4A90E2', '#3B82F6']} style={s.contactIconWrap}>
+                <Ionicons name="call" size={20} color="#fff" />
+              </LinearGradient>
+              <View style={s.contactInfo}>
+                <Text style={[s.contactLabel, { fontSize: fonts.sm }]}>
+                  {contactoInfo.telefono_nombre}
+                </Text>
+                <Text style={[s.contactValue, { fontSize: fonts.xs }]}>
+                  {contactoInfo.telefono}
+                </Text>
+                {contactoInfo.horario && (
+                  <Text style={[s.contactSubValue, { fontSize: fonts.xs }]}>
+                    {contactoInfo.horario}
+                  </Text>
+                )}
+              </View>
+              <Pressable
+                onPress={() => handleCall(contactoInfo.telefono!)}
+                style={({ pressed }) => [s.llamarBtn, { opacity: pressed ? 0.85 : 1 }]}
+              >
+                <Ionicons name="call" size={14} color="#fff" />
+                <Text style={[s.llamarBtnText, { fontSize: fonts.xs }]}>{t('call_btn')}</Text>
+              </Pressable>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.subtext} />
-          </Pressable>
+          )}
 
           <View style={s.contactDivider} />
 
-          <View style={s.contactRow}>
-            <LinearGradient colors={['#F5BE41', '#F59E0B']} style={s.contactIconWrap}>
-              <Ionicons name="location" size={20} color="#fff" />
-            </LinearGradient>
-            <View style={s.contactInfo}>
-              <Text style={[s.contactLabel, { fontSize: fonts.sm }]}>{t('address')}</Text>
-              <Text style={[s.contactValue, { fontSize: fonts.xs }]}>Palacio Municipal, Centro</Text>
-              <Text style={[s.contactSubValue, { fontSize: fonts.xs }]}>Guadalupe, Nuevo León, México</Text>
-            </View>
-          </View>
+          {/* Dirección — toca para abrir Google Maps */}
+          {contactoInfo.direccion && (
+            <Pressable
+              style={({ pressed }) => [s.contactRow, { opacity: pressed ? 0.8 : 1 }]}
+              onPress={() => contactoInfo.maps_url && handleMaps(contactoInfo.maps_url)}
+            >
+              <LinearGradient colors={['#F5BE41', '#F59E0B']} style={s.contactIconWrap}>
+                <Ionicons name="location" size={20} color="#fff" />
+              </LinearGradient>
+              <View style={s.contactInfo}>
+                <Text style={[s.contactLabel, { fontSize: fonts.sm }]}>{t('address')}</Text>
+                <Text style={[s.contactValue, { fontSize: fonts.xs }]}>
+                  {contactoInfo.direccion}
+                </Text>
+                <Text style={[s.contactSubValue, s.contactLink, { fontSize: fonts.xs, marginTop: 3 }]}>
+                  Ver en Google Maps ↗
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.subtext} />
+            </Pressable>
+          )}
+
         </View>
       </View>
     </ScrollView>
@@ -329,4 +389,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) => StyleSheet.create({
   contactValue:    { color: c.subtext },
   contactSubValue: { color: c.subtext, marginTop: 2, opacity: 0.75 },
   contactDivider:  { height: 1, backgroundColor: c.border, marginVertical: 14 },
+  contactLink:     { color: '#3B82F6', textDecorationLine: 'underline' },
+  llamarBtn:       { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#3B82F6', paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10 },
+  llamarBtnText:   { color: '#fff', fontWeight: '700' },
 });
