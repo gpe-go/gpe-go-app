@@ -11,11 +11,12 @@ import { getEmergencias, enviarMensajeSoporte } from '../../src/api/api';
 
 // ── Datos por defecto (fallback si la API no responde) ───
 const EMERGENCIAS_DEFAULT = [
-  { icon: 'flame',     title: 'Bomberos',            sub: 'Estación Guadalupe',       phone: '+528140400021', color: '#EF4444' },
-  { icon: 'megaphone', title: 'Protección Civil',    sub: 'Rescate y Auxilio',        phone: '+528117718801', color: '#F97316' },
-  { icon: 'medical',   title: 'Cruz Verde',           sub: 'Ambulancias',              phone: '+528140409080', color: '#10B981' },
-  { icon: 'shield',    title: 'Seguridad Pública',   sub: 'Policía Municipal',        phone: '+528181355900', color: '#3B82F6' },
-  { icon: 'car-sport', title: 'Tránsito y Vialidad', sub: 'Asistencia Vial',          phone: '+528181355900', color: '#8B5CF6' },
+  { icon: 'flame',        title: 'Bomberos',              sub: 'Estación Guadalupe',       phone: '+528140400021', color: '#EF4444' },
+  { icon: 'megaphone',    title: 'Protección Civil',      sub: 'Rescate y Auxilio',        phone: '+528117718801', color: '#F97316' },
+  { icon: 'medical',      title: 'Cruz Verde',             sub: 'Ambulancias',              phone: '+528140409080', color: '#10B981' },
+  { icon: 'shield',       title: 'Seguridad Pública',     sub: 'Policía Municipal',        phone: '+528181355900', color: '#3B82F6' },
+  { icon: 'car-sport',    title: 'Tránsito y Vialidad',   sub: 'Asistencia Vial',          phone: '+528181355900', color: '#8B5CF6' },
+  { icon: 'business',     title: 'Alcaldía de Guadalupe', sub: 'Municipio de Guadalupe',   phone: '+528180306000', color: '#E96928' },
 ];
 
 type Emergencia = {
