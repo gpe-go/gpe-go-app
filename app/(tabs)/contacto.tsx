@@ -65,7 +65,7 @@ export default function ContactoScreen() {
     telefono: '+528180306000',
     telefono_nombre: 'Alcaldía de Guadalupe',
     horario: 'Lunes a viernes de 8:00 a 17:00 horas',
-    direccion: 'Palacio Municipal, Hidalgo S/N Col. Centro, Guadalupe, Nuevo León, México',
+    direccion: 'C/ Hidalgo SN, Centro de Guadalupe, 67100 Guadalupe, N.L.',
     maps_url: 'https://maps.google.com/?q=Palacio+Municipal+Guadalupe+Nuevo+Leon+Mexico',
   });
 
