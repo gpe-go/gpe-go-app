@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TextInput, Pressable,
-  ScrollView, Linking, StatusBar, Alert,
+  ScrollView, Linking, StatusBar, Alert, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -93,7 +93,18 @@ export default function ContactoScreen() {
 
   const handleCall  = (numero: string) => Linking.openURL(`tel:${numero}`);
   const handleEmail = (correo: string) => Linking.openURL(`mailto:${correo}`);
-  const handleMaps  = (url: string)    => Linking.openURL(url);
+  const handleMaps  = (direccion: string) => {
+    const query = encodeURIComponent(direccion);
+    const url = Platform.select({
+      ios:     `maps://maps.apple.com/?q=${query}`,
+      android: `geo:0,0?q=${query}`,
+      default: `https://maps.google.com/?q=${query}`,
+    })!;
+    Linking.openURL(url).catch(() => {
+      // Fallback al navegador si no tiene app de mapas
+      Linking.openURL(`https://maps.google.com/?q=${query}`);
+    });
+  };
 
   const enviarSoporte = async () => {
     if (!nombre.trim() || !email.trim() || !mensaje.trim()) {
@@ -273,7 +284,7 @@ export default function ContactoScreen() {
 
           {/* Correos electrónicos — toca para abrir app de correo */}
           <View style={s.contactRow}>
-            <LinearGradient colors={['#FF6B35', '#E96928']} style={s.contactIconWrap}>
+            <LinearGradient colors={['#E96928', '#c4511a']} style={s.contactIconWrap}>
               <Ionicons name="mail" size={20} color="#fff" />
             </LinearGradient>
             <View style={s.contactInfo}>
@@ -294,7 +305,7 @@ export default function ContactoScreen() {
           {/* Teléfono — botón llamar */}
           {contactoInfo.telefono && (
             <View style={s.contactRow}>
-              <LinearGradient colors={['#4A90E2', '#3B82F6']} style={s.contactIconWrap}>
+              <LinearGradient colors={['#E96928', '#c4511a']} style={s.contactIconWrap}>
                 <Ionicons name="call" size={20} color="#fff" />
               </LinearGradient>
               <View style={s.contactInfo}>
@@ -326,9 +337,9 @@ export default function ContactoScreen() {
           {contactoInfo.direccion && (
             <Pressable
               style={({ pressed }) => [s.contactRow, { opacity: pressed ? 0.8 : 1 }]}
-              onPress={() => contactoInfo.maps_url && handleMaps(contactoInfo.maps_url)}
+              onPress={() => contactoInfo.direccion && handleMaps(contactoInfo.direccion)}
             >
-              <LinearGradient colors={['#F5BE41', '#F59E0B']} style={s.contactIconWrap}>
+              <LinearGradient colors={['#E96928', '#c4511a']} style={s.contactIconWrap}>
                 <Ionicons name="location" size={20} color="#fff" />
               </LinearGradient>
               <View style={s.contactInfo}>
@@ -390,6 +401,6 @@ const makeStyles = (c: any, f: any, isDark: boolean) => StyleSheet.create({
   contactSubValue: { color: c.subtext, marginTop: 2, opacity: 0.75 },
   contactDivider:  { height: 1, backgroundColor: c.border, marginVertical: 14 },
   contactLink:     { color: '#3B82F6', textDecorationLine: 'underline' },
-  llamarBtn:       { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#3B82F6', paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10 },
+  llamarBtn:       { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#E96928', paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10 },
   llamarBtnText:   { color: '#fff', fontWeight: '700' },
 });
