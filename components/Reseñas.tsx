@@ -10,7 +10,7 @@ import { useAuth } from '../src/context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
 import {
-  getResenas, crearResena, editarResena, eliminarResena, subirFotoResena,
+  getResenas, crearResena, editarResena, eliminarResena, subirFotoResena, crearReporte,
 } from '../src/api/api';
 
 type Props = { lugarId: string };
@@ -103,6 +103,11 @@ export default function Reseñas({ lugarId }: Props) {
   const [editEstrellas,    setEditEstrellas]    = useState(0);
   const [editFotos,        setEditFotos]        = useState<FotoLocal[]>([]);
   const [guardandoEdicion, setGuardandoEdicion] = useState(false);
+
+  // ── Reporte ──
+  const [reporteModal,    setReporteModal]    = useState(false);
+  const [reportandoId,    setReportandoId]    = useState<number | null>(null);
+  const [enviandoReporte, setEnviandoReporte] = useState(false);
 
   // ── Cargar reseñas ──────────────────────────────────────
   const cargarResenas = useCallback(async () => {
@@ -268,6 +273,35 @@ export default function Reseñas({ lugarId }: Props) {
     );
   };
 
+  // ── Reportar reseña ─────────────────────────────────────
+  const abrirReporte = (id: number) => {
+    if (!isAuthenticated) { setLoginModal(true); return; }
+    setReportandoId(id);
+    setReporteModal(true);
+  };
+
+  const enviarReporte = async (motivo: string) => {
+    if (!reportandoId) return;
+    setEnviandoReporte(true);
+    try {
+      await crearReporte({ tipo_entidad: 'resena', id_entidad: reportandoId, motivo });
+      setReporteModal(false);
+      setReportandoId(null);
+      Alert.alert('Reporte enviado', 'Gracias. Un moderador revisará el contenido.');
+    } catch (e: any) {
+      const codigo = e?.response?.data?.error?.codigo;
+      if (codigo === 'REPORTE_DUPLICADO') {
+        Alert.alert('Ya reportado', 'Ya habías reportado esta reseña anteriormente.');
+      } else {
+        Alert.alert('Error', 'No se pudo enviar el reporte. Intenta de nuevo.');
+      }
+      setReporteModal(false);
+      setReportandoId(null);
+    } finally {
+      setEnviandoReporte(false);
+    }
+  };
+
   const FotosRow = ({ fotosActuales, setFn }: { fotosActuales: FotoLocal[]; setFn: (f: FotoLocal[]) => void }) => (
     <View style={s.fotosRow}>
       {fotosActuales.map((foto, index) => (
@@ -294,6 +328,41 @@ export default function Reseñas({ lugarId }: Props) {
         onClose={() => setLoginModal(false)}
         onGoLogin={() => { setLoginModal(false); router.push('/perfil'); }}
       />
+
+      {/* ── MODAL REPORTE ── */}
+      <Modal visible={reporteModal} transparent animationType="fade">
+        <View style={m.backdrop}>
+          <View style={m.sheet}>
+            <View style={[m.iconWrap, { backgroundColor: 'rgba(239,68,68,0.1)' }]}>
+              <Ionicons name="flag" size={28} color="#EF4444" />
+            </View>
+            <Text style={m.title}>Reportar reseña</Text>
+            <Text style={m.body}>¿Por qué quieres reportar este contenido?</Text>
+            {[
+              'Contenido inapropiado',
+              'Información falsa',
+              'Spam o publicidad',
+              'Lenguaje ofensivo',
+              'Otro',
+            ].map(motivo => (
+              <Pressable
+                key={motivo}
+                style={[m.primaryBtn, { backgroundColor: '#F3F4F6', marginBottom: 0 }]}
+                onPress={() => enviarReporte(motivo)}
+                disabled={enviandoReporte}
+              >
+                {enviandoReporte
+                  ? <ActivityIndicator color="#E96928" size="small" />
+                  : <Text style={[m.primaryBtnText, { color: '#1A1A1A' }]}>{motivo}</Text>
+                }
+              </Pressable>
+            ))}
+            <Pressable style={m.cancelBtn} onPress={() => { setReporteModal(false); setReportandoId(null); }}>
+              <Text style={m.cancelBtnText}>Cancelar</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
 
       <View style={s.headerRow}>
         <Text style={s.sectionTitle}>
@@ -423,8 +492,8 @@ export default function Reseñas({ lugarId }: Props) {
                   </ScrollView>
                 )}
 
-                {/* Solo mostrar acciones si es la reseña propia */}
-                {isAuthenticated && usuario?.id && reseña.id_usuario == usuario.id && (
+                {/* Acciones: editar/eliminar si es propia, reportar si es ajena */}
+                {isAuthenticated && usuario?.id && reseña.id_usuario == usuario.id ? (
                   <View style={s.accionesRow}>
                     <Pressable style={s.editarBtn} onPress={() => abrirEdicion(reseña)}>
                       <Ionicons name="pencil-outline" size={15} color="#E96928" />
@@ -435,7 +504,14 @@ export default function Reseñas({ lugarId }: Props) {
                       <Text style={s.eliminarBtnText}>{t('review_delete')}</Text>
                     </Pressable>
                   </View>
-                )}
+                ) : isAuthenticated ? (
+                  <View style={[s.accionesRow, { justifyContent: 'flex-end' }]}>
+                    <Pressable style={s.reportarBtn} onPress={() => abrirReporte(reseña.id)}>
+                      <Ionicons name="flag-outline" size={13} color="#9CA3AF" />
+                      <Text style={s.reportarBtnText}>Reportar</Text>
+                    </Pressable>
+                  </View>
+                ) : null}
               </>
             )}
           </View>
@@ -489,4 +565,6 @@ const makeStyles = (c: any, f: any) => StyleSheet.create({
   editarBtnText:   { color: '#E96928', fontSize: f.xs, fontWeight: '600' },
   eliminarBtn:     { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: '#E11D48' },
   eliminarBtnText: { color: '#E11D48', fontSize: f.xs, fontWeight: '600' },
+  reportarBtn:     { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
+  reportarBtnText: { color: '#9CA3AF', fontSize: f.xs, fontWeight: '500' },
 });
