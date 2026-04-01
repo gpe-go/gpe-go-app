@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getEventos, getFotosEvento } from "../api/api";
 import { mapEvento } from "../mappers/eventosMapper";
 import { Evento } from "../data/eventos";
@@ -7,9 +7,11 @@ export const useEventos = (tipo?: string, busqueda?: string) => {
   const [data, setData] = useState<Evento[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     const cargar = async () => {
+      setLoading(true);
       try {
         const params: any = {};
         if (tipo) params.tipo = tipo;
@@ -42,7 +44,11 @@ export const useEventos = (tipo?: string, busqueda?: string) => {
       }
     };
     cargar();
-  }, [tipo, busqueda]);
+  }, [tipo, busqueda, refreshTrigger]);
 
-  return { data, loading, error };
+  const refresh = useCallback(() => {
+    setRefreshTrigger(prev => prev + 1);
+  }, []);
+
+  return { data, loading, error, refresh };
 };

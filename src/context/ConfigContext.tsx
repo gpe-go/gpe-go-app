@@ -1,47 +1,32 @@
 import React, { createContext, useContext, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { cambiarIdioma, AppLanguage } from '../i18n/i18n';
 
 const ConfigContext = createContext<any>(undefined);
 
 export const ConfigProvider = ({ children }: { children: React.ReactNode }) => {
   const [darkMode, setDarkMode] = useState(false);
   const [fontSize, setFontSize] = useState(1);
-  const [language, setLanguage] = useState('es');
+  const { t: i18nT, i18n } = useTranslation();
 
-  // --- AQUÍ ESTÁ EL DICCIONARIO EXPANDIDO ---
-  const translations: any = {
-    es: {
-      settings: 'Configuración', dark: 'Modo Oscuro', lang: 'Idioma',
-      inicio: 'Inicio', noticias: 'Noticias', eventos: 'Eventos',
-      directorio: 'Directorio', explorar: 'Explorar', favoritos: 'Favoritos'
-    },
-    en: {
-      settings: 'Settings', dark: 'Dark Mode', lang: 'Language',
-      inicio: 'Home', noticias: 'News', eventos: 'Events',
-      directorio: 'Directory', explorar: 'Explore', favoritos: 'Favorites'
-    },
-    fr: {
-      settings: 'Réglages', dark: 'Mode Sombre', lang: 'Langue',
-      inicio: 'Accueil', noticias: 'Nouvelles', eventos: 'Événements',
-      directorio: 'Annuaire', explorar: 'Explorer', favoritos: 'Favoris'
-    },
-    pt: {
-      settings: 'Configurações', dark: 'Modo Escuro', lang: 'Idioma',
-      inicio: 'Início', noticias: 'Notícias', eventos: 'Eventos',
-      directorio: 'Diretório', explorar: 'Explorar', favoritos: 'Favoritos'
-    },
-    de: {
-      settings: 'Einstellungen', dark: 'Dunkelmodus', lang: 'Sprache',
-      inicio: 'Startseite', noticias: 'Nachrichten', eventos: 'Ereignisse',
-      directorio: 'Verzeichnis', explorar: 'Erkunden', favoritos: 'Favoriten'
-    },
-    ja: {
-      settings: '設定', dark: 'ダークモード', lang: '言語',
-      inicio: 'ホーム', noticias: 'ニュース', eventos: 'イベント',
-      directorio: 'ディレクトリ', explorar: '探索', favoritos: 'お気に入り'
-    },
+  const language = i18n.language as AppLanguage;
+
+  const setLanguage = async (lang: AppLanguage) => {
+    await cambiarIdioma(lang);
   };
 
-  const t = translations[language] || translations['es'];
+  // Objeto t compatible con el uso existente en la app
+  const t = {
+    settings: i18nT('tab_settings'),
+    dark:     i18nT('settings_dark_mode'),
+    lang:     i18nT('settings_language'),
+    inicio:   i18nT('tab_home'),
+    noticias: i18nT('tab_news'),
+    eventos:  i18nT('tab_events'),
+    directorio: i18nT('tab_directory'),
+    explorar: i18nT('tab_explore'),
+    favoritos: i18nT('tab_favorites'),
+  };
 
   return (
     <ConfigContext.Provider value={{ darkMode, setDarkMode, fontSize, setFontSize, language, setLanguage, t }}>
@@ -59,7 +44,8 @@ export const useConfig = () => {
       language: 'es',
       t: {
         settings: 'Configuración', dark: 'Modo Oscuro', lang: 'Idioma',
-        inicio: 'Inicio', noticias: 'Noticias', eventos: 'Eventos'
+        inicio: 'Inicio', noticias: 'Noticias', eventos: 'Eventos',
+        directorio: 'Directorio', explorar: 'Explorar', favoritos: 'Favoritos',
       }
     };
   }
