@@ -2,35 +2,45 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
-  Animated, Image, ImageBackground, Pressable,
-  RefreshControl, ScrollView, StatusBar, StyleSheet,
-  Text, TextInput, View,
+  Animated,
+  Image,
+  ImageBackground,
+  Pressable,
+  RefreshControl,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
-import { useTranslation } from "react-i18next";
-import i18n from "../../src/i18n/i18n";
 import { useTheme } from "../../src/context/ThemeContext";
 import { useLugares } from "../../src/hooks/useLugares";
+import i18n from "../../src/i18n/i18n";
 
 // ── Hook: fecha y hora en vivo (reactivo al idioma) ──────
 function useDateTime() {
-  const [now,    setNow]    = useState(new Date());
+  const [now, setNow] = useState(new Date());
   const [locale, setLocale] = useState(i18n.language ?? "es");
 
-  // Reloj: se sincroniza al minuto exacto
   useEffect(() => {
     const msHastaProxMinuto = (60 - new Date().getSeconds()) * 1000;
+    let interval: ReturnType<typeof setInterval> | undefined;
+
     const t0 = setTimeout(() => {
       setNow(new Date());
-      const interval = setInterval(() => setNow(new Date()), 60_000);
-      return () => clearInterval(interval);
+      interval = setInterval(() => setNow(new Date()), 60_000);
     }, msHastaProxMinuto);
-    return () => clearTimeout(t0);
+
+    return () => {
+      clearTimeout(t0);
+      if (interval) clearInterval(interval);
+    };
   }, []);
 
-  // Escucha cambios de idioma en i18n y actualiza locale inmediatamente
   useEffect(() => {
     const onLangChange = (lng: string) => setLocale(lng);
     i18n.on("languageChanged", onLangChange);
@@ -48,41 +58,64 @@ function useDateTime() {
     minute: "2-digit",
   });
 
-  // Primera letra en mayúscula (algunos idiomas devuelven minúscula)
   const fechaFormatted = fecha.charAt(0).toUpperCase() + fecha.slice(1);
 
   return { fecha: fechaFormatted, hora };
 }
 
 function RefreshLogo({ refreshing }: { refreshing: boolean }) {
-  const spinAnim  = useRef(new Animated.Value(0)).current;
+  const spinAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    if (refreshing) {
-      const spin = Animated.loop(
-        Animated.timing(spinAnim, { toValue: 1, duration: 900, useNativeDriver: true })
-      );
-      const pulse = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, { toValue: 1.18, duration: 450, useNativeDriver: true }),
-          Animated.timing(pulseAnim, { toValue: 1,    duration: 450, useNativeDriver: true }),
-        ])
-      );
-      spin.start(); pulse.start();
-      return () => {
-        spin.stop(); pulse.stop();
-        spinAnim.setValue(0); pulseAnim.setValue(1);
-      };
-    }
+    if (!refreshing) return;
+
+    const spin = Animated.loop(
+      Animated.timing(spinAnim, {
+        toValue: 1,
+        duration: 900,
+        useNativeDriver: true,
+      })
+    );
+
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.18,
+          duration: 450,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 450,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    spin.start();
+    pulse.start();
+
+    return () => {
+      spin.stop();
+      pulse.stop();
+      spinAnim.setValue(0);
+      pulseAnim.setValue(1);
+    };
   }, [refreshing, spinAnim, pulseAnim]);
 
-  const spin = spinAnim.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] });
+  const spin = spinAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "360deg"],
+  });
+
   if (!refreshing) return null;
 
   return (
     <View style={rl.container}>
-      <Animated.View style={[rl.iconWrap, { transform: [{ rotate: spin }, { scale: pulseAnim }] }]}>
+      <Animated.View
+        style={[rl.iconWrap, { transform: [{ rotate: spin }, { scale: pulseAnim }] }]}
+      >
         <View style={rl.iconBg}>
           <Ionicons name="location" size={18} color="#bbb" />
         </View>
@@ -93,11 +126,38 @@ function RefreshLogo({ refreshing }: { refreshing: boolean }) {
 }
 
 const rl = StyleSheet.create({
-  container: { alignItems: "center", justifyContent: "center", paddingVertical: 14, gap: 8 },
-  iconWrap:  { alignItems: "center", justifyContent: "center" },
-  iconBg:    { width: 42, height: 42, borderRadius: 13, backgroundColor: "#e0e0e0", alignItems: "center", justifyContent: "center" },
-  label:     { fontSize: 13, fontWeight: "700", color: "#aaa", letterSpacing: 0.3 },
+  container: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    gap: 8,
+  },
+  iconWrap: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconBg: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    backgroundColor: "#e0e0e0",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#aaa",
+    letterSpacing: 0.3,
+  },
 });
+
+type LugarLite = {
+  id?: string | number;
+  nombre?: string;
+  ubicacion?: string;
+  imagen?: string;
+};
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -108,54 +168,245 @@ export default function HomeScreen() {
   const { fecha, hora } = useDateTime();
 
   const mapRef = useRef<MapView>(null);
-  const [search, setSearch]         = useState("");
-  const [region, setRegion]         = useState<any>(null);
+  const [search, setSearch] = useState("");
+  const [region, setRegion] = useState<any>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const titleAnim = useRef(new Animated.Value(0)).current;
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
-  const { data: lugares, refresh: refreshLugares } = useLugares();
+  const headerAnim = useRef(new Animated.Value(0)).current;
+  const row1Anim = useRef(new Animated.Value(0)).current;
+  const row2Anim = useRef(new Animated.Value(0)).current;
+  const row3Anim = useRef(new Animated.Value(0)).current;
+  const row4Anim = useRef(new Animated.Value(0)).current;
+  const mapAnim = useRef(new Animated.Value(0)).current;
+  const searchFocusAnim = useRef(new Animated.Value(0)).current;
+  const scrollY = useRef(new Animated.Value(0)).current;
 
-  const fetchData = useCallback(async () => {
-    await refreshLugares();
-  }, [refreshLugares]);
+  const lugaresHook = useLugares() as { data?: LugarLite[] };
+  const lugares = Array.isArray(lugaresHook?.data) ? lugaresHook.data : [];
 
   useEffect(() => {
-    let sub: Location.LocationSubscription;
+    let sub: Location.LocationSubscription | undefined;
+
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") return;
-      const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+
+      const current = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+
       const initialRegion = {
-        latitude: current.coords.latitude, longitude: current.coords.longitude,
-        latitudeDelta: 0.01, longitudeDelta: 0.01,
+        latitude: current.coords.latitude,
+        longitude: current.coords.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
       };
+
       setRegion(initialRegion);
+
       sub = await Location.watchPositionAsync(
-        { accuracy: Location.Accuracy.High, timeInterval: 3000, distanceInterval: 5 },
-        (loc) => setRegion({
-          latitude: loc.coords.latitude, longitude: loc.coords.longitude,
-          latitudeDelta: 0.01, longitudeDelta: 0.01,
-        })
+        {
+          accuracy: Location.Accuracy.High,
+          timeInterval: 3000,
+          distanceInterval: 5,
+        },
+        (loc) =>
+          setRegion({
+            latitude: loc.coords.latitude,
+            longitude: loc.coords.longitude,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
+          })
       );
     })();
-    Animated.timing(titleAnim, { toValue: 1, duration: 700, useNativeDriver: true }).start();
-    return () => sub && sub.remove();
-  }, [titleAnim]);
+
+    Animated.stagger(110, [
+      Animated.timing(headerAnim, {
+        toValue: 1,
+        duration: 520,
+        useNativeDriver: true,
+      }),
+      Animated.timing(row1Anim, {
+        toValue: 1,
+        duration: 520,
+        useNativeDriver: true,
+      }),
+      Animated.timing(row2Anim, {
+        toValue: 1,
+        duration: 520,
+        useNativeDriver: true,
+      }),
+      Animated.timing(row3Anim, {
+        toValue: 1,
+        duration: 520,
+        useNativeDriver: true,
+      }),
+      Animated.timing(row4Anim, {
+        toValue: 1,
+        duration: 520,
+        useNativeDriver: true,
+      }),
+      Animated.timing(mapAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    return () => {
+      if (sub) sub.remove();
+    };
+  }, [headerAnim, row1Anim, row2Anim, row3Anim, row4Anim, mapAnim]);
+
+  useEffect(() => {
+    Animated.timing(searchFocusAnim, {
+      toValue: isSearchFocused ? 1 : 0,
+      duration: 180,
+      useNativeDriver: false,
+    }).start();
+  }, [isSearchFocused, searchFocusAnim]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchData();
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     setRefreshing(false);
-  }, [fetchData]);
+  }, []);
 
   const centerMap = () => {
     if (!region || !mapRef.current) return;
     mapRef.current.animateToRegion(region, 600);
   };
 
-  const searchResults = search.length > 0
-    ? lugares.filter((item: any) => item.nombre.toLowerCase().includes(search.toLowerCase()))
-    : [];
+  const searchResults =
+    search.length > 0
+      ? lugares.filter((item) =>
+          String(item?.nombre ?? "")
+            .toLowerCase()
+            .includes(search.toLowerCase())
+        )
+      : [];
+
+  const headerAnimatedStyle = {
+    opacity: headerAnim,
+    transform: [
+      {
+        translateY: headerAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [18, 0],
+        }),
+      },
+    ],
+  };
+
+  const makeRowAnimatedStyle = (anim: Animated.Value) => ({
+    opacity: anim,
+    transform: [
+      {
+        translateY: anim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [26, 0],
+        }),
+      },
+      {
+        scale: anim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0.985, 1],
+        }),
+      },
+    ],
+  });
+
+  const row1AnimatedStyle = makeRowAnimatedStyle(row1Anim);
+  const row2AnimatedStyle = makeRowAnimatedStyle(row2Anim);
+  const row3AnimatedStyle = makeRowAnimatedStyle(row3Anim);
+  const row4AnimatedStyle = makeRowAnimatedStyle(row4Anim);
+
+  const mapAnimatedStyle = {
+    opacity: mapAnim,
+    transform: [
+      {
+        translateY: mapAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [24, 0],
+        }),
+      },
+    ],
+  };
+
+  const animatedSearchBoxStyle = useMemo(
+    () => ({
+      transform: [
+        {
+          scale: searchFocusAnim.interpolate({
+            inputRange: [0, 1],
+            outputRange: [1, 1.02],
+          }),
+        },
+      ],
+      borderColor: searchFocusAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [
+          isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.06)",
+          "#E96928",
+        ],
+      }),
+      shadowOpacity: searchFocusAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [isDark ? 0.18 : 0.08, isDark ? 0.3 : 0.16],
+      }),
+      shadowRadius: searchFocusAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [14, 20],
+      }),
+      elevation: searchFocusAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [4, 8],
+      }),
+    }),
+    [searchFocusAnim, isDark]
+  );
+
+  const headerScrollStyle = {
+    transform: [
+      {
+        translateY: scrollY.interpolate({
+          inputRange: [0, 140],
+          outputRange: [0, -10],
+          extrapolate: "clamp",
+        }),
+      },
+      {
+        scale: scrollY.interpolate({
+          inputRange: [0, 140],
+          outputRange: [1, 0.97],
+          extrapolate: "clamp",
+        }),
+      },
+    ],
+    opacity: scrollY.interpolate({
+      inputRange: [0, 160],
+      outputRange: [1, 0.94],
+      extrapolate: "clamp",
+    }),
+  };
+
+  const glowScrollStyle = {
+    opacity: scrollY.interpolate({
+      inputRange: [0, 140],
+      outputRange: [0.9, 0.45],
+      extrapolate: "clamp",
+    }),
+    transform: [
+      {
+        scale: scrollY.interpolate({
+          inputRange: [0, 140],
+          outputRange: [1, 0.92],
+          extrapolate: "clamp",
+        }),
+      },
+    ],
+  };
 
   return (
     <View style={s.container}>
@@ -164,9 +415,14 @@ export default function HomeScreen() {
         backgroundColor={colors.background}
       />
 
-      <ScrollView
+      <Animated.ScrollView
         contentContainerStyle={s.scrollContent}
         showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        )}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -179,343 +435,690 @@ export default function HomeScreen() {
       >
         <RefreshLogo refreshing={refreshing} />
 
-        {/* ══ HEADER / BUSCADOR ═══════════════════════════ */}
-        <View style={s.header}>
-          <Text style={[s.searchTitle, { fontSize: fonts["2xl"] }]}>
-            {t("welcome1")} 👋
-          </Text>
-
-          {/* Fecha y hora en vivo */}
-          <View style={s.dateTimeRow}>
-            <View style={s.dateChip}>
-              <Ionicons name="calendar-outline" size={13} color="#E96928" />
-              <Text style={[s.dateChipText, { fontSize: fonts.xs }]}>{fecha}</Text>
-            </View>
-            <View style={s.timeChip}>
-              <Ionicons name="time-outline" size={13} color="#E96928" />
-              <Text style={[s.timeChipText, { fontSize: fonts.xs }]}>{hora}</Text>
-            </View>
-          </View>
-
-          <View style={s.searchWrapper}>
-            <View style={s.searchBox}>
-              <Ionicons name="search" size={20} color={colors.subtext} />
-              <TextInput
-                placeholder={t("search")}
-                placeholderTextColor={colors.subtext}
-                style={[s.searchInput, { fontSize: fonts.base }]}
-                value={search}
-                onChangeText={setSearch}
-              />
-              {search.length > 0 && (
-                <Pressable onPress={() => setSearch("")}>
-                  <Ionicons name="close-circle" size={20} color={colors.subtext} />
-                </Pressable>
-              )}
-            </View>
-
-            {searchResults.length > 0 && (
-              <View style={s.searchResults}>
-                {searchResults.map((item: any) => (
-                  <Pressable
-                    key={item.id}
-                    style={s.searchItem}
-                    onPress={() => { setSearch(item.nombre); router.push("/explorar"); }}
-                  >
-                    <Image source={{ uri: item.imagen }} style={s.searchImg} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={[s.searchItemTitle, { fontSize: fonts.sm }]} numberOfLines={1}>
-                        {item.nombre}
-                      </Text>
-                      <Text style={[s.searchSub, { fontSize: fonts.xs }]}>{item.ubicacion}</Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={16} color={colors.subtext} />
-                  </Pressable>
-                ))}
-              </View>
-            )}
-          </View>
-        </View>
-
-        {/* ══ BENTO GRID – FILA 1 ═════════════════════════ */}
-        <View style={[s.gridRow, { height: 220 }]}>
-          <Pressable style={[s.card, { width: "48%" }]} onPress={() => router.push("/categorias/explorar")}>
-            <ImageBackground
-              source={{ uri: "https://i.pinimg.com/originals/33/b5/22/33b522650f28ec33a20eea361c08beb9.jpg" }}
-              style={s.cardBg} imageStyle={s.rounded}
+        <Animated.View style={[s.headerShell, headerAnimatedStyle]}>
+          <Animated.View style={headerScrollStyle}>
+            <LinearGradient
+              colors={isDark ? ["#0a0a0a", "#121212"] : ["#fafafa", "#f3f3f3"]}
+              style={s.header}
             >
-              <LinearGradient colors={["transparent", "rgba(0,0,0,0.78)"]} style={s.gradient}>
-                <View style={s.cardIconWrap}>
-                  <Ionicons name="map-outline" size={18} color="#fff" />
+              <Animated.View style={[s.headerGlow, glowScrollStyle]} />
+
+              <Text style={[s.searchTitle, { fontSize: fonts["2xl"] }]}>
+                {t("welcome1")} 👋
+              </Text>
+
+              <View style={s.dateTimeRow}>
+                <View style={s.dateChip}>
+                  <Ionicons name="calendar-outline" size={13} color="#E96928" />
+                  <Text style={[s.dateChipText, { fontSize: fonts.xs }]}>{fecha}</Text>
                 </View>
-                <Text style={[s.cardTitle, { fontSize: fonts.lg }]}>{t("cat_explore")}</Text>
-                <Text style={[s.cardSub, { fontSize: fonts.xs }]}>Guadalupe & NL</Text>
-              </LinearGradient>
-            </ImageBackground>
-          </Pressable>
 
-          <Pressable style={[s.card, { width: "48%" }]} onPress={() => router.push("/categorias/Fin de semana")}>
-            <ImageBackground
-              source={{ uri: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800" }}
-              style={s.cardBg} imageStyle={s.rounded}
+                <View style={s.timeChip}>
+                  <Ionicons name="time-outline" size={13} color="#E96928" />
+                  <Text style={[s.timeChipText, { fontSize: fonts.xs }]}>{hora}</Text>
+                </View>
+              </View>
+
+              <View style={s.searchWrapper}>
+                <Animated.View style={[s.searchBox, animatedSearchBoxStyle]}>
+                  <Ionicons name="search" size={22} color={colors.subtext} />
+                  <TextInput
+                    placeholder={t("search")}
+                    placeholderTextColor={colors.subtext}
+                    style={[s.searchInput, { fontSize: fonts.base }]}
+                    value={search}
+                    onChangeText={setSearch}
+                    onFocus={() => setIsSearchFocused(true)}
+                    onBlur={() => setIsSearchFocused(false)}
+                  />
+                  {search.length > 0 && (
+                    <Pressable onPress={() => setSearch("")}>
+                      <Ionicons name="close-circle" size={20} color={colors.subtext} />
+                    </Pressable>
+                  )}
+                </Animated.View>
+
+                {searchResults.length > 0 && (
+                  <View style={s.searchResults}>
+                    {searchResults.map((item, index) => (
+                      <Pressable
+                        key={item.id ?? index}
+                        style={s.searchItem}
+                        onPress={() => {
+                          setSearch(item.nombre ?? "");
+                          router.push("/explorar");
+                        }}
+                      >
+                        <Image source={{ uri: item.imagen }} style={s.searchImg} />
+                        <View style={{ flex: 1 }}>
+                          <Text
+                            style={[s.searchItemTitle, { fontSize: fonts.sm }]}
+                            numberOfLines={1}
+                          >
+                            {item.nombre}
+                          </Text>
+                          <Text style={[s.searchSub, { fontSize: fonts.xs }]}>
+                            {item.ubicacion}
+                          </Text>
+                        </View>
+                        <Ionicons
+                          name="chevron-forward"
+                          size={16}
+                          color={colors.subtext}
+                        />
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+              </View>
+            </LinearGradient>
+          </Animated.View>
+        </Animated.View>
+
+        <Animated.View style={row1AnimatedStyle}>
+          <View style={[s.gridRow, { height: 226, marginTop: 10 }]}>
+            <Pressable
+              style={({ pressed }) => [
+                s.card,
+                { width: "48%" },
+                { transform: [{ scale: pressed ? 0.96 : 0.98 }] },
+              ]}
+              onPress={() => router.push("/categorias/explorar")}
             >
-              <LinearGradient colors={["transparent", "rgba(0,0,0,0.78)"]} style={s.gradient}>
-                <Text style={[s.cardTitle, { fontSize: fonts.lg }]}>{t("cat_weekend")}</Text>
-              </LinearGradient>
-            </ImageBackground>
-          </Pressable>
-        </View>
+              <ImageBackground
+                source={{
+                  uri: "https://i.pinimg.com/originals/33/b5/22/33b522650f28ec33a20eea361c08beb9.jpg",
+                }}
+                style={s.cardBg}
+                imageStyle={s.rounded}
+              >
+                <LinearGradient
+                  colors={["rgba(0,0,0,0.10)", "rgba(0,0,0,0.85)"]}
+                  style={s.gradient}
+                >
+                  <View style={s.cardIconWrap}>
+                    <Ionicons name="map-outline" size={18} color="#fff" />
+                  </View>
+                  <Text style={[s.cardTitle, { fontSize: fonts.lg }]}>
+                    {t("cat_explore")}
+                  </Text>
+                  <Text style={[s.cardSub, { fontSize: fonts.xs }]}>Guadalupe & NL</Text>
+                </LinearGradient>
+              </ImageBackground>
+            </Pressable>
 
-        {/* FILA 2 */}
-        <View style={[s.gridRow, { height: 160 }]}>
-          <Pressable style={[s.card, { width: "58%" }]} onPress={() => router.push("/categorias/Naturaleza & Aventura")}>
-            <ImageBackground
-              source={{ uri: "https://mvsnoticias.com/u/fotografias/m/2023/9/27/f768x400-565219_609122_7.jpg" }}
-              style={s.cardBg} imageStyle={s.rounded}
+            <Pressable
+              style={({ pressed }) => [
+                s.card,
+                { width: "48%" },
+                { transform: [{ scale: pressed ? 0.96 : 0.98 }] },
+              ]}
+              onPress={() => router.push("/categorias/Fin de semana")}
             >
-              <LinearGradient colors={["transparent", "rgba(0,0,0,0.78)"]} style={s.gradient}>
-                <Text style={[s.cardTitle, { fontSize: fonts.lg }]}>{t("cat_nature")}</Text>
-              </LinearGradient>
-            </ImageBackground>
-          </Pressable>
-
-          <Pressable style={[s.card, { width: "38%" }]} onPress={() => router.push("/categorias/pueblos Magicos")}>
-            <ImageBackground
-              source={{ uri: "https://wallpapers.com/images/hd/monterrey-photo-collage-7ilxq3egqhow9gdw.jpg" }}
-              style={s.cardBg} imageStyle={s.rounded}
-            >
-              <LinearGradient colors={["transparent", "rgba(0,0,0,0.78)"]} style={s.gradient}>
-                <Text style={[s.cardTitle, { fontSize: fonts.lg }]}>{t("cat_magic")}</Text>
-              </LinearGradient>
-            </ImageBackground>
-          </Pressable>
-        </View>
-
-        {/* FILA 3 */}
-        <View style={[s.gridRow, { height: 150 }]}>
-          <Pressable style={[s.card, { width: "48%" }]} onPress={() => router.push("/categorias/tours")}>
-            <ImageBackground
-              source={{ uri: "https://tse1.mm.bing.net/th/id/OIP.SJuomIXnlZ7o0_RQ7XO18AHaDf" }}
-              style={s.cardBg} imageStyle={s.rounded}
-            >
-              <LinearGradient colors={["transparent", "rgba(0,0,0,0.78)"]} style={s.gradient}>
-                <Text style={[s.cardTitle, { fontSize: fonts.lg }]}>{t("cat_tours")}</Text>
-              </LinearGradient>
-            </ImageBackground>
-          </Pressable>
-
-          <Pressable style={[s.card, { width: "48%" }]} onPress={() => router.push("/categorias/cultura")}>
-            <ImageBackground
-              source={{ uri: "https://i1.wp.com/www.turimexico.com/wp-content/uploads/2015/06/marco.jpg" }}
-              style={s.cardBg} imageStyle={s.rounded}
-            >
-              <LinearGradient colors={["transparent", "rgba(0,0,0,0.78)"]} style={s.gradient}>
-                <Text style={[s.cardTitle, { fontSize: fonts.lg }]}>{t("cat_culture")}</Text>
-              </LinearGradient>
-            </ImageBackground>
-          </Pressable>
-        </View>
-
-        {/* FILA 4 */}
-        <View style={[s.gridRow, { height: 180 }]}>
-          <Pressable style={[s.card, { width: "43%" }]} onPress={() => router.push("/categorias/compras")}>
-            <ImageBackground
-              source={{ uri: "https://statics-cuidateplus.marca.com/cms/2022-11/compras-compulsivas_0.jpg" }}
-              style={s.cardBg} imageStyle={s.rounded}
-            >
-              <LinearGradient colors={["transparent", "rgba(0,0,0,0.78)"]} style={s.gradient}>
-                <Text style={[s.cardTitle, { fontSize: fonts.lg }]}>{t("cat_shopping")}</Text>
-              </LinearGradient>
-            </ImageBackground>
-          </Pressable>
-
-          <Pressable style={[s.card, { width: "53%" }]} onPress={() => router.push("/categorias/servicios")}>
-            <ImageBackground
-              source={{ uri: "https://i0.wp.com/www.cuponerapp.com/mexiconoce/wp-content/uploads/2021/05/Captura-de-pantalla-2021-05-31-222254.jpg?resize=600%2C332&ssl=1" }}
-              style={s.cardBg} imageStyle={s.rounded}
-            >
-              <LinearGradient colors={["transparent", "rgba(0,0,0,0.78)"]} style={s.gradient}>
-                <Text style={[s.cardTitle, { fontSize: fonts.lg }]}>{t("cat_services")}</Text>
-              </LinearGradient>
-            </ImageBackground>
-          </Pressable>
-        </View>
-
-        {/* ══ MAPA ════════════════════════════════════════ */}
-        <Animated.View
-          style={[
-            s.mapHeaderBlock,
-            {
-              opacity: titleAnim,
-              transform: [{ translateY: titleAnim.interpolate({ inputRange: [0, 1], outputRange: [15, 0] }) }],
-            },
-          ]}
-        >
-          <View style={s.mapHeader}>
-            <View style={s.sectionDot} />
-            <View>
-              <Text style={[s.mapTitle, { fontSize: fonts.xl }]}>{t("cat_map")}</Text>
-              <Text style={[s.mapSubtitle, { fontSize: fonts.xs }]}>{t("cat_map_sub")}</Text>
-            </View>
+              <ImageBackground
+                source={{
+                  uri: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800",
+                }}
+                style={s.cardBg}
+                imageStyle={s.rounded}
+              >
+                <LinearGradient
+                  colors={["rgba(0,0,0,0.10)", "rgba(0,0,0,0.85)"]}
+                  style={s.gradient}
+                >
+                  <Text style={[s.cardTitle, { fontSize: fonts.lg }]}>
+                    {t("cat_weekend")}
+                  </Text>
+                </LinearGradient>
+              </ImageBackground>
+            </Pressable>
           </View>
         </Animated.View>
 
-        <View style={s.mapFrame}>
-          <View style={s.mapContainer}>
-            <MapView
-              ref={mapRef}
-              provider={PROVIDER_GOOGLE}
-              style={StyleSheet.absoluteFillObject}
-              initialRegion={region ?? { latitude: 25.676, longitude: -100.256, latitudeDelta: 0.05, longitudeDelta: 0.05 }}
+        <Animated.View style={row2AnimatedStyle}>
+          <View style={[s.gridRow, { height: 164 }]}>
+            <Pressable
+              style={({ pressed }) => [
+                s.card,
+                { width: "58%" },
+                { transform: [{ scale: pressed ? 0.96 : 0.98 }] },
+              ]}
+              onPress={() => router.push("/categorias/Naturaleza & Aventura")}
             >
-              {region && (
-                <Marker coordinate={region}>
-                  <View style={s.userMarker} />
-                </Marker>
-              )}
-            </MapView>
+              <ImageBackground
+                source={{
+                  uri: "https://mvsnoticias.com/u/fotografias/m/2023/9/27/f768x400-565219_609122_7.jpg",
+                }}
+                style={s.cardBg}
+                imageStyle={s.rounded}
+              >
+                <LinearGradient
+                  colors={["rgba(0,0,0,0.10)", "rgba(0,0,0,0.85)"]}
+                  style={s.gradient}
+                >
+                  <Text style={[s.cardTitle, { fontSize: fonts.lg }]}>
+                    {t("cat_nature")}
+                  </Text>
+                </LinearGradient>
+              </ImageBackground>
+            </Pressable>
+
+            <Pressable
+              style={({ pressed }) => [
+                s.card,
+                { width: "38%" },
+                { transform: [{ scale: pressed ? 0.96 : 0.98 }] },
+              ]}
+              onPress={() => router.push("/categorias/pueblos Magicos")}
+            >
+              <ImageBackground
+                source={{
+                  uri: "https://wallpapers.com/images/hd/monterrey-photo-collage-7ilxq3egqhow9gdw.jpg",
+                }}
+                style={s.cardBg}
+                imageStyle={s.rounded}
+              >
+                <LinearGradient
+                  colors={["rgba(0,0,0,0.10)", "rgba(0,0,0,0.85)"]}
+                  style={s.gradient}
+                >
+                  <Text style={[s.cardTitle, { fontSize: fonts.lg }]}>
+                    {t("cat_magic")}
+                  </Text>
+                </LinearGradient>
+              </ImageBackground>
+            </Pressable>
           </View>
-        </View>
+        </Animated.View>
 
-        <Pressable
-          style={({ pressed }) => [
-            s.locationBtn,
-            { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
-          ]}
-          onPress={centerMap}
-        >
-          <LinearGradient colors={["#E96928", "#c4511a"]} style={s.locationBtnGradient}>
-            <Ionicons name="locate-outline" size={20} color="#fff" />
-            <Text style={[s.btnText, { fontSize: fonts.sm }]}>{t("cat_my_location")}</Text>
-          </LinearGradient>
-        </Pressable>
+        <Animated.View style={row3AnimatedStyle}>
+          <View style={[s.gridRow, { height: 154 }]}>
+            <Pressable
+              style={({ pressed }) => [
+                s.card,
+                { width: "48%" },
+                { transform: [{ scale: pressed ? 0.96 : 0.98 }] },
+              ]}
+              onPress={() => router.push("/categorias/tours")}
+            >
+              <ImageBackground
+                source={{
+                  uri: "https://tse1.mm.bing.net/th/id/OIP.SJuomIXnlZ7o0_RQ7XO18AHaDf",
+                }}
+                style={s.cardBg}
+                imageStyle={s.rounded}
+              >
+                <LinearGradient
+                  colors={["rgba(0,0,0,0.10)", "rgba(0,0,0,0.85)"]}
+                  style={s.gradient}
+                >
+                  <Text style={[s.cardTitle, { fontSize: fonts.lg }]}>
+                    {t("cat_tours")}
+                  </Text>
+                </LinearGradient>
+              </ImageBackground>
+            </Pressable>
 
-      </ScrollView>
+            <Pressable
+              style={({ pressed }) => [
+                s.card,
+                { width: "48%" },
+                { transform: [{ scale: pressed ? 0.96 : 0.98 }] },
+              ]}
+              onPress={() => router.push("/categorias/cultura")}
+            >
+              <ImageBackground
+                source={{
+                  uri: "https://i1.wp.com/www.turimexico.com/wp-content/uploads/2015/06/marco.jpg",
+                }}
+                style={s.cardBg}
+                imageStyle={s.rounded}
+              >
+                <LinearGradient
+                  colors={["rgba(0,0,0,0.10)", "rgba(0,0,0,0.85)"]}
+                  style={s.gradient}
+                >
+                  <Text style={[s.cardTitle, { fontSize: fonts.lg }]}>
+                    {t("cat_culture")}
+                  </Text>
+                </LinearGradient>
+              </ImageBackground>
+            </Pressable>
+          </View>
+        </Animated.View>
+
+        <Animated.View style={row4AnimatedStyle}>
+          <View style={[s.gridRow, { height: 184 }]}>
+            <Pressable
+              style={({ pressed }) => [
+                s.card,
+                { width: "43%" },
+                { transform: [{ scale: pressed ? 0.96 : 0.98 }] },
+              ]}
+              onPress={() => router.push("/categorias/compras")}
+            >
+              <ImageBackground
+                source={{
+                  uri: "https://statics-cuidateplus.marca.com/cms/2022-11/compras-compulsivas_0.jpg",
+                }}
+                style={s.cardBg}
+                imageStyle={s.rounded}
+              >
+                <LinearGradient
+                  colors={["rgba(0,0,0,0.10)", "rgba(0,0,0,0.85)"]}
+                  style={s.gradient}
+                >
+                  <Text style={[s.cardTitle, { fontSize: fonts.lg }]}>
+                    {t("cat_shopping")}
+                  </Text>
+                </LinearGradient>
+              </ImageBackground>
+            </Pressable>
+
+            <Pressable
+              style={({ pressed }) => [
+                s.card,
+                { width: "53%" },
+                { transform: [{ scale: pressed ? 0.96 : 0.98 }] },
+              ]}
+              onPress={() => router.push("/categorias/servicios")}
+            >
+              <ImageBackground
+                source={{
+                  uri: "https://i0.wp.com/www.cuponerapp.com/mexiconoce/wp-content/uploads/2021/05/Captura-de-pantalla-2021-05-31-222254.jpg?resize=600%2C332&ssl=1",
+                }}
+                style={s.cardBg}
+                imageStyle={s.rounded}
+              >
+                <LinearGradient
+                  colors={["rgba(0,0,0,0.10)", "rgba(0,0,0,0.85)"]}
+                  style={s.gradient}
+                >
+                  <Text style={[s.cardTitle, { fontSize: fonts.lg }]}>
+                    {t("cat_services")}
+                  </Text>
+                </LinearGradient>
+              </ImageBackground>
+            </Pressable>
+          </View>
+        </Animated.View>
+
+        <Animated.View style={mapAnimatedStyle}>
+          <View style={s.mapHeaderBlock}>
+            <View style={s.mapHeader}>
+              <View style={s.sectionDot} />
+              <View>
+                <Text style={[s.mapTitle, { fontSize: fonts.xl }]}>{t("cat_map")}</Text>
+                <Text style={[s.mapSubtitle, { fontSize: fonts.xs }]}>
+                  {t("cat_map_sub")}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={s.mapFrame}>
+            <View style={s.mapContainer}>
+              <MapView
+                ref={mapRef}
+                provider={PROVIDER_GOOGLE}
+                style={StyleSheet.absoluteFillObject}
+                initialRegion={
+                  region ?? {
+                    latitude: 25.676,
+                    longitude: -100.256,
+                    latitudeDelta: 0.05,
+                    longitudeDelta: 0.05,
+                  }
+                }
+              >
+                {region && (
+                  <Marker coordinate={region}>
+                    <View style={s.userMarker} />
+                  </Marker>
+                )}
+              </MapView>
+            </View>
+          </View>
+
+          <Pressable
+            style={({ pressed }) => [
+              s.locationBtn,
+              {
+                opacity: pressed ? 0.92 : 1,
+                transform: [{ scale: pressed ? 0.97 : 1 }],
+              },
+            ]}
+            onPress={centerMap}
+          >
+            <LinearGradient colors={["#E96928", "#c4511a"]} style={s.locationBtnGradient}>
+              <Ionicons name="locate-outline" size={20} color="#fff" />
+              <Text style={[s.btnText, { fontSize: fonts.sm }]}>
+                {t("cat_my_location")}
+              </Text>
+            </LinearGradient>
+          </Pressable>
+        </Animated.View>
+      </Animated.ScrollView>
     </View>
   );
 }
 
 const makeStyles = (c: any, f: any, isDark: boolean) =>
   StyleSheet.create({
-    container:     { flex: 1, backgroundColor: c.background },
-    scrollContent: { paddingBottom: 140 },
+    container: {
+      flex: 1,
+      backgroundColor: isDark ? c.background : "#fafafa",
+      overflow: "hidden",
+    },
 
-    header: { paddingHorizontal: 20, paddingBottom: 18, marginTop: 10 },
+    scrollContent: {
+      paddingBottom: 150,
+      paddingTop: 6,
+    },
+
+    headerShell: {
+      marginBottom: 4,
+      position: "relative",
+    },
+
+    header: {
+      paddingHorizontal: 20,
+      paddingTop: 10,
+      paddingBottom: 28,
+      marginTop: 8,
+      borderBottomLeftRadius: 32,
+      borderBottomRightRadius: 32,
+      overflow: "hidden",
+    },
+
+    headerGlow: {
+      position: "absolute",
+      top: -30,
+      left: 40,
+      right: 40,
+      height: 140,
+      borderRadius: 80,
+      backgroundColor: isDark
+        ? "rgba(255,255,255,0.025)"
+        : "rgba(233,105,40,0.06)",
+      opacity: 0.9,
+    },
+
     searchTitle: {
-      fontWeight: "900", marginBottom: 14,
-      textAlign: "center", color: c.text,
+      fontWeight: "900",
+      marginBottom: 16,
+      textAlign: "center",
+      color: c.text,
+      letterSpacing: -0.4,
+      lineHeight: 42,
     },
-    searchWrapper: { position: "relative", zIndex: 999 },
+
+    dateTimeRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      marginBottom: 18,
+    },
+
+    dateChip: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
+      backgroundColor: isDark ? "rgba(233,105,40,0.12)" : "rgba(233,105,40,0.08)",
+      paddingHorizontal: 13,
+      paddingVertical: 7,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: isDark ? "rgba(233,105,40,0.30)" : "rgba(233,105,40,0.18)",
+    },
+
+    dateChipText: {
+      color: isDark ? "#E96928" : "#c4511a",
+      fontWeight: "600",
+    },
+
+    timeChip: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
+      backgroundColor: isDark ? "rgba(233,105,40,0.12)" : "rgba(233,105,40,0.08)",
+      paddingHorizontal: 13,
+      paddingVertical: 7,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: isDark ? "rgba(233,105,40,0.30)" : "rgba(233,105,40,0.18)",
+    },
+
+    timeChipText: {
+      color: isDark ? "#E96928" : "#c4511a",
+      fontWeight: "700",
+    },
+
+    searchWrapper: {
+      position: "relative",
+      zIndex: 999,
+      marginTop: 4,
+    },
+
     searchBox: {
-      flexDirection: "row", alignItems: "center",
-      backgroundColor: c.inputBackground,
-      borderRadius: 20, paddingHorizontal: 16, height: 55,
-      borderWidth: 1, borderColor: c.border,
-      shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.08, shadowRadius: 4, elevation: 3,
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "#f7f7f8",
+      borderRadius: 24,
+      paddingHorizontal: 18,
+      height: 64,
+      borderWidth: 1.2,
+      borderColor: isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.06)",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: isDark ? 0.18 : 0.08,
+      shadowRadius: 14,
+      elevation: 4,
     },
-    searchInput:  { flex: 1, marginLeft: 10, color: c.text },
+
+    searchInput: {
+      flex: 1,
+      marginLeft: 10,
+      color: c.text,
+    },
+
     searchResults: {
-      position: "absolute", top: 62, left: 0, right: 0,
+      position: "absolute",
+      top: 72,
+      left: 0,
+      right: 0,
       backgroundColor: c.card,
-      borderRadius: 18, padding: 10,
-      elevation: 12, zIndex: 999,
-      borderWidth: 1, borderColor: c.border,
-      shadowColor: "#000", shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.12, shadowRadius: 10,
+      borderRadius: 20,
+      padding: 10,
+      elevation: 12,
+      zIndex: 999,
+      borderWidth: 1,
+      borderColor: c.border,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.12,
+      shadowRadius: 18,
     },
-    searchItem:      { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },
-    searchImg:       { width: 44, height: 44, borderRadius: 10 },
-    searchItemTitle: { fontWeight: "700", color: c.text },
-    searchSub:       { color: c.subtext, marginTop: 1 },
+
+    searchItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      marginBottom: 10,
+      paddingVertical: 4,
+    },
+
+    searchImg: {
+      width: 46,
+      height: 46,
+      borderRadius: 12,
+    },
+
+    searchItemTitle: {
+      fontWeight: "700",
+      color: c.text,
+    },
+
+    searchSub: {
+      color: c.subtext,
+      marginTop: 2,
+    },
 
     gridRow: {
-      flexDirection: "row", alignItems: "stretch",
+      flexDirection: "row",
+      alignItems: "stretch",
       justifyContent: "space-between",
-      marginBottom: 10, gap: 10,
-      paddingHorizontal: 12,
+      marginBottom: 14,
+      gap: 12,
+      paddingHorizontal: 16,
     },
+
     card: {
-      flex: 1, borderRadius: 22, overflow: "hidden",
-      shadowColor: "#000", shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.28, shadowRadius: 10, elevation: 8,
-    },
-    cardBg:  { flex: 1, width: "100%", height: "100%", justifyContent: "flex-end" },
-    rounded: { borderRadius: 22 },
-    gradient: {
-      paddingHorizontal: 14, paddingBottom: 16, paddingTop: 60,
-      justifyContent: "flex-end", borderRadius: 22,
-    },
-    cardIconWrap: {
-      width: 32, height: 32, borderRadius: 9,
-      backgroundColor: "rgba(255,255,255,0.2)",
-      justifyContent: "center", alignItems: "center",
-      marginBottom: 6,
-    },
-    cardTitle: {
-      color: "#fff", fontWeight: "800",
-      textShadowColor: "rgba(0,0,0,0.6)",
-      textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6,
-    },
-    cardSub: {
-      color: "rgba(255,255,255,0.85)", marginTop: 2,
-      textShadowColor: "rgba(0,0,0,0.5)",
-      textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4,
-    },
-
-    mapHeaderBlock: { paddingHorizontal: 4 },
-    mapHeader: {
-      flexDirection: "row", alignItems: "center", gap: 8,
-      paddingHorizontal: 16, marginTop: 22, marginBottom: 12,
-    },
-    sectionDot:  { width: 4, height: 18, borderRadius: 2, backgroundColor: "#E96928" },
-    mapTitle:    { fontWeight: "900", color: c.text },
-    mapSubtitle: { color: c.subtext, marginTop: 2 },
-    mapFrame: {
-      marginHorizontal: 12, borderRadius: 26, overflow: "hidden",
+      flex: 1,
+      borderRadius: 26,
+      overflow: "hidden",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: isDark ? 0.28 : 0.14,
+      shadowRadius: 18,
       elevation: 6,
-      shadowColor: "#000", shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.15, shadowRadius: 8,
-      borderWidth: 1, borderColor: c.border,
+      backfaceVisibility: "hidden",
     },
-    mapContainer: { height: 280, borderRadius: 26, overflow: "hidden" },
-    userMarker: {
-      width: 16, height: 16, backgroundColor: "#E96928",
-      borderRadius: 8, borderWidth: 3, borderColor: "#fff",
-    },
-    locationBtn: {
-      marginTop: 14, alignSelf: "center",
-      borderRadius: 30, overflow: "hidden",
-      elevation: 5,
-      shadowColor: "#E96928", shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.4, shadowRadius: 8,
-    },
-    locationBtnGradient: {
-      flexDirection: "row", alignItems: "center",
-      paddingHorizontal: 24, paddingVertical: 13, gap: 8,
-    },
-    btnText: { color: "#fff", fontWeight: "800" },
 
-    // Fecha y hora
-    dateTimeRow: {
-      flexDirection: "row", alignItems: "center",
-      justifyContent: "center", gap: 8,
+    cardBg: {
+      flex: 1,
+      width: "100%",
+      height: "100%",
+      justifyContent: "flex-end",
+      overflow: "hidden",
+    },
+
+    rounded: {
+      borderRadius: 26,
+    },
+
+    gradient: {
+      paddingHorizontal: 16,
+      paddingBottom: 16,
+      paddingTop: 70,
+      justifyContent: "flex-end",
+      borderRadius: 26,
+    },
+
+    cardIconWrap: {
+      width: 34,
+      height: 34,
+      borderRadius: 10,
+      backgroundColor: "rgba(255,255,255,0.18)",
+      justifyContent: "center",
+      alignItems: "center",
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: "rgba(255,255,255,0.18)",
+    },
+
+    cardTitle: {
+      color: "#fff",
+      fontWeight: "900",
+      letterSpacing: -0.3,
+      textShadowColor: "rgba(0,0,0,0.55)",
+      textShadowOffset: { width: 0, height: 2 },
+      textShadowRadius: 8,
+    },
+
+    cardSub: {
+      color: "rgba(255,255,255,0.9)",
+      marginTop: 4,
+      fontWeight: "500",
+      textShadowColor: "rgba(0,0,0,0.45)",
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 5,
+    },
+
+    mapHeaderBlock: {
+      paddingHorizontal: 4,
+      marginTop: 8,
+    },
+
+    mapHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      paddingHorizontal: 16,
+      marginTop: 22,
       marginBottom: 14,
     },
-    dateChip: {
-      flexDirection: "row", alignItems: "center", gap: 5,
-      backgroundColor: isDark ? "rgba(233,105,40,0.12)" : "rgba(233,105,40,0.08)",
-      paddingHorizontal: 12, paddingVertical: 6,
-      borderRadius: 20, borderWidth: 1,
-      borderColor: isDark ? "rgba(233,105,40,0.3)" : "rgba(233,105,40,0.2)",
+
+    sectionDot: {
+      width: 5,
+      height: 22,
+      borderRadius: 3,
+      backgroundColor: "#E96928",
     },
-    dateChipText: { color: isDark ? "#E96928" : "#c4511a", fontWeight: "600" },
-    timeChip: {
-      flexDirection: "row", alignItems: "center", gap: 5,
-      backgroundColor: isDark ? "rgba(233,105,40,0.12)" : "rgba(233,105,40,0.08)",
-      paddingHorizontal: 12, paddingVertical: 6,
-      borderRadius: 20, borderWidth: 1,
-      borderColor: isDark ? "rgba(233,105,40,0.3)" : "rgba(233,105,40,0.2)",
+
+    mapTitle: {
+      fontWeight: "900",
+      color: c.text,
+      letterSpacing: -0.3,
     },
-    timeChipText: { color: isDark ? "#E96928" : "#c4511a", fontWeight: "700" },
+
+    mapSubtitle: {
+      color: c.subtext,
+      marginTop: 3,
+    },
+
+    mapFrame: {
+      marginHorizontal: 16,
+      borderRadius: 28,
+      overflow: "hidden",
+      elevation: 6,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.14,
+      shadowRadius: 16,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+
+    mapContainer: {
+      height: 285,
+      borderRadius: 28,
+      overflow: "hidden",
+    },
+
+    userMarker: {
+      width: 16,
+      height: 16,
+      backgroundColor: "#E96928",
+      borderRadius: 8,
+      borderWidth: 3,
+      borderColor: "#fff",
+    },
+
+    locationBtn: {
+      marginTop: 18,
+      alignSelf: "center",
+      borderRadius: 32,
+      overflow: "hidden",
+      elevation: 5,
+      shadowColor: "#E96928",
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.28,
+      shadowRadius: 14,
+    },
+
+    locationBtnGradient: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 26,
+      paddingVertical: 14,
+      gap: 9,
+    },
+
+    btnText: {
+      color: "#fff",
+      fontWeight: "800",
+      letterSpacing: 0.2,
+    },
   });

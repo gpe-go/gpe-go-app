@@ -1,19 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  Pressable,
-  ScrollView,
-  Alert,
-  ActivityIndicator,
-  Platform,
-} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { registrarComercio, getMisLugares, getCategoriasAPI } from '../src/api/api';
+import { getCategoriasAPI, getMisLugares, registrarComercio } from '../src/api/api';
 
 type Categoria = { id: number; nombre: string };
 type Lugar = { id: number; nombre: string; estado: string; direccion?: string };
