@@ -131,15 +131,12 @@ export function NotificacionesProvider({ children }: { children: React.ReactNode
 
   // ─── Marcar una como leída ───────────────────────────────────────────────
   const marcarLeida = useCallback(async (id: number) => {
-    try {
-      await apiMarcarLeida(id);
-      setNotificaciones(prev =>
-        prev.map(n => n.id === id ? { ...n, leida: 1 } : n)
-      );
-      setUnread(prev => Math.max(0, prev - 1));
-    } catch {
-      // silencioso
-    }
+    // Actualización visual inmediata, sin esperar la API
+    setNotificaciones(prev =>
+      prev.map(n => n.id === id ? { ...n, leida: 1 } : n)
+    );
+    setUnread(prev => Math.max(0, prev - 1));
+    apiMarcarLeida(id).catch(() => {});
   }, []);
 
   // ─── Marcar todas ───────────────────────────────────────────────────────
