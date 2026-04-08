@@ -120,8 +120,10 @@ export function NotificacionesProvider({ children }: { children: React.ReactNode
         getNotificaciones(),
         contarNoLeidas(),
       ]);
-      if (listRes.success)  setNotificaciones(listRes.data ?? []);
-      if (countRes.success) setUnread(countRes.data?.count ?? 0);
+      if (listRes.success)  setNotificaciones(
+        (listRes.data ?? []).map((n: any) => ({ ...n, leida: Number(n.leida) }))
+      );
+      if (countRes.success) setUnread(Number(countRes.data?.count ?? 0));
     } catch {
       // silencioso
     } finally {
