@@ -54,14 +54,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (u.foto_url) {
       items.push(['fotoPerfil', u.foto_url]);
       setFotoPerfil(u.foto_url);
+    } else {
+      // Limpiar foto de un usuario anterior
+      await AsyncStorage.removeItem('fotoPerfil');
+      setFotoPerfil(null);
     }
     await AsyncStorage.multiSet(items);
     setUsuario(u);
   }, []);
 
   const logout = useCallback(async () => {
-    await AsyncStorage.multiRemove(['token', 'usuario']);
+    await AsyncStorage.multiRemove(['token', 'usuario', 'fotoPerfil']);
     setUsuario(null);
+    setFotoPerfil(null);
   }, []);
 
   const actualizarUsuario = useCallback(async (cambios: Partial<Usuario>) => {

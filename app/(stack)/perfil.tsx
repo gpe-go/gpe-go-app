@@ -20,7 +20,9 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { getMisLugares, registrarUsuario, solicitarCodigo, verificarCodigo } from '../../src/api/api';
+import { useNotificaciones } from '../../src/context/NotificacionesContext';
 import { useAuth } from '../../src/context/AuthContext';
 import { useTheme } from '../../src/context/ThemeContext';
 
@@ -215,6 +217,7 @@ export default function PerfilScreen() {
     logout,
     actualizarFoto,
   } = useAuth();
+  const { refresh: refreshNotif } = useNotificaciones();
 
   const [step, setStep] = useState<Step>('login');
   const [email, setEmail] = useState('');
@@ -225,15 +228,19 @@ export default function PerfilScreen() {
   type MiNegocio = { id: number; nombre: string; estado: string; id_categoria: number };
   const [misNegocios, setMisNegocios] = useState<MiNegocio[]>([]);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      getMisLugares()
-        .then(res => { if (res.success) setMisNegocios(res.data ?? []); })
-        .catch(() => {});
-    } else {
-      setMisNegocios([]);
-    }
-  }, [isAuthenticated]);
+  // Recargar mis negocios y notificaciones cada vez que la pantalla toma foco
+  useFocusEffect(
+    React.useCallback(() => {
+      if (isAuthenticated) {
+        getMisLugares()
+          .then(res => { if (res.success) setMisNegocios(res.data ?? []); })
+          .catch(() => {});
+        refreshNotif();
+      } else {
+        setMisNegocios([]);
+      }
+    }, [isAuthenticated, refreshNotif])
+  );
 
   const topAnim = useRef(new Animated.Value(0)).current;
   const cardsAnim = useRef(new Animated.Value(0)).current;
