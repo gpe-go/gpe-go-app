@@ -295,8 +295,7 @@
   "privacy_location_body": "GPS används bara för att centrera kartan. Det sparas aldrig och delas inte med tredje part.",
   "privacy_rights_title": "Dina rättigheter",
   "privacy_rights_body": "Du kan radera ditt konto och all din data när som helst i appinställningarna.",
-  "privacy_close": "Förstått"
-,
+  "privacy_close": "Förstått",
   "contact_schedule_hours": "Måndag till fredag 8:00–17:00",
   "biz_register_btn": "Registrera mitt företag",
   "biz_title": "Registrera företag",
@@ -322,5 +321,15 @@
   "biz_success_body": "Ditt företag har skickats in och väntar på godkännande.",
   "biz_success_btn": "Acceptera",
   "biz_submit": "Registrera företag",
-  "biz_pending_note": "Ditt företag väntar på godkännande innan det visas i appen."
+  "biz_pending_note": "Ditt företag väntar på godkännande innan det visas i appen.",
+  "drawer_nav_notificaciones": "Aviseringar",
+  "notif_title": "Aviseringar",
+  "notif_mark_all": "Markera alla lästa",
+  "notif_empty": "Inga aviseringar",
+  "notif_empty_sub": "Uppdateringar om företag, evenemang och mer visas här.",
+  "mis_negocios_title": "Mina företag",
+  "mis_negocios_empty": "Du har inte registrerat något företag ännu.",
+  "negocio_estado_pendiente": "Väntar",
+  "negocio_estado_aprobado": "Godkänd",
+  "negocio_estado_rechazado": "Avvisad"
 }

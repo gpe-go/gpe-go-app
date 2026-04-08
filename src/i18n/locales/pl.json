@@ -295,8 +295,7 @@
   "privacy_location_body": "GPS służy tylko do wyśrodkowania mapy. Nigdy nie jest przechowywany ani udostępniany osobom trzecim.",
   "privacy_rights_title": "Twoje prawa",
   "privacy_rights_body": "Możesz usunąć swoje konto i wszystkie dane w dowolnym momencie w ustawieniach aplikacji.",
-  "privacy_close": "Rozumiem"
-,
+  "privacy_close": "Rozumiem",
   "contact_schedule_hours": "Poniedziałek–piątek od 8:00 do 17:00",
   "biz_register_btn": "Zarejestruj moją firmę",
   "biz_title": "Zarejestruj firmę",
@@ -322,5 +321,15 @@
   "biz_success_body": "Twoja firma została przesłana i oczekuje na zatwierdzenie.",
   "biz_success_btn": "Akceptuj",
   "biz_submit": "Zarejestruj firmę",
-  "biz_pending_note": "Twoja firma będzie oczekiwać na zatwierdzenie przed pojawieniem się w aplikacji."
+  "biz_pending_note": "Twoja firma będzie oczekiwać na zatwierdzenie przed pojawieniem się w aplikacji.",
+  "drawer_nav_notificaciones": "Powiadomienia",
+  "notif_title": "Powiadomienia",
+  "notif_mark_all": "Oznacz wszystkie",
+  "notif_empty": "Brak powiadomień",
+  "notif_empty_sub": "Tutaj pojawią się informacje o firmach, wydarzeniach i nie tylko.",
+  "mis_negocios_title": "Moje firmy",
+  "mis_negocios_empty": "Nie zarejestrowałeś jeszcze żadnej firmy.",
+  "negocio_estado_pendiente": "Oczekujące",
+  "negocio_estado_aprobado": "Zatwierdzone",
+  "negocio_estado_rechazado": "Odrzucone"
 }

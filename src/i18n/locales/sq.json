@@ -295,8 +295,7 @@
   "privacy_location_body": "GPS përdoret vetëm për të qendruar hartën. Nuk ruhet kurrë dhe nuk ndahet me palë të treta.",
   "privacy_rights_title": "Të drejtat tuaja",
   "privacy_rights_body": "Mund të fshini llogarinë dhe të gjitha të dhënat tuaja në çdo kohë nga cilësimet e aplikacionit.",
-  "privacy_close": "Kuptova"
-,
+  "privacy_close": "Kuptova",
   "contact_schedule_hours": "E hënë deri të premte 8:00–17:00",
   "biz_register_btn": "Regjistro biznesin tim",
   "biz_title": "Regjistro biznesin",
@@ -322,5 +321,15 @@
   "biz_success_body": "Biznesi juaj u dërgua dhe pret miratimin.",
   "biz_success_btn": "Prano",
   "biz_submit": "Regjistro biznesin",
-  "biz_pending_note": "Biznesi juaj do të presë miratimin para se të shfaqet në aplikacion."
+  "biz_pending_note": "Biznesi juaj do të presë miratimin para se të shfaqet në aplikacion.",
+  "drawer_nav_notificaciones": "Njoftimet",
+  "notif_title": "Njoftimet",
+  "notif_mark_all": "Shëno të gjitha",
+  "notif_empty": "Nuk ka njoftime",
+  "notif_empty_sub": "Këtu do të shfaqen përditësimet për bizneset, ngjarjet dhe më shumë.",
+  "mis_negocios_title": "Bizneset e mia",
+  "mis_negocios_empty": "Nuk keni regjistruar asnjë biznes ende.",
+  "negocio_estado_pendiente": "Në pritje",
+  "negocio_estado_aprobado": "Aprovuar",
+  "negocio_estado_rechazado": "Refuzuar"
 }

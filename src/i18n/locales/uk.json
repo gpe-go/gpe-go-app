@@ -295,8 +295,7 @@
   "privacy_location_body": "GPS використовується лише для центрування карти. Ніколи не зберігається і не передається третім особам.",
   "privacy_rights_title": "Ваші права",
   "privacy_rights_body": "Ви можете видалити свій обліковий запис і всі дані будь-коли в налаштуваннях програми.",
-  "privacy_close": "Зрозуміло"
-,
+  "privacy_close": "Зрозуміло",
   "contact_schedule_hours": "Понеділок–п'ятниця з 8:00 до 17:00",
   "biz_register_btn": "Зареєструвати мій бізнес",
   "biz_title": "Реєстрація бізнесу",
@@ -322,5 +321,15 @@
   "biz_success_body": "Ваш бізнес надіслано і очікує на схвалення.",
   "biz_success_btn": "Прийняти",
   "biz_submit": "Зареєструвати бізнес",
-  "biz_pending_note": "Ваш бізнес буде очікувати на схвалення перед появою в додатку."
+  "biz_pending_note": "Ваш бізнес буде очікувати на схвалення перед появою в додатку.",
+  "drawer_nav_notificaciones": "Сповіщення",
+  "notif_title": "Сповіщення",
+  "notif_mark_all": "Позначити всі",
+  "notif_empty": "Немає сповіщень",
+  "notif_empty_sub": "Тут з'являться оновлення про бізнес, події та інше.",
+  "mis_negocios_title": "Мої бізнеси",
+  "mis_negocios_empty": "Ви ще не зареєстрували жодного бізнесу.",
+  "negocio_estado_pendiente": "На розгляді",
+  "negocio_estado_aprobado": "Схвалено",
+  "negocio_estado_rechazado": "Відхилено"
 }

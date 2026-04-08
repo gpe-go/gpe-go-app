@@ -14,15 +14,17 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
+import { useNotificaciones } from '../src/context/NotificacionesContext';
+import { useAuth } from '../src/context/AuthContext';
 
 const MENU_ITEMS = [
-  { name: 'index',      icon: 'home-outline',     labelKey: 'drawer_nav_home'      },
-  { name: 'noticias',   icon: 'newspaper-outline', labelKey: 'drawer_nav_news'      },
-  { name: 'eventos',    icon: 'calendar-outline',  labelKey: 'drawer_nav_events'    },
-  { name: 'directorio', icon: 'business-outline',  labelKey: 'drawer_nav_directory' },
-  { name: 'explorar',   icon: 'compass-outline',   labelKey: 'drawer_nav_explore'   },
-  { name: 'favoritos',  icon: 'heart-outline',     labelKey: 'drawer_nav_favorites' },
-  { name: 'contacto',   icon: 'mail-outline',      labelKey: 'drawer_nav_contact'   },
+  { name: 'index',      icon: 'home-outline',          labelKey: 'drawer_nav_home'      },
+  { name: 'noticias',   icon: 'newspaper-outline',      labelKey: 'drawer_nav_news'      },
+  { name: 'eventos',    icon: 'calendar-outline',       labelKey: 'drawer_nav_events'    },
+  { name: 'directorio', icon: 'business-outline',       labelKey: 'drawer_nav_directory' },
+  { name: 'explorar',   icon: 'compass-outline',        labelKey: 'drawer_nav_explore'   },
+  { name: 'favoritos',  icon: 'heart-outline',          labelKey: 'drawer_nav_favorites' },
+  { name: 'contacto',   icon: 'mail-outline',           labelKey: 'drawer_nav_contact'   },
 ] as const;
 
 function getClimaInfo(code: number): { desc: string; icon: string } {
@@ -62,6 +64,8 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
   const { fonts, isDark } = useTheme();
   const router  = useRouter();
   const insets  = useSafeAreaInsets();
+  const { isAuthenticated } = useAuth();
+  const { unread } = useNotificaciones();
 
   const [saludoIcon, setSaludoIcon] = useState(getSaludoIcon());
   const [saludoKey,  setSaludoKey]  = useState(getSaludoKey());
@@ -289,6 +293,35 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
             </TouchableOpacity>
           );
         })}
+
+        {/* ── Separador + Notificaciones ── */}
+        <View style={styles.drawerSeparator} />
+        <TouchableOpacity
+          onPress={() => {
+            props.navigation.closeDrawer();
+            router.push('/(stack)/notificaciones' as any);
+          }}
+          activeOpacity={0.8}
+          style={styles.item}
+        >
+          <View style={[styles.itemIconWrap, styles.itemIconWrapInactive]}>
+            <Ionicons
+              name={isAuthenticated && unread > 0 ? 'notifications' : 'notifications-outline'}
+              size={20}
+              color="rgba(255,255,255,0.75)"
+            />
+          </View>
+          <Text style={[styles.itemLabel, { fontSize: fonts.base, color: '#fff', fontWeight: '600' }]}>
+            {t('drawer_nav_notificaciones')}
+          </Text>
+          {isAuthenticated && unread > 0 && (
+            <View style={styles.drawerBadge}>
+              <Text style={[styles.drawerBadgeText, { fontSize: fonts.xs }]}>
+                {unread > 9 ? '9+' : unread}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
       </DrawerContentScrollView>
 
       {/* ══ FOOTER ══════════════════════════════════════ */}
@@ -391,6 +424,20 @@ const styles = StyleSheet.create({
   },
   itemIconWrapInactive: { backgroundColor: 'rgba(255,255,255,0.12)' },
   itemLabel: { fontWeight: '600' },
+  drawerSeparator: {
+    height: 1, backgroundColor: 'rgba(255,255,255,0.18)',
+    marginHorizontal: 14, marginVertical: 8,
+  },
+  drawerBadge: {
+    marginLeft: 'auto',
+    backgroundColor: '#fff',
+    minWidth: 20, height: 20, borderRadius: 10,
+    justifyContent: 'center', alignItems: 'center',
+    paddingHorizontal: 5,
+  },
+  drawerBadgeText: {
+    color: '#E96928', fontWeight: '800',
+  },
   footer: {
     paddingHorizontal: 20,
     backgroundColor: '#c4511a',

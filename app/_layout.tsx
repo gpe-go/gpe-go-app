@@ -2,12 +2,14 @@ import { Stack } from "expo-router";
 import { ThemeProvider } from '../src/context/ThemeContext';
 import { AuthProvider } from '../src/context/AuthContext';
 import { FavoritosProvider } from '../src/context/FavoritosContext';
+import { NotificacionesProvider } from '../src/context/NotificacionesContext';
 import '../src/i18n/i18n';
 
 export default function RootLayout() {
   return (
     <ThemeProvider>
       <AuthProvider>
+        <NotificacionesProvider>
         <FavoritosProvider>
           <Stack
             screenOptions={{
@@ -25,6 +27,7 @@ export default function RootLayout() {
             <Stack.Screen name="lugar/[id]"        options={{ animation: 'slide_from_right' }} />
           </Stack>
         </FavoritosProvider>
+        </NotificacionesProvider>
       </AuthProvider>
     </ThemeProvider>
   );

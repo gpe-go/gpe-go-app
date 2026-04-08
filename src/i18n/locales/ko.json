@@ -295,8 +295,7 @@
   "privacy_location_body": "GPS는 지도 중심을 맞추는 데만 사용됩니다. 저장되거나 제3자와 공유되지 않습니다.",
   "privacy_rights_title": "귀하의 권리",
   "privacy_rights_body": "앱 설정에서 언제든지 계정과 모든 데이터를 삭제할 수 있습니다.",
-  "privacy_close": "확인"
-,
+  "privacy_close": "확인",
   "contact_schedule_hours": "월요일부터 금요일까지 오전 8:00 ~ 오후 5:00",
   "biz_register_btn": "내 사업체 등록",
   "biz_title": "사업체 등록",
@@ -322,5 +321,15 @@
   "biz_success_body": "사업체가 제출되었으며 승인 대기 중입니다.",
   "biz_success_btn": "확인",
   "biz_submit": "사업체 등록",
-  "biz_pending_note": "사업체는 앱에 표시되기 전에 승인을 기다립니다."
+  "biz_pending_note": "사업체는 앱에 표시되기 전에 승인을 기다립니다.",
+  "drawer_nav_notificaciones": "알림",
+  "notif_title": "알림",
+  "notif_mark_all": "모두 읽기",
+  "notif_empty": "알림 없음",
+  "notif_empty_sub": "비즈니스 업데이트, 이벤트 등이 여기에 표시됩니다.",
+  "mis_negocios_title": "내 비즈니스",
+  "mis_negocios_empty": "아직 등록된 비즈니스가 없습니다.",
+  "negocio_estado_pendiente": "검토 중",
+  "negocio_estado_aprobado": "승인됨",
+  "negocio_estado_rechazado": "거절됨"
 }

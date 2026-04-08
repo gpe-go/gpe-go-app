@@ -312,6 +312,50 @@ export const getFotosResena = async (id_resena: number) => {
   return response.data;
 };
 
+/* ================= NOTIFICACIONES ================= */
+
+export const getNotificaciones = async (limit = 50) => {
+  const response = await API.get("", {
+    params: { modulo: "notificaciones", action: "listar", limit },
+  });
+  return response.data;
+};
+
+export const contarNoLeidas = async () => {
+  const response = await API.get("", {
+    params: { modulo: "notificaciones", action: "contar" },
+  });
+  return response.data;
+};
+
+export const marcarLeida = async (id: number) => {
+  const response = await API.post("", {}, {
+    params: { modulo: "notificaciones", action: "marcar_leida", id },
+  });
+  return response.data;
+};
+
+export const marcarTodasLeidas = async () => {
+  const response = await API.post("", {}, {
+    params: { modulo: "notificaciones", action: "marcar_todas" },
+  });
+  return response.data;
+};
+
+export const guardarPushToken = async (token: string, plataforma: string) => {
+  const response = await API.post("", { token, plataforma }, {
+    params: { modulo: "notificaciones", action: "guardar_token" },
+  });
+  return response.data;
+};
+
+export const eliminarPushToken = async (token: string) => {
+  const response = await API.post("", { token }, {
+    params: { modulo: "notificaciones", action: "eliminar_token" },
+  });
+  return response.data;
+};
+
 /* ================= REPORTES ================= */
 
 export const crearReporte = async (data: {

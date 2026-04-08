@@ -321,5 +321,15 @@
   "biz_success_body": "Tu comercio fue enviado y está pendiente de aprobación. Te notificaremos cuando sea revisado.",
   "biz_success_btn": "Aceptar",
   "biz_submit": "Registrar negocio",
-  "biz_pending_note": "Tu negocio quedará pendiente de aprobación antes de aparecer en la app."
+  "biz_pending_note": "Tu negocio quedará pendiente de aprobación antes de aparecer en la app.",
+  "drawer_nav_notificaciones": "Notificaciones",
+  "notif_title": "Notificaciones",
+  "notif_mark_all": "Leer todo",
+  "notif_empty": "Sin notificaciones",
+  "notif_empty_sub": "Aquí aparecerán tus avisos de negocios, eventos y más.",
+  "mis_negocios_title": "Mis negocios",
+  "mis_negocios_empty": "Aún no has registrado ningún negocio.",
+  "negocio_estado_pendiente": "Pendiente",
+  "negocio_estado_aprobado": "Aprobado",
+  "negocio_estado_rechazado": "Rechazado"
 }

@@ -321,5 +321,15 @@
   "biz_success_body": "Your business was submitted and is pending approval. We will notify you when it is reviewed.",
   "biz_success_btn": "Accept",
   "biz_submit": "Register business",
-  "biz_pending_note": "Your business will be pending approval before appearing in the app."
+  "biz_pending_note": "Your business will be pending approval before appearing in the app.",
+  "drawer_nav_notificaciones": "Notifications",
+  "notif_title": "Notifications",
+  "notif_mark_all": "Mark all read",
+  "notif_empty": "No notifications",
+  "notif_empty_sub": "Business updates, events and more will appear here.",
+  "mis_negocios_title": "My businesses",
+  "mis_negocios_empty": "You haven't registered any business yet.",
+  "negocio_estado_pendiente": "Pending",
+  "negocio_estado_aprobado": "Approved",
+  "negocio_estado_rechazado": "Rejected"
 }

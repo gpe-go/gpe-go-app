@@ -295,8 +295,7 @@
   "privacy_location_body": "GPS wird nur verwendet, um die Karte zu zentrieren. Es wird nie gespeichert oder mit Dritten geteilt.",
   "privacy_rights_title": "Ihre Rechte",
   "privacy_rights_body": "Sie können Ihr Konto und alle Ihre Daten jederzeit in den App-Einstellungen löschen.",
-  "privacy_close": "Verstanden"
-,
+  "privacy_close": "Verstanden",
   "contact_schedule_hours": "Montag bis Freitag von 8:00 bis 17:00 Uhr",
   "biz_register_btn": "Mein Unternehmen registrieren",
   "biz_title": "Unternehmen registrieren",
@@ -322,5 +321,15 @@
   "biz_success_body": "Ihr Unternehmen wurde eingereicht und wartet auf Genehmigung.",
   "biz_success_btn": "Akzeptieren",
   "biz_submit": "Unternehmen registrieren",
-  "biz_pending_note": "Ihr Unternehmen wartet auf Genehmigung, bevor es in der App erscheint."
+  "biz_pending_note": "Ihr Unternehmen wartet auf Genehmigung, bevor es in der App erscheint.",
+  "drawer_nav_notificaciones": "Benachrichtigungen",
+  "notif_title": "Benachrichtigungen",
+  "notif_mark_all": "Alle lesen",
+  "notif_empty": "Keine Benachrichtigungen",
+  "notif_empty_sub": "Hier erscheinen Informationen zu Unternehmen, Veranstaltungen und mehr.",
+  "mis_negocios_title": "Meine Unternehmen",
+  "mis_negocios_empty": "Sie haben noch kein Unternehmen registriert.",
+  "negocio_estado_pendiente": "Ausstehend",
+  "negocio_estado_aprobado": "Genehmigt",
+  "negocio_estado_rechazado": "Abgelehnt"
 }

@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CustomDrawer from '../../components/CustomDrawer';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useAuth } from '../../src/context/AuthContext';
+import { useNotificaciones } from '../../src/context/NotificacionesContext';
 
 const { width } = Dimensions.get('window');
 
@@ -70,12 +71,39 @@ function HeaderBtn({
   );
 }
 
+function BellBtn({ onPress, color, unread }: { onPress: () => void; color: string; unread: number }) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.75}
+      style={{ width: 36, height: 36, justifyContent: 'center', alignItems: 'center' }}
+    >
+      <Ionicons name={unread > 0 ? 'notifications' : 'notifications-outline'} size={20} color={color} />
+      {unread > 0 && (
+        <View style={{
+          position: 'absolute', top: 4, right: 4,
+          minWidth: 14, height: 14, borderRadius: 7,
+          backgroundColor: '#E96928',
+          borderWidth: 1.5, borderColor: '#fff',
+          justifyContent: 'center', alignItems: 'center',
+          paddingHorizontal: 2,
+        }}>
+          <Text style={{ color: '#fff', fontSize: 8, fontWeight: '800', lineHeight: 10 }}>
+            {unread > 9 ? '9+' : unread}
+          </Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+}
+
 const HEADER_CONTENT_H = 52;
 
 export default function Layout() {
   const router = useRouter();
   const { colors, fonts, isDark } = useTheme();
   const { fotoPerfil, isAuthenticated } = useAuth();
+  const { unread } = useNotificaciones();
   const insets = useSafeAreaInsets();
   const STATUS_BAR_H = insets.top;
   const HEADER_H     = STATUS_BAR_H + HEADER_CONTENT_H;
@@ -125,6 +153,11 @@ export default function Layout() {
                 <View style={{ flex: 1 }} />
 
                 <View style={s.actionsRow}>
+                  <BellBtn
+                    color="#E96928"
+                    unread={isAuthenticated ? unread : 0}
+                    onPress={() => router.push('/(stack)/notificaciones' as any)}
+                  />
                   <HeaderBtn
                     icon="settings-outline"
                     color="#E96928"

@@ -295,8 +295,7 @@
   "privacy_location_body": "GPSは地図の中心を合わせるためだけに使用されます。保存や第三者への共有はありません。",
   "privacy_rights_title": "あなたの権利",
   "privacy_rights_body": "アプリの設定からいつでもアカウントと全データを削除できます。",
-  "privacy_close": "了解"
-,
+  "privacy_close": "了解",
   "contact_schedule_hours": "月曜日〜金曜日 8:00〜17:00",
   "biz_register_btn": "ビジネスを登録する",
   "biz_title": "ビジネス登録",
@@ -322,5 +321,15 @@
   "biz_success_body": "ビジネスが送信され、承認待ちです。",
   "biz_success_btn": "了解",
   "biz_submit": "ビジネスを登録する",
-  "biz_pending_note": "ビジネスはアプリに表示される前に承認待ちになります。"
+  "biz_pending_note": "ビジネスはアプリに表示される前に承認待ちになります。",
+  "drawer_nav_notificaciones": "通知",
+  "notif_title": "通知",
+  "notif_mark_all": "すべて既読",
+  "notif_empty": "通知はありません",
+  "notif_empty_sub": "ビジネス、イベントなどのお知らせがここに表示されます。",
+  "mis_negocios_title": "マイビジネス",
+  "mis_negocios_empty": "まだビジネスを登録していません。",
+  "negocio_estado_pendiente": "審査中",
+  "negocio_estado_aprobado": "承認済み",
+  "negocio_estado_rechazado": "却下"
 }

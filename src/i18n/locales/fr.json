@@ -295,8 +295,7 @@
   "privacy_location_body": "Le GPS est utilisé uniquement pour centrer la carte. Il n'est jamais stocké ni partagé avec des tiers.",
   "privacy_rights_title": "Vos droits",
   "privacy_rights_body": "Vous pouvez supprimer votre compte et toutes vos données à tout moment depuis les paramètres.",
-  "privacy_close": "Compris"
-,
+  "privacy_close": "Compris",
   "contact_schedule_hours": "Lundi au vendredi de 8h00 à 17h00",
   "biz_register_btn": "Enregistrer mon entreprise",
   "biz_title": "Enregistrer une entreprise",
@@ -322,5 +321,15 @@
   "biz_success_body": "Votre commerce a été soumis et est en attente d'approbation.",
   "biz_success_btn": "Accepter",
   "biz_submit": "Enregistrer l'entreprise",
-  "biz_pending_note": "Votre entreprise sera en attente d'approbation avant d'apparaître dans l'application."
+  "biz_pending_note": "Votre entreprise sera en attente d'approbation avant d'apparaître dans l'application.",
+  "drawer_nav_notificaciones": "Notifications",
+  "notif_title": "Notifications",
+  "notif_mark_all": "Tout lire",
+  "notif_empty": "Aucune notification",
+  "notif_empty_sub": "Les avis sur vos commerces, événements et plus apparaîtront ici.",
+  "mis_negocios_title": "Mes commerces",
+  "mis_negocios_empty": "Vous n'avez pas encore enregistré de commerce.",
+  "negocio_estado_pendiente": "En attente",
+  "negocio_estado_aprobado": "Approuvé",
+  "negocio_estado_rechazado": "Rejeté"
 }

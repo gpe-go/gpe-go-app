@@ -295,8 +295,7 @@
   "privacy_location_body": "O GPS é usado apenas para centralizar o mapa. Nunca é armazenado ou compartilhado com terceiros.",
   "privacy_rights_title": "Seus direitos",
   "privacy_rights_body": "Você pode excluir sua conta e todos os seus dados a qualquer momento nas configurações do app.",
-  "privacy_close": "Entendido"
-,
+  "privacy_close": "Entendido",
   "contact_schedule_hours": "Segunda a sexta-feira das 8h00 às 17h00",
   "biz_register_btn": "Registrar meu negócio",
   "biz_title": "Registrar negócio",
@@ -322,5 +321,15 @@
   "biz_success_body": "Seu comércio foi enviado e está pendente de aprovação.",
   "biz_success_btn": "Aceitar",
   "biz_submit": "Registrar negócio",
-  "biz_pending_note": "Seu negócio ficará pendente de aprovação antes de aparecer no app."
+  "biz_pending_note": "Seu negócio ficará pendente de aprovação antes de aparecer no app.",
+  "drawer_nav_notificaciones": "Notificações",
+  "notif_title": "Notificações",
+  "notif_mark_all": "Marcar tudo",
+  "notif_empty": "Sem notificações",
+  "notif_empty_sub": "Avisos sobre negócios, eventos e mais aparecerão aqui.",
+  "mis_negocios_title": "Meus negócios",
+  "mis_negocios_empty": "Você ainda não registrou nenhum negócio.",
+  "negocio_estado_pendiente": "Pendente",
+  "negocio_estado_aprobado": "Aprovado",
+  "negocio_estado_rechazado": "Rejeitado"
 }

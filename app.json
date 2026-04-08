@@ -47,6 +47,15 @@
       "expo-video",
 
       [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#E96928",
+          "sounds": []
+        }
+      ],
+
+      [
         "expo-location",
         {
           "locationAlwaysAndWhenInUsePermission": "GuadalupeGo necesita tu ubicación para mostrarte lugares cercanos."

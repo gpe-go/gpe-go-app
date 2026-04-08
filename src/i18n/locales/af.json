@@ -295,8 +295,7 @@
   "privacy_location_body": "GPS word slegs gebruik om die kaart te sentreer. Dit word nooit gestoor of met derde partye gedeel nie.",
   "privacy_rights_title": "Jou regte",
   "privacy_rights_body": "Jy kan jou rekening en alle data op enige tyd in die program-instellings verwyder.",
-  "privacy_close": "Verstaan"
-,
+  "privacy_close": "Verstaan",
   "contact_schedule_hours": "Maandag tot Vrydag 8:00 tot 17:00",
   "biz_register_btn": "Registreer my besigheid",
   "biz_title": "Registreer besigheid",
@@ -322,5 +321,15 @@
   "biz_success_body": "Jou besigheid is ingedien en wag op goedkeuring.",
   "biz_success_btn": "Aanvaar",
   "biz_submit": "Registreer besigheid",
-  "biz_pending_note": "Jou besigheid wag op goedkeuring voordat dit in die app verskyn."
+  "biz_pending_note": "Jou besigheid wag op goedkeuring voordat dit in die app verskyn.",
+  "drawer_nav_notificaciones": "Kennisgewings",
+  "notif_title": "Kennisgewings",
+  "notif_mark_all": "Merk alles gelees",
+  "notif_empty": "Geen kennisgewings",
+  "notif_empty_sub": "Opdaterings oor besighede, geleenthede en meer sal hier verskyn.",
+  "mis_negocios_title": "My besighede",
+  "mis_negocios_empty": "Jy het nog geen besigheid geregistreer nie.",
+  "negocio_estado_pendiente": "Hangende",
+  "negocio_estado_aprobado": "Goedgekeur",
+  "negocio_estado_rechazado": "Verwerp"
 }

@@ -20,7 +20,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { registrarUsuario, solicitarCodigo, verificarCodigo } from '../../src/api/api';
+import { getMisLugares, registrarUsuario, solicitarCodigo, verificarCodigo } from '../../src/api/api';
 import { useAuth } from '../../src/context/AuthContext';
 import { useTheme } from '../../src/context/ThemeContext';
 
@@ -221,6 +221,19 @@ export default function PerfilScreen() {
   const [nombre, setNombre] = useState('');
   const [codigo, setCodigo] = useState('');
   const [loading, setLoading] = useState(false);
+
+  type MiNegocio = { id: number; nombre: string; estado: string; id_categoria: number };
+  const [misNegocios, setMisNegocios] = useState<MiNegocio[]>([]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      getMisLugares()
+        .then(res => { if (res.success) setMisNegocios(res.data ?? []); })
+        .catch(() => {});
+    } else {
+      setMisNegocios([]);
+    }
+  }, [isAuthenticated]);
 
   const topAnim = useRef(new Animated.Value(0)).current;
   const cardsAnim = useRef(new Animated.Value(0)).current;
@@ -495,6 +508,45 @@ export default function PerfilScreen() {
               </Text>
               <Ionicons name="chevron-forward" size={18} color={colors.subtext} />
             </Pressable>
+
+            {/* ── Mis Negocios ── */}
+            {misNegocios.length > 0 && (
+              <View style={[styles.misNegociosSection, { borderColor: colors.border }]}>
+                <Text style={[styles.misNegociosTitle, { color: colors.text, fontSize: fonts.sm }]}>
+                  {t('mis_negocios_title')}
+                </Text>
+                {misNegocios.map(neg => {
+                  const estadoColor =
+                    neg.estado === 'aprobado'  ? '#22c55e' :
+                    neg.estado === 'rechazado' ? '#ef4444' : '#f59e0b';
+                  const estadoKey =
+                    neg.estado === 'aprobado'  ? 'negocio_estado_aprobado' :
+                    neg.estado === 'rechazado' ? 'negocio_estado_rechazado' : 'negocio_estado_pendiente';
+                  return (
+                    <View
+                      key={neg.id}
+                      style={[styles.misNegociosCard, { backgroundColor: colors.background, borderColor: colors.border }]}
+                    >
+                      <View style={[styles.misNegociosIconWrap, { backgroundColor: 'rgba(233,105,40,0.1)' }]}>
+                        <Ionicons name="storefront-outline" size={18} color="#E96928" />
+                      </View>
+                      <Text
+                        style={[styles.misNegociosName, { color: colors.text, fontSize: fonts.sm }]}
+                        numberOfLines={1}
+                      >
+                        {neg.nombre}
+                      </Text>
+                      <View style={[styles.estadoBadge, { backgroundColor: estadoColor + '22' }]}>
+                        <View style={[styles.estadoDot, { backgroundColor: estadoColor }]} />
+                        <Text style={[styles.estadoText, { color: estadoColor, fontSize: fonts.xs }]}>
+                          {t(estadoKey)}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
 
             <Pressable
               style={({ pressed }) => [
@@ -1010,6 +1062,45 @@ const styles = StyleSheet.create({
   logoutText: {
     color: '#E96928',
     fontSize: 16,
+    fontWeight: '700',
+  },
+  misNegociosSection: {
+    marginTop: 8,
+    marginBottom: 4,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingTop: 14,
+    gap: 8,
+  },
+  misNegociosTitle: {
+    fontWeight: '700',
+    marginBottom: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  misNegociosCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 10,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  misNegociosIconWrap: {
+    width: 34, height: 34, borderRadius: 10,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  misNegociosName: {
+    flex: 1,
+    fontWeight: '600',
+  },
+  estadoBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20,
+  },
+  estadoDot: {
+    width: 6, height: 6, borderRadius: 3,
+  },
+  estadoText: {
     fontWeight: '700',
   },
   appInfo: {

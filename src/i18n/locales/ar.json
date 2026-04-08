@@ -295,8 +295,7 @@
   "privacy_location_body": "يُستخدم GPS فقط لتوسيط الخريطة. لا يُخزَّن أبداً ولا يُشارَك مع أطراف ثالثة.",
   "privacy_rights_title": "حقوقك",
   "privacy_rights_body": "يمكنك حذف حسابك وجميع بياناتك في أي وقت من إعدادات التطبيق.",
-  "privacy_close": "فهمت"
-,
+  "privacy_close": "فهمت",
   "contact_schedule_hours": "من الاثنين إلى الجمعة من 8:00 إلى 17:00",
   "biz_register_btn": "تسجيل عملي",
   "biz_title": "تسجيل نشاط تجاري",
@@ -322,5 +321,15 @@
   "biz_success_body": "تم إرسال تجارتك وهي في انتظار الموافقة.",
   "biz_success_btn": "قبول",
   "biz_submit": "تسجيل النشاط التجاري",
-  "biz_pending_note": "سيكون نشاطك التجاري في انتظار الموافقة قبل الظهور في التطبيق."
+  "biz_pending_note": "سيكون نشاطك التجاري في انتظار الموافقة قبل الظهور في التطبيق.",
+  "drawer_nav_notificaciones": "الإشعارات",
+  "notif_title": "الإشعارات",
+  "notif_mark_all": "قراءة الكل",
+  "notif_empty": "لا توجد إشعارات",
+  "notif_empty_sub": "ستظهر هنا إشعارات الأعمال والفعاليات والمزيد.",
+  "mis_negocios_title": "أعمالي",
+  "mis_negocios_empty": "لم تسجل أي نشاط تجاري بعد.",
+  "negocio_estado_pendiente": "قيد الانتظار",
+  "negocio_estado_aprobado": "موافق عليه",
+  "negocio_estado_rechazado": "مرفوض"
 }
