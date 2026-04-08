@@ -4,12 +4,12 @@
     "strict": true,
     "module": "ESNext",
     "forceConsistentCasingInFileNames": true,
-    "baseUrl": ".",
     "paths": {
       "@/*": [
         "./*"
       ]
-    }
+    },
+    "ignoreDeprecations": "5.0"
   },
   "include": [
     "**/*.ts",

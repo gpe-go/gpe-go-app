@@ -180,6 +180,14 @@ export const getMisLugares = async () => {
   return response.data;
 };
 
+export const subirFotoLugar = async (id_lugar: number, base64: string, orden: number) => {
+  const response = await API.post("", { id_lugar, imagen: base64, orden }, {
+    params: { modulo: "fotos_lugares", action: "subir" },
+    timeout: 30000,
+  });
+  return response.data;
+};
+
 /* ================= CATEGORIAS ================= */
 
 export const getCategoriasAPI = async () => {

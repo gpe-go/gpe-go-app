@@ -25,7 +25,7 @@ const EMERGENCIAS_DEFAULT = [
   { icon: 'medical', title: 'Cruz Verde', sub: 'Ambulancias', phone: '+528140409080', color: '#10B981' },
   { icon: 'shield', title: 'Seguridad Pública', sub: 'Policía Municipal', phone: '+528181355900', color: '#3B82F6' },
   { icon: 'car-sport', title: 'Tránsito y Vialidad', sub: 'Asistencia Vial', phone: '+528181355900', color: '#8B5CF6' },
-  { icon: 'business', title: 'Alcaldía de Guadalupe', sub: 'Municipio de Guadalupe', phone: '+528180306000', color: '#E96928' },
+  { icon: 'business', title: 'Presidencia Municipal', sub: 'Municipio de Guadalupe', phone: '+528180306000', color: '#E96928' },
 ];
 
 type Emergencia = {
@@ -236,7 +236,7 @@ export default function ContactoScreen() {
   }>({
     emails: ['turismo@guadalupe.gob.mx', 'info@guadalupe.gob.mx'],
     telefono: '+528180306000',
-    telefono_nombre: 'Alcaldía de Guadalupe',
+    telefono_nombre: 'Presidencia Municipal',
     horario: 'Lunes a viernes de 8:00 a 17:00 horas',
     direccion: 'C/ Hidalgo SN, Centro de Guadalupe, 67100 Guadalupe, N.L.',
     maps_url: 'https://maps.google.com/?q=Palacio+Municipal+Guadalupe+Nuevo+Leon+Mexico',
@@ -266,16 +266,28 @@ export default function ContactoScreen() {
 
   const handleCall = (numero: string) => Linking.openURL(`tel:${numero}`);
   const handleEmail = (correo: string) => Linking.openURL(`mailto:${correo}`);
-  const handleMaps = (direccion: string) => {
-    const query = encodeURIComponent(direccion);
-    const url = Platform.select({
-      ios: `maps://maps.apple.com/?q=${query}`,
-      android: `geo:0,0?q=${query}`,
-      default: `https://maps.google.com/?q=${query}`,
-    })!;
-    Linking.openURL(url).catch(() => {
-      Linking.openURL(`https://maps.google.com/?q=${query}`);
-    });
+  const handleMaps = () => {
+    const GOOGLE_MAPS_URL = 'https://maps.app.goo.gl/e28q3nYAanyh4BzK9?g_st=ic';
+    const APPLE_MAPS_URL = 'https://maps.apple/p/sv5wZPp3UpGIgp';
+
+    const opciones: { text: string; onPress: () => void }[] = [
+      {
+        text: 'Google Maps',
+        onPress: () => Linking.openURL(GOOGLE_MAPS_URL),
+      },
+    ];
+
+    if (Platform.OS === 'ios') {
+      opciones.unshift({
+        text: 'Apple Maps',
+        onPress: () => Linking.openURL(APPLE_MAPS_URL),
+      });
+    }
+
+    Alert.alert('Abrir en Mapas', 'Elige tu aplicación de mapas', [
+      ...opciones,
+      { text: 'Cancelar', style: 'cancel' },
+    ]);
   };
 
   const enviarSoporte = async () => {
@@ -511,11 +523,9 @@ export default function ContactoScreen() {
                   <Text style={[s.contactValue, { fontSize: fonts.xs }]}>
                     {contactoInfo.telefono}
                   </Text>
-                  {contactoInfo.horario && (
-                    <Text style={[s.contactSubValue, { fontSize: fonts.xs }]}>
-                      {contactoInfo.horario}
-                    </Text>
-                  )}
+                  <Text style={[s.contactSubValue, { fontSize: fonts.xs }]}>
+                    {t('contact_schedule_hours')}
+                  </Text>
                 </View>
                 <Pressable
                   onPress={() => handleCall(contactoInfo.telefono!)}
@@ -545,7 +555,7 @@ export default function ContactoScreen() {
                     transform: [{ scale: pressed ? 0.995 : 1 }],
                   },
                 ]}
-                onPress={() => contactoInfo.direccion && handleMaps(contactoInfo.direccion)}
+                onPress={handleMaps}
               >
                 <LinearGradient colors={['#E96928', '#c4511a']} style={s.contactIconWrap}>
                   <Ionicons name="location" size={20} color="#fff" />
@@ -556,7 +566,7 @@ export default function ContactoScreen() {
                     {contactoInfo.direccion}
                   </Text>
                   <Text style={[s.contactSubValue, s.contactLink, { fontSize: fonts.xs, marginTop: 3 }]}>
-                    Ver en Google Maps ↗
+                    Ver en Mapas ↗
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={colors.subtext} />

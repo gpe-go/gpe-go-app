@@ -222,6 +222,10 @@ export default function PerfilScreen() {
   const [codigo, setCodigo] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const topAnim = useRef(new Animated.Value(0)).current;
+  const cardsAnim = useRef(new Animated.Value(0)).current;
+  const cardAnim = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
     if (!isAuthenticated) {
       setStep('login');
@@ -230,6 +234,20 @@ export default function PerfilScreen() {
       setCodigo('');
     }
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (isAuthenticated && usuario) {
+      topAnim.setValue(0);
+      cardsAnim.setValue(0);
+      Animated.stagger(120, [
+        Animated.timing(topAnim, { toValue: 1, duration: 420, useNativeDriver: true }),
+        Animated.timing(cardsAnim, { toValue: 1, duration: 380, useNativeDriver: true }),
+      ]).start();
+    } else {
+      cardAnim.setValue(0);
+      Animated.timing(cardAnim, { toValue: 1, duration: 380, useNativeDriver: true }).start();
+    }
+  }, [isAuthenticated, usuario, step, topAnim, cardsAnim, cardAnim]);
 
   const cambiarFoto = () => {
     Alert.alert(t('profile_photo'), '', [
@@ -351,24 +369,6 @@ export default function PerfilScreen() {
   };
 
   if (isAuthenticated && usuario) {
-    const topAnim = useRef(new Animated.Value(0)).current;
-    const cardsAnim = useRef(new Animated.Value(0)).current;
-
-    useEffect(() => {
-      Animated.stagger(120, [
-        Animated.timing(topAnim, {
-          toValue: 1,
-          duration: 420,
-          useNativeDriver: true,
-        }),
-        Animated.timing(cardsAnim, {
-          toValue: 1,
-          duration: 380,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }, [topAnim, cardsAnim]);
-
     return (
       <ScreenShell colors={colors}>
         <Animated.View
@@ -476,38 +476,25 @@ export default function PerfilScreen() {
               <Ionicons name="chevron-forward" size={18} color={colors.subtext} />
             </Pressable>
 
-            {usuario.rol === 'comercio' ? (
-              <Pressable
-                style={({ pressed }) => [
-                  styles.locatarioButton,
-                  {
-                    opacity: pressed ? 0.92 : 1,
-                    transform: [{ scale: pressed ? 0.985 : 1 }],
-                  },
-                ]}
-                onPress={() => router.push('/registrar-negocio' as any)}
-              >
-                <Ionicons name="storefront-outline" size={22} color="#fff" />
-                <Text style={styles.locatarioButtonText}>Registrar mi negocio</Text>
-              </Pressable>
-            ) : (
-              <View
-                style={[
-                  styles.locatarioCard,
-                  { backgroundColor: colors.card, borderColor: colors.border },
-                ]}
-              >
-                <View style={s.locatarioIconCircle}>
-                  <Ionicons name="storefront-outline" size={30} color="#E96928" />
-                </View>
-                <Text style={[styles.locatarioTitle, { color: colors.text }]}>
-                  ¿Tienes un negocio?
-                </Text>
-                <Text style={[styles.locatarioDesc, { color: colors.subtext }]}>
-                  Solicita ser locatario para publicar tu comercio en GuadalupeGO.
-                </Text>
+            <Pressable
+              style={({ pressed }) => [
+                styles.actionRow,
+                { backgroundColor: colors.card, borderColor: colors.border },
+                {
+                  opacity: pressed ? 0.92 : 1,
+                  transform: [{ scale: pressed ? 0.985 : 1 }],
+                },
+              ]}
+              onPress={() => router.push('/(stack)/registrar-negocio' as any)}
+            >
+              <View style={[styles.actionIconWrap, { backgroundColor: 'rgba(233,105,40,0.1)' }]}>
+                <Ionicons name="storefront-outline" size={20} color="#E96928" />
               </View>
-            )}
+              <Text style={[styles.actionLabel, { color: colors.text, fontSize: fonts.base }]}>
+                {t('biz_register_btn')}
+              </Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.subtext} />
+            </Pressable>
 
             <Pressable
               style={({ pressed }) => [
@@ -533,16 +520,6 @@ export default function PerfilScreen() {
   }
 
   if (step === 'codigo') {
-    const cardAnim = useRef(new Animated.Value(0)).current;
-
-    useEffect(() => {
-      Animated.timing(cardAnim, {
-        toValue: 1,
-        duration: 380,
-        useNativeDriver: true,
-      }).start();
-    }, [cardAnim]);
-
     return (
       <ScreenShell colors={colors}>
         <AuthBanner
@@ -644,16 +621,6 @@ export default function PerfilScreen() {
   }
 
   if (step === 'registro') {
-    const cardAnim = useRef(new Animated.Value(0)).current;
-
-    useEffect(() => {
-      Animated.timing(cardAnim, {
-        toValue: 1,
-        duration: 380,
-        useNativeDriver: true,
-      }).start();
-    }, [cardAnim]);
-
     return (
       <ScreenShell colors={colors}>
         <AuthBanner
@@ -750,16 +717,6 @@ export default function PerfilScreen() {
       </ScreenShell>
     );
   }
-
-  const cardAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.timing(cardAnim, {
-      toValue: 1,
-      duration: 380,
-      useNativeDriver: true,
-    }).start();
-  }, [cardAnim]);
 
   return (
     <ScreenShell colors={colors}>
