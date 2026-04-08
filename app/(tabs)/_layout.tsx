@@ -150,14 +150,15 @@ export default function Layout() {
                   <Ionicons name="menu-outline" size={26} color="#E96928" />
                 </TouchableOpacity>
 
+                <BellBtn
+                  color="#E96928"
+                  unread={isAuthenticated ? unread : 0}
+                  onPress={() => router.push('/(stack)/notificaciones' as any)}
+                />
+
                 <View style={{ flex: 1 }} />
 
                 <View style={s.actionsRow}>
-                  <BellBtn
-                    color="#E96928"
-                    unread={isAuthenticated ? unread : 0}
-                    onPress={() => router.push('/(stack)/notificaciones' as any)}
-                  />
                   <HeaderBtn
                     icon="settings-outline"
                     color="#E96928"

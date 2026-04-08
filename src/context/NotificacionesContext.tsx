@@ -9,6 +9,10 @@ import React, {
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
+
+// Push solo funciona en build nativo (no en Expo Go)
+const IS_EXPO_GO = Constants.appOwnership === 'expo';
 import {
   getNotificaciones,
   contarNoLeidas,
@@ -19,16 +23,18 @@ import {
 } from '../api/api';
 import { useAuth } from './AuthContext';
 
-// Configurar comportamiento de notificaciones recibidas en foreground
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge:  true,
-    shouldShowBanner: true,
-    shouldShowList:   true,
-  }),
-});
+// Configurar comportamiento solo si no es Expo Go
+if (!IS_EXPO_GO) {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert:  true,
+      shouldPlaySound:  true,
+      shouldSetBadge:   true,
+      shouldShowBanner: true,
+      shouldShowList:   true,
+    }),
+  });
+}
 
 export type Notificacion = {
   id: number;
@@ -70,7 +76,7 @@ export function NotificacionesProvider({ children }: { children: React.ReactNode
   const registrarToken = useCallback(async () => {
     if (!isAuthenticated) return;
     try {
-      if (!Device.isDevice) return; // Solo en dispositivo físico
+      if (!Device.isDevice || IS_EXPO_GO) return; // Solo en build nativo, no Expo Go
 
       const { status: existing } = await Notifications.getPermissionsAsync();
       let finalStatus = existing;
@@ -173,8 +179,9 @@ export function NotificacionesProvider({ children }: { children: React.ReactNode
     };
   }, [isAuthenticated, refresh, registrarToken]);
 
-  // ─── Escuchar notificaciones recibidas en foreground ────────────────────
+  // ─── Escuchar notificaciones recibidas en foreground (solo build nativo) ──
   useEffect(() => {
+    if (IS_EXPO_GO) return;
     const sub = Notifications.addNotificationReceivedListener(() => {
       refresh();
     });

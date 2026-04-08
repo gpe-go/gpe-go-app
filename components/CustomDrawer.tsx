@@ -14,8 +14,6 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
-import { useNotificaciones } from '../src/context/NotificacionesContext';
-import { useAuth } from '../src/context/AuthContext';
 
 const MENU_ITEMS = [
   { name: 'index',      icon: 'home-outline',          labelKey: 'drawer_nav_home'      },
@@ -64,8 +62,6 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
   const { fonts, isDark } = useTheme();
   const router  = useRouter();
   const insets  = useSafeAreaInsets();
-  const { isAuthenticated } = useAuth();
-  const { unread } = useNotificaciones();
 
   const [saludoIcon, setSaludoIcon] = useState(getSaludoIcon());
   const [saludoKey,  setSaludoKey]  = useState(getSaludoKey());
@@ -294,34 +290,6 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
           );
         })}
 
-        {/* ── Separador + Notificaciones ── */}
-        <View style={styles.drawerSeparator} />
-        <TouchableOpacity
-          onPress={() => {
-            props.navigation.closeDrawer();
-            router.push('/(stack)/notificaciones' as any);
-          }}
-          activeOpacity={0.8}
-          style={styles.item}
-        >
-          <View style={[styles.itemIconWrap, styles.itemIconWrapInactive]}>
-            <Ionicons
-              name={isAuthenticated && unread > 0 ? 'notifications' : 'notifications-outline'}
-              size={20}
-              color="rgba(255,255,255,0.75)"
-            />
-          </View>
-          <Text style={[styles.itemLabel, { fontSize: fonts.base, color: '#fff', fontWeight: '600' }]}>
-            {t('drawer_nav_notificaciones')}
-          </Text>
-          {isAuthenticated && unread > 0 && (
-            <View style={styles.drawerBadge}>
-              <Text style={[styles.drawerBadgeText, { fontSize: fonts.xs }]}>
-                {unread > 9 ? '9+' : unread}
-              </Text>
-            </View>
-          )}
-        </TouchableOpacity>
       </DrawerContentScrollView>
 
       {/* ══ FOOTER ══════════════════════════════════════ */}
