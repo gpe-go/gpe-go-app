@@ -302,7 +302,8 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
             </View>
             <Text
               numberOfLines={1}
-              style={[styles.footerLogo, { fontSize: fonts.base }]}
+              allowFontScaling={false}
+              style={[styles.footerLogo, { fontSize: 14 }]}
             >
               Guadalupe<Text style={styles.footerLogoAccent}>GO</Text>
             </Text>
@@ -310,7 +311,8 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
           <View style={styles.versionBadge}>
             <Text
               numberOfLines={1}
-              style={[styles.versionText, { fontSize: fonts.xs }]}
+              allowFontScaling={false}
+              style={[styles.versionText, { fontSize: 11 }]}
             >
               {t('drawer_version')}
             </Text>
