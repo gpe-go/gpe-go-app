@@ -300,12 +300,18 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
             <View style={styles.footerLogoIcon}>
               <Ionicons name="location" size={12} color="#fff" />
             </View>
-            <Text style={[styles.footerLogo, { fontSize: fonts.md }]}>
+            <Text
+              numberOfLines={1}
+              style={[styles.footerLogo, { fontSize: fonts.sm }]}
+            >
               Guadalupe<Text style={styles.footerLogoAccent}>GO</Text>
             </Text>
           </View>
           <View style={styles.versionBadge}>
-            <Text style={[styles.versionText, { fontSize: fonts.xs }]}>
+            <Text
+              numberOfLines={1}
+              style={[styles.versionText, { fontSize: fonts.xs }]}
+            >
               {t('drawer_version')}
             </Text>
           </View>
@@ -414,8 +420,8 @@ const styles = StyleSheet.create({
     height: 1, borderRadius: 1,
     backgroundColor: 'rgba(255,255,255,0.2)', marginBottom: 14,
   },
-  footerTop:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  footerLogoRow:    { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  footerTop:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
+  footerLogoRow:    { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 },
   footerLogoIcon:   {
     width: 24, height: 24, borderRadius: 7,
     backgroundColor: 'rgba(255,255,255,0.25)',
