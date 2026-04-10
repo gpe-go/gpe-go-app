@@ -130,15 +130,15 @@ const dark: AppColors = {
 export const FONT_SCALE: Record<FontSize, FontScale> = {
   small: {
     xs: 10, sm: 12, base: 14, md: 15,
-    lg: 17, xl: 19, '2xl': 22, '3xl': 26,
+    lg: 16, xl: 18, '2xl': 20, '3xl': 24,
   },
   medium: {
-    xs: 12, sm: 14, base: 16, md: 17,
-    lg: 19, xl: 21, '2xl': 24, '3xl': 30,
+    xs: 11, sm: 13, base: 15, md: 16,
+    lg: 17, xl: 19, '2xl': 22, '3xl': 26,
   },
   large: {
-    xs: 14, sm: 16, base: 18, md: 20,
-    lg: 22, xl: 24, '2xl': 28, '3xl': 34,
+    xs: 13, sm: 15, base: 17, md: 18,
+    lg: 20, xl: 22, '2xl': 25, '3xl': 30,
   },
 } as const;
 
