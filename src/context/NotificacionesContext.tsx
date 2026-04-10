@@ -6,13 +6,14 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import * as Device from 'expo-device';
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
-// Push solo funciona en build nativo (no en Expo Go)
+// Push solo funciona en build nativo (no en Expo Go desde SDK 53+)
+// Se usa require() en lugar de import para evitar side effects en Expo Go
+// (DevicePushTokenAutoRegistration.fx.js se ejecuta al importar expo-notifications)
 const IS_EXPO_GO = Constants.appOwnership === 'expo';
+
 import {
   getNotificaciones,
   contarNoLeidas,
@@ -23,8 +24,9 @@ import {
 } from '../api/api';
 import { useAuth } from './AuthContext';
 
-// Configurar comportamiento solo si no es Expo Go
+// Configurar comportamiento solo si no es Expo Go (usando require para evitar side effects)
 if (!IS_EXPO_GO) {
+  const Notifications = require('expo-notifications');
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowAlert:  true,
@@ -74,9 +76,13 @@ export function NotificacionesProvider({ children }: { children: React.ReactNode
 
   // ─── Registrar push token ───────────────────────────────────────────────
   const registrarToken = useCallback(async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || IS_EXPO_GO) return;
     try {
-      if (!Device.isDevice || IS_EXPO_GO) return; // Solo en build nativo, no Expo Go
+      // require() aquí para evitar que el módulo se cargue en Expo Go
+      const Device        = require('expo-device');
+      const Notifications = require('expo-notifications');
+
+      if (!Device.isDevice) return;
 
       const { status: existing } = await Notifications.getPermissionsAsync();
       let finalStatus = existing;
@@ -99,7 +105,7 @@ export function NotificacionesProvider({ children }: { children: React.ReactNode
       }
 
       const tokenData = await Notifications.getExpoPushTokenAsync({
-        projectId: 'guadalupego', // slug de app.json
+        projectId: 'guadalupego',
       });
 
       const token = tokenData.data;
@@ -181,6 +187,7 @@ export function NotificacionesProvider({ children }: { children: React.ReactNode
   // ─── Escuchar notificaciones recibidas en foreground (solo build nativo) ──
   useEffect(() => {
     if (IS_EXPO_GO) return;
+    const Notifications = require('expo-notifications');
     const sub = Notifications.addNotificationReceivedListener(() => {
       refresh();
     });

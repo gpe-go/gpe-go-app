@@ -1,9 +1,17 @@
 import { Stack } from "expo-router";
+import { Text } from 'react-native';
 import { ThemeProvider } from '../src/context/ThemeContext';
 import { AuthProvider } from '../src/context/AuthContext';
 import { FavoritosProvider } from '../src/context/FavoritosContext';
 import { NotificacionesProvider } from '../src/context/NotificacionesContext';
 import '../src/i18n/i18n';
+
+// Limitar el escalado de fuentes del sistema a 1.2x máximo
+// para que las letras grandes de accesibilidad no rompan los layouts
+// @ts-ignore
+if (!Text.defaultProps) Text.defaultProps = {};
+// @ts-ignore
+Text.defaultProps.maxFontSizeMultiplier = 1.2;
 
 export default function RootLayout() {
   return (
