@@ -302,7 +302,7 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
             </View>
             <Text
               numberOfLines={1}
-              style={[styles.footerLogo, { fontSize: fonts.sm }]}
+              style={[styles.footerLogo, { fontSize: fonts.base }]}
             >
               Guadalupe<Text style={styles.footerLogoAccent}>GO</Text>
             </Text>

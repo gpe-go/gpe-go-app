@@ -2,6 +2,7 @@ import React, {
   createContext, useCallback, useContext,
   useEffect, useState,
 } from 'react';
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // ─────────────────────────────────────────────────────────
@@ -127,20 +128,42 @@ const dark: AppColors = {
 // ESCALA DE FUENTES
 // ─────────────────────────────────────────────────────────
 
+// Android (Samsung One UI, etc.) renderiza sp más grandes que iOS pt,
+// por eso se usan valores ligeramente menores en Android.
+const isAndroid = Platform.OS === 'android';
+
 export const FONT_SCALE: Record<FontSize, FontScale> = {
   small: {
-    xs: 10, sm: 12, base: 14, md: 15,
-    lg: 16, xl: 18, '2xl': 20, '3xl': 24,
+    xs:   isAndroid ? 10 : 11,
+    sm:   isAndroid ? 12 : 13,
+    base: isAndroid ? 13 : 14,
+    md:   isAndroid ? 14 : 15,
+    lg:   isAndroid ? 16 : 17,
+    xl:   isAndroid ? 18 : 19,
+    '2xl': isAndroid ? 20 : 22,
+    '3xl': isAndroid ? 24 : 26,
   },
   medium: {
-    xs: 11, sm: 13, base: 15, md: 16,
-    lg: 17, xl: 19, '2xl': 22, '3xl': 26,
+    xs:   isAndroid ? 11 : 12,
+    sm:   isAndroid ? 13 : 14,
+    base: isAndroid ? 14 : 16,
+    md:   isAndroid ? 15 : 17,
+    lg:   isAndroid ? 17 : 19,
+    xl:   isAndroid ? 19 : 21,
+    '2xl': isAndroid ? 22 : 24,
+    '3xl': isAndroid ? 26 : 30,
   },
   large: {
-    xs: 13, sm: 15, base: 17, md: 18,
-    lg: 20, xl: 22, '2xl': 25, '3xl': 30,
+    xs:   isAndroid ? 12 : 14,
+    sm:   isAndroid ? 14 : 16,
+    base: isAndroid ? 16 : 18,
+    md:   isAndroid ? 17 : 20,
+    lg:   isAndroid ? 19 : 22,
+    xl:   isAndroid ? 21 : 24,
+    '2xl': isAndroid ? 24 : 28,
+    '3xl': isAndroid ? 28 : 34,
   },
-} as const;
+};
 
 // ─────────────────────────────────────────────────────────
 // STORAGE KEYS
