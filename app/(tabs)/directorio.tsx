@@ -467,14 +467,18 @@ export default function DirectorioScreen() {
     setFilteredData(lugares);
   }, [lugares]);
 
+  const isEmpty = filteredData.length === 0 && (search.length > 0 || categoriaActiva !== null);
+
   useEffect(() => {
-    emptyAnim.setValue(0);
-    Animated.timing(emptyAnim, {
-      toValue: 1,
-      duration: 320,
-      useNativeDriver: true,
-    }).start();
-  }, [filteredData, search, categoriaActiva, emptyAnim]);
+    if (isEmpty) {
+      emptyAnim.setValue(0);
+      Animated.timing(emptyAnim, {
+        toValue: 1,
+        duration: 320,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [isEmpty, emptyAnim]);
 
   const obtenerUbicacion = useCallback(async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
@@ -621,6 +625,7 @@ export default function DirectorioScreen() {
         ref={flatListRef}
         data={filteredData}
         keyExtractor={(item) => item.id}
+        keyboardShouldPersistTaps="handled"
         ListHeaderComponent={() => listHeader}
         ListEmptyComponent={
           !refreshing ? (

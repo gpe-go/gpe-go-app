@@ -8,6 +8,7 @@ import {
   Animated,
   Image,
   ImageBackground,
+  Keyboard,
   Pressable,
   RefreshControl,
   StatusBar,
@@ -418,6 +419,7 @@ export default function HomeScreen() {
       <Animated.ScrollView
         contentContainerStyle={s.scrollContent}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         scrollEventThrottle={16}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
@@ -477,39 +479,6 @@ export default function HomeScreen() {
                     </Pressable>
                   )}
                 </Animated.View>
-
-                {searchResults.length > 0 && (
-                  <View style={s.searchResults}>
-                    {searchResults.map((item, index) => (
-                      <Pressable
-                        key={item.id ?? index}
-                        style={s.searchItem}
-                        onPress={() => {
-                          setSearch(item.nombre ?? "");
-                          router.push("/explorar");
-                        }}
-                      >
-                        <Image source={{ uri: item.imagen }} style={s.searchImg} />
-                        <View style={{ flex: 1 }}>
-                          <Text
-                            style={[s.searchItemTitle, { fontSize: fonts.sm }]}
-                            numberOfLines={1}
-                          >
-                            {item.nombre}
-                          </Text>
-                          <Text style={[s.searchSub, { fontSize: fonts.xs }]}>
-                            {item.ubicacion}
-                          </Text>
-                        </View>
-                        <Ionicons
-                          name="chevron-forward"
-                          size={16}
-                          color={colors.subtext}
-                        />
-                      </Pressable>
-                    ))}
-                  </View>
-                )}
               </View>
             </LinearGradient>
           </Animated.View>
@@ -799,6 +768,46 @@ export default function HomeScreen() {
           </Pressable>
         </Animated.View>
       </Animated.ScrollView>
+
+      {searchResults.length > 0 && (
+        <View style={s.searchOverlay}>
+          <Pressable style={s.searchOverlayBg} onPress={() => { setSearch(""); Keyboard.dismiss(); }} />
+          <View style={s.searchResults}>
+            <Text style={[s.searchResultsTitle, { fontSize: fonts.sm }]}>
+              {t("search")}
+            </Text>
+            {searchResults.slice(0, 6).map((item, index) => (
+              <Pressable
+                key={item.id ?? index}
+                style={s.searchItem}
+                onPress={() => {
+                  setSearch("");
+                  Keyboard.dismiss();
+                  router.push(`/lugar/${item.id}` as any);
+                }}
+              >
+                <View style={s.searchItemIcon}>
+                  <Ionicons name="location-outline" size={16} color="#E96928" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[s.searchItemTitle, { fontSize: fonts.sm }]}
+                    numberOfLines={1}
+                  >
+                    {item.nombre}
+                  </Text>
+                  {item.ubicacion ? (
+                    <Text style={[s.searchSub, { fontSize: fonts.xs }]} numberOfLines={1}>
+                      {item.ubicacion}
+                    </Text>
+                  ) : null}
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.subtext} />
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -923,16 +932,27 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       color: c.text,
     },
 
-    searchResults: {
+    searchOverlay: {
       position: "absolute",
-      top: 72,
+      top: 0,
       left: 0,
       right: 0,
+      bottom: 0,
+      zIndex: 9999,
+    },
+
+    searchOverlayBg: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: "rgba(0,0,0,0.3)",
+    },
+
+    searchResults: {
+      marginTop: 160,
+      marginHorizontal: 20,
       backgroundColor: c.card,
       borderRadius: 20,
-      padding: 10,
+      padding: 14,
       elevation: 12,
-      zIndex: 999,
       borderWidth: 1,
       borderColor: c.border,
       shadowColor: "#000",
@@ -941,18 +961,26 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       shadowRadius: 18,
     },
 
+    searchResultsTitle: {
+      fontWeight: "700",
+      color: c.subtext,
+      marginBottom: 8,
+    },
+
     searchItem: {
       flexDirection: "row",
       alignItems: "center",
       gap: 10,
-      marginBottom: 10,
-      paddingVertical: 4,
+      paddingVertical: 8,
     },
 
-    searchImg: {
-      width: 46,
-      height: 46,
-      borderRadius: 12,
+    searchItemIcon: {
+      width: 32,
+      height: 32,
+      borderRadius: 10,
+      backgroundColor: isDark ? "rgba(233,105,40,0.12)" : "rgba(233,105,40,0.08)",
+      justifyContent: "center",
+      alignItems: "center",
     },
 
     searchItemTitle: {
