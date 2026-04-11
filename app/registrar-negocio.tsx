@@ -73,6 +73,11 @@ export default function RegistrarNegocioScreen() {
       Alert.alert('Límite alcanzado', `Máximo ${MAX_FOTOS} fotos por negocio`);
       return;
     }
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería para agregar fotos.');
+      return;
+    }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       quality: 0.7,

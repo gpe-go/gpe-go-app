@@ -137,6 +137,8 @@ export default function Reseñas({ lugarId }: Props) {
       {
         text: '📷 Cámara',
         onPress: async () => {
+          const { status } = await ImagePicker.requestCameraPermissionsAsync();
+          if (status !== 'granted') { Alert.alert('Permiso requerido', 'Necesitamos acceso a tu cámara para tomar fotos.'); return; }
           const result = await ImagePicker.launchCameraAsync({
             allowsEditing: true, aspect: [4, 3], quality: 0.7, base64: true,
           });
