@@ -458,14 +458,26 @@ export default function DirectorioScreen() {
 
   const [search, setSearch] = useState('');
   const [categoriaActiva, setCategoriaActiva] = useState<string | null>(null);
-  const [filteredData, setFilteredData] = useState<Lugar[]>([]);
   const [region, setRegion] = useState<any>(null);
   const [refreshing, setRefreshing] = useState(false);
   const emptyAnim = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    setFilteredData(lugares);
-  }, [lugares]);
+  const filteredData = useMemo(() => {
+    let data = lugares;
+    if (categoriaActiva) {
+      data = data.filter((l) => l.categoria === categoriaActiva);
+    }
+    if (search) {
+      const q = search.toLowerCase();
+      data = data.filter(
+        (l) =>
+          l.nombre.toLowerCase().includes(q) ||
+          l.categoria.toLowerCase().includes(q) ||
+          l.ubicacion.toLowerCase().includes(q)
+      );
+    }
+    return data;
+  }, [lugares, search, categoriaActiva]);
 
   const isEmpty = filteredData.length === 0 && (search.length > 0 || categoriaActiva !== null);
 
@@ -503,49 +515,20 @@ export default function DirectorioScreen() {
     obtenerUbicacion();
   }, [obtenerUbicacion]);
 
-  const filtrar = useCallback(
-    (texto: string, categoria: string | null) => {
-      let data = lugares;
-
-      if (categoria) {
-        data = data.filter((l) => l.categoria === categoria);
-      }
-
-      if (texto) {
-        data = data.filter(
-          (l) =>
-            l.nombre.toLowerCase().includes(texto.toLowerCase()) ||
-            l.categoria.toLowerCase().includes(texto.toLowerCase()) ||
-            l.ubicacion.toLowerCase().includes(texto.toLowerCase())
-        );
-      }
-
-      setFilteredData(data);
-    },
-    [lugares]
-  );
-
-  const handleSearch = useCallback(
-    (text: string) => {
-      setSearch(text);
-      filtrar(text, categoriaActiva);
-    },
-    [categoriaActiva, filtrar]
-  );
+  const handleSearch = useCallback((text: string) => {
+    setSearch(text);
+  }, []);
 
   const limpiarSearch = useCallback(() => {
     setSearch('');
-    filtrar('', categoriaActiva);
-  }, [categoriaActiva, filtrar]);
+  }, []);
 
   const seleccionarCategoria = useCallback(
     (cat: string) => {
-      const nueva = cat === categoriaActiva ? null : cat;
-      setCategoriaActiva(nueva);
-      filtrar(search, nueva);
+      setCategoriaActiva(prev => cat === prev ? null : cat);
       flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
     },
-    [categoriaActiva, search, filtrar]
+    []
   );
 
   const fetchData = useCallback(async () => {
@@ -626,7 +609,7 @@ export default function DirectorioScreen() {
         data={filteredData}
         keyExtractor={(item) => item.id}
         keyboardShouldPersistTaps="handled"
-        ListHeaderComponent={() => listHeader}
+        ListHeaderComponent={listHeader}
         ListEmptyComponent={
           !refreshing ? (
             <Animated.View style={[s.emptyWrap, emptyAnimatedStyle]}>

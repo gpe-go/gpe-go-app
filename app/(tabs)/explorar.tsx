@@ -456,14 +456,26 @@ export default function ExplorarScreen() {
 
   const [search, setSearch] = useState('');
   const [categoriaActiva, setCategoriaActiva] = useState<string | null>(null);
-  const [filteredData, setFilteredData] = useState<Lugar[]>([]);
   const [region, setRegion] = useState<Region | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const emptyAnim = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    setFilteredData(sitios);
-  }, [sitios]);
+  const filteredData = useMemo(() => {
+    let data = sitios;
+    if (categoriaActiva) {
+      data = data.filter((l) => l.categoria === categoriaActiva);
+    }
+    if (search) {
+      const q = search.toLowerCase();
+      data = data.filter(
+        (l) =>
+          l.nombre.toLowerCase().includes(q) ||
+          l.ubicacion.toLowerCase().includes(q) ||
+          l.categoria.toLowerCase().includes(q)
+      );
+    }
+    return data;
+  }, [sitios, search, categoriaActiva]);
 
   const isEmpty = filteredData.length === 0 && (search.length > 0 || categoriaActiva !== null);
 
@@ -506,36 +518,22 @@ export default function ExplorarScreen() {
 
   const filtrarCategoria = useCallback(
     (cat: string) => {
-      const nueva = cat === categoriaActiva ? null : cat;
-      setCategoriaActiva(nueva);
+      setCategoriaActiva(prev => cat === prev ? null : cat);
       setSearch('');
-      setFilteredData(nueva ? sitios.filter((l) => l.categoria === nueva) : sitios);
       flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
     },
-    [categoriaActiva, sitios]
+    []
   );
 
-  const handleSearch = useCallback(
-    (text: string) => {
-      setSearch(text);
-      setCategoriaActiva(null);
-      setFilteredData(
-        sitios.filter(
-          (l) =>
-            l.nombre.toLowerCase().includes(text.toLowerCase()) ||
-            l.ubicacion.toLowerCase().includes(text.toLowerCase()) ||
-            l.categoria.toLowerCase().includes(text.toLowerCase())
-        )
-      );
-    },
-    [sitios]
-  );
+  const handleSearch = useCallback((text: string) => {
+    setSearch(text);
+    setCategoriaActiva(null);
+  }, []);
 
   const limpiarSearch = useCallback(() => {
     setSearch('');
     setCategoriaActiva(null);
-    setFilteredData(sitios);
-  }, [sitios]);
+  }, []);
 
   const fetchData = useCallback(async () => {
     await refreshSitios();
@@ -626,7 +624,7 @@ export default function ExplorarScreen() {
         keyExtractor={(item) => item.id}
         numColumns={2}
         keyboardShouldPersistTaps="handled"
-        ListHeaderComponent={() => listHeader}
+        ListHeaderComponent={listHeader}
         ListEmptyComponent={
           <Animated.View style={[s.emptyWrap, emptyAnimatedStyle]}>
             <View style={s.emptyIconWrap}>
