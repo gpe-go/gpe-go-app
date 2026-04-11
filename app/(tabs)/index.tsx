@@ -825,6 +825,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
     headerShell: {
       marginBottom: 4,
       position: "relative",
+      zIndex: 999,
     },
 
     header: {
@@ -834,7 +835,6 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       marginTop: 8,
       borderBottomLeftRadius: 32,
       borderBottomRightRadius: 32,
-      overflow: "hidden",
     },
 
     headerGlow: {
