@@ -169,10 +169,12 @@ export default function HomeScreen() {
   const { fecha, hora } = useDateTime();
 
   const mapRef = useRef<MapView>(null);
+  const searchBoxRef = useRef<View>(null);
   const [search, setSearch] = useState("");
   const [region, setRegion] = useState<any>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [searchBoxBottom, setSearchBoxBottom] = useState(0);
 
   const headerAnim = useRef(new Animated.Value(0)).current;
   const row1Anim = useRef(new Animated.Value(0)).current;
@@ -461,7 +463,15 @@ export default function HomeScreen() {
                 </View>
               </View>
 
-              <View style={s.searchWrapper}>
+              <View
+                ref={searchBoxRef}
+                style={s.searchWrapper}
+                onLayout={() => {
+                  searchBoxRef.current?.measureInWindow((_x, y, _w, h) => {
+                    setSearchBoxBottom(y + h + 8);
+                  });
+                }}
+              >
                 <Animated.View style={[s.searchBox, animatedSearchBoxStyle]}>
                   <Ionicons name="search" size={22} color={colors.subtext} />
                   <TextInput
@@ -470,7 +480,12 @@ export default function HomeScreen() {
                     style={[s.searchInput, { fontSize: fonts.base }]}
                     value={search}
                     onChangeText={setSearch}
-                    onFocus={() => setIsSearchFocused(true)}
+                    onFocus={() => {
+                      setIsSearchFocused(true);
+                      searchBoxRef.current?.measureInWindow((_x, y, _w, h) => {
+                        setSearchBoxBottom(y + h + 8);
+                      });
+                    }}
                     onBlur={() => setIsSearchFocused(false)}
                   />
                   {search.length > 0 && (
@@ -772,7 +787,7 @@ export default function HomeScreen() {
       {searchResults.length > 0 && (
         <View style={s.searchOverlay}>
           <Pressable style={s.searchOverlayBg} onPress={() => { setSearch(""); Keyboard.dismiss(); }} />
-          <View style={s.searchResults}>
+          <View style={[s.searchResults, { marginTop: searchBoxBottom || 260 }]}>
             <Text style={[s.searchResultsTitle, { fontSize: fonts.sm }]}>
               {t("search")}
             </Text>
@@ -947,7 +962,6 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
     },
 
     searchResults: {
-      marginTop: 160,
       marginHorizontal: 20,
       backgroundColor: c.card,
       borderRadius: 20,
