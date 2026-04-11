@@ -517,7 +517,10 @@ export default function EventosScreen() {
                               transform: [{ scale: pressed ? 0.98 : 1 }],
                             },
                           ]}
-                          onPress={() => setSearch(item.titulo)}
+                          onPress={() => {
+                            setSearch('');
+                            irAlDetalle(item);
+                          }}
                         >
                           <View style={s.searchItemIconWrap}>
                             <MaterialCommunityIcons
