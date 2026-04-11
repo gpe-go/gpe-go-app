@@ -169,10 +169,13 @@ export default function HomeScreen() {
   const { fecha, hora } = useDateTime();
 
   const mapRef = useRef<MapView>(null);
+  const containerRef = useRef<View>(null);
+  const searchWrapRef = useRef<View>(null);
   const [search, setSearch] = useState("");
   const [region, setRegion] = useState<any>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [dropdownTop, setDropdownTop] = useState(0);
 
   const headerAnim = useRef(new Animated.Value(0)).current;
   const row1Anim = useRef(new Animated.Value(0)).current;
@@ -410,7 +413,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <View style={s.container}>
+    <View ref={containerRef} style={s.container}>
       <StatusBar
         barStyle={isDark ? "light-content" : "dark-content"}
         backgroundColor={colors.background}
@@ -461,7 +464,19 @@ export default function HomeScreen() {
                 </View>
               </View>
 
-              <View style={s.searchWrapper}>
+              <View
+                ref={searchWrapRef}
+                style={s.searchWrapper}
+                onLayout={() => {
+                  setTimeout(() => {
+                    searchWrapRef.current?.measureLayout(
+                      containerRef.current as any,
+                      (_x, y, _w, h) => { setDropdownTop(y + h + 8); },
+                      () => {},
+                    );
+                  }, 100);
+                }}
+              >
                 <Animated.View style={[s.searchBox, animatedSearchBoxStyle]}>
                   <Ionicons name="search" size={22} color={colors.subtext} />
                   <TextInput
@@ -479,43 +494,6 @@ export default function HomeScreen() {
                     </Pressable>
                   )}
                 </Animated.View>
-
-                {searchResults.length > 0 && (
-                  <View style={s.searchResults}>
-                    <Text style={[s.searchResultsTitle, { fontSize: fonts.sm }]}>
-                      {t("search")}
-                    </Text>
-                    {searchResults.slice(0, 6).map((item, index) => (
-                      <Pressable
-                        key={item.id ?? index}
-                        style={s.searchItem}
-                        onPress={() => {
-                          setSearch("");
-                          Keyboard.dismiss();
-                          router.push(`/lugar/${item.id}` as any);
-                        }}
-                      >
-                        <View style={s.searchItemIcon}>
-                          <Ionicons name="location-outline" size={16} color="#E96928" />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <Text
-                            style={[s.searchItemTitle, { fontSize: fonts.sm }]}
-                            numberOfLines={1}
-                          >
-                            {item.nombre}
-                          </Text>
-                          {item.ubicacion ? (
-                            <Text style={[s.searchSub, { fontSize: fonts.xs }]} numberOfLines={1}>
-                              {item.ubicacion}
-                            </Text>
-                          ) : null}
-                        </View>
-                        <Ionicons name="chevron-forward" size={16} color={colors.subtext} />
-                      </Pressable>
-                    ))}
-                  </View>
-                )}
               </View>
             </LinearGradient>
           </Animated.View>
@@ -805,6 +783,49 @@ export default function HomeScreen() {
           </Pressable>
         </Animated.View>
       </Animated.ScrollView>
+
+      {searchResults.length > 0 && dropdownTop > 0 && (
+        <>
+          <Pressable
+            style={s.searchOverlayBg}
+            onPress={() => { setSearch(""); Keyboard.dismiss(); }}
+          />
+          <View style={[s.searchResults, { top: dropdownTop }]}>
+            <Text style={[s.searchResultsTitle, { fontSize: fonts.sm }]}>
+              {t("search")}
+            </Text>
+            {searchResults.slice(0, 6).map((item, index) => (
+              <Pressable
+                key={item.id ?? index}
+                style={s.searchItem}
+                onPress={() => {
+                  setSearch("");
+                  Keyboard.dismiss();
+                  router.push(`/lugar/${item.id}` as any);
+                }}
+              >
+                <View style={s.searchItemIcon}>
+                  <Ionicons name="location-outline" size={16} color="#E96928" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[s.searchItemTitle, { fontSize: fonts.sm }]}
+                    numberOfLines={1}
+                  >
+                    {item.nombre}
+                  </Text>
+                  {item.ubicacion ? (
+                    <Text style={[s.searchSub, { fontSize: fonts.xs }]} numberOfLines={1}>
+                      {item.ubicacion}
+                    </Text>
+                  ) : null}
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.subtext} />
+              </Pressable>
+            ))}
+          </View>
+        </>
+      )}
     </View>
   );
 }
@@ -929,21 +950,29 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       color: c.text,
     },
 
-    searchResults: {
+    searchOverlayBg: {
       position: "absolute",
-      top: 72,
+      top: 0,
       left: 0,
       right: 0,
+      bottom: 0,
+      zIndex: 998,
+    },
+
+    searchResults: {
+      position: "absolute",
+      left: 20,
+      right: 20,
       backgroundColor: c.card,
       borderRadius: 20,
       padding: 14,
-      elevation: 12,
+      elevation: 20,
       zIndex: 999,
       borderWidth: 1,
       borderColor: c.border,
       shadowColor: "#000",
       shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.12,
+      shadowOpacity: 0.15,
       shadowRadius: 18,
     },
 
