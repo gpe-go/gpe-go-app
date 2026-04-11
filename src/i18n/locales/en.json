@@ -331,5 +331,9 @@
   "mis_negocios_empty": "You haven't registered any business yet.",
   "negocio_estado_pendiente": "Pending",
   "negocio_estado_aprobado": "Approved",
-  "negocio_estado_rechazado": "Rejected"
+  "negocio_estado_rechazado": "Rejected",
+  "map": "Map",
+  "open_in_maps": "Open in Maps",
+  "choose_maps_app": "Choose maps app",
+  "cancel": "Cancel"
 }

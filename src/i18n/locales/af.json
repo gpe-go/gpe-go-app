@@ -331,5 +331,9 @@
   "mis_negocios_empty": "Jy het nog geen besigheid geregistreer nie.",
   "negocio_estado_pendiente": "Hangende",
   "negocio_estado_aprobado": "Goedgekeur",
-  "negocio_estado_rechazado": "Verwerp"
+  "negocio_estado_rechazado": "Verwerp",
+  "map": "Kaart",
+  "open_in_maps": "Maak oop in Kaarte",
+  "choose_maps_app": "Kies kaarte-toep",
+  "cancel": "Kanselleer"
 }

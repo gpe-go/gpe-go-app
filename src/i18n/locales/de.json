@@ -331,5 +331,9 @@
   "mis_negocios_empty": "Sie haben noch kein Unternehmen registriert.",
   "negocio_estado_pendiente": "Ausstehend",
   "negocio_estado_aprobado": "Genehmigt",
-  "negocio_estado_rechazado": "Abgelehnt"
+  "negocio_estado_rechazado": "Abgelehnt",
+  "map": "Karte",
+  "open_in_maps": "In Karten öffnen",
+  "choose_maps_app": "Karten-App auswählen",
+  "cancel": "Abbrechen"
 }

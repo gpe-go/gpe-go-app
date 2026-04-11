@@ -331,5 +331,9 @@
   "mis_negocios_empty": "まだビジネスを登録していません。",
   "negocio_estado_pendiente": "審査中",
   "negocio_estado_aprobado": "承認済み",
-  "negocio_estado_rechazado": "却下"
+  "negocio_estado_rechazado": "却下",
+  "map": "地図",
+  "open_in_maps": "マップで開く",
+  "choose_maps_app": "マップアプリを選択",
+  "cancel": "キャンセル"
 }

@@ -331,5 +331,9 @@
   "mis_negocios_empty": "Ви ще не зареєстрували жодного бізнесу.",
   "negocio_estado_pendiente": "На розгляді",
   "negocio_estado_aprobado": "Схвалено",
-  "negocio_estado_rechazado": "Відхилено"
+  "negocio_estado_rechazado": "Відхилено",
+  "map": "Карта",
+  "open_in_maps": "Відкрити в Картах",
+  "choose_maps_app": "Оберіть додаток карт",
+  "cancel": "Скасувати"
 }

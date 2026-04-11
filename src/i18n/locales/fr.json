@@ -331,5 +331,9 @@
   "mis_negocios_empty": "Vous n'avez pas encore enregistré de commerce.",
   "negocio_estado_pendiente": "En attente",
   "negocio_estado_aprobado": "Approuvé",
-  "negocio_estado_rechazado": "Rejeté"
+  "negocio_estado_rechazado": "Rejeté",
+  "map": "Carte",
+  "open_in_maps": "Ouvrir dans Plans",
+  "choose_maps_app": "Choisir l'application de cartes",
+  "cancel": "Annuler"
 }

@@ -331,5 +331,9 @@
   "mis_negocios_empty": "Du har inte registrerat något företag ännu.",
   "negocio_estado_pendiente": "Väntar",
   "negocio_estado_aprobado": "Godkänd",
-  "negocio_estado_rechazado": "Avvisad"
+  "negocio_estado_rechazado": "Avvisad",
+  "map": "Karta",
+  "open_in_maps": "Öppna i Kartor",
+  "choose_maps_app": "Välj kartapp",
+  "cancel": "Avbryt"
 }

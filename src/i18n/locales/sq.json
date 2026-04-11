@@ -331,5 +331,9 @@
   "mis_negocios_empty": "Nuk keni regjistruar asnjë biznes ende.",
   "negocio_estado_pendiente": "Në pritje",
   "negocio_estado_aprobado": "Aprovuar",
-  "negocio_estado_rechazado": "Refuzuar"
+  "negocio_estado_rechazado": "Refuzuar",
+  "map": "Harta",
+  "open_in_maps": "Hap në Harta",
+  "choose_maps_app": "Zgjidh aplikacionin e hartave",
+  "cancel": "Anulo"
 }

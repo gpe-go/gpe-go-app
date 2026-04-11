@@ -331,5 +331,9 @@
   "mis_negocios_empty": "لم تسجل أي نشاط تجاري بعد.",
   "negocio_estado_pendiente": "قيد الانتظار",
   "negocio_estado_aprobado": "موافق عليه",
-  "negocio_estado_rechazado": "مرفوض"
+  "negocio_estado_rechazado": "مرفوض",
+  "map": "خريطة",
+  "open_in_maps": "فتح في الخرائط",
+  "choose_maps_app": "اختر تطبيق الخرائط",
+  "cancel": "إلغاء"
 }

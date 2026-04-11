@@ -331,5 +331,9 @@
   "mis_negocios_empty": "아직 등록된 비즈니스가 없습니다.",
   "negocio_estado_pendiente": "검토 중",
   "negocio_estado_aprobado": "승인됨",
-  "negocio_estado_rechazado": "거절됨"
+  "negocio_estado_rechazado": "거절됨",
+  "map": "지도",
+  "open_in_maps": "지도에서 열기",
+  "choose_maps_app": "지도 앱 선택",
+  "cancel": "취소"
 }

@@ -331,5 +331,9 @@
   "mis_negocios_empty": "Nie zarejestrowałeś jeszcze żadnej firmy.",
   "negocio_estado_pendiente": "Oczekujące",
   "negocio_estado_aprobado": "Zatwierdzone",
-  "negocio_estado_rechazado": "Odrzucone"
+  "negocio_estado_rechazado": "Odrzucone",
+  "map": "Mapa",
+  "open_in_maps": "Otwórz w Mapach",
+  "choose_maps_app": "Wybierz aplikację map",
+  "cancel": "Anuluj"
 }
