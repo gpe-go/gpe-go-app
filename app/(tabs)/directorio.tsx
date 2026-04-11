@@ -139,6 +139,7 @@ type HeaderProps = {
   onLimpiar: () => void;
   onCategoria: (cat: string) => void;
   onUbicacion: () => void;
+  onSelectItem: (item: Lugar) => void;
   isDark: boolean;
 };
 
@@ -158,6 +159,7 @@ const DirectorioHeader = React.memo(
     onLimpiar,
     onCategoria,
     onUbicacion,
+    onSelectItem,
     isDark,
   }: HeaderProps) => {
     const bannerAnim = useRef(new Animated.Value(0)).current;
@@ -304,7 +306,7 @@ const DirectorioHeader = React.memo(
                             transform: [{ scale: pressed ? 0.98 : 1 }],
                           },
                         ]}
-                        onPress={() => onSearch(item.nombre)}
+                        onPress={() => onSelectItem(item)}
                       >
                         <View style={s.searchItemIconWrap}>
                           <Ionicons name="location-outline" size={16} color="#E96928" />
@@ -531,6 +533,17 @@ export default function DirectorioScreen() {
     []
   );
 
+  const irAlDetalle = useCallback(
+    (item: Lugar) => {
+      setSearch('');
+      router.push({
+        pathname: '/(stack)/detalleLugar',
+        params: { lugar: JSON.stringify(item), from: 'directorio' },
+      });
+    },
+    [router]
+  );
+
   const fetchData = useCallback(async () => {
     await refreshLugares();
   }, [refreshLugares]);
@@ -561,6 +574,7 @@ export default function DirectorioScreen() {
         onLimpiar={limpiarSearch}
         onCategoria={seleccionarCategoria}
         onUbicacion={obtenerUbicacion}
+        onSelectItem={irAlDetalle}
         isDark={isDark}
       />
     ),
@@ -578,6 +592,7 @@ export default function DirectorioScreen() {
       limpiarSearch,
       seleccionarCategoria,
       obtenerUbicacion,
+      irAlDetalle,
       isDark,
     ]
   );

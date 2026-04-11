@@ -137,6 +137,7 @@ type ExplorarHeaderProps = {
   onCategoria: (cat: string) => void;
   onUbicacion: () => void;
   onOpenMaps: (nombre: string, ubicacion: string) => void;
+  onSelectItem: (item: Lugar) => void;
   isDark: boolean;
 };
 
@@ -157,6 +158,7 @@ const ExplorarHeader = React.memo(
     onCategoria,
     onUbicacion,
     onOpenMaps,
+    onSelectItem,
     isDark,
   }: ExplorarHeaderProps) => {
     const bannerAnim = useRef(new Animated.Value(0)).current;
@@ -303,7 +305,7 @@ const ExplorarHeader = React.memo(
                             transform: [{ scale: pressed ? 0.98 : 1 }],
                           },
                         ]}
-                        onPress={() => onOpenMaps(item.nombre, item.ubicacion)}
+                        onPress={() => onSelectItem(item)}
                       >
                         <View style={s.searchItemIconWrap}>
                           <Ionicons name="location-outline" size={16} color="#E96928" />
@@ -548,6 +550,17 @@ export default function ExplorarScreen() {
     setRefreshing(false);
   }, [fetchData]);
 
+  const irAlDetalle = useCallback(
+    (item: Lugar) => {
+      setSearch('');
+      router.push({
+        pathname: '/(stack)/detalleLugar',
+        params: { lugar: JSON.stringify(item), from: 'explorar' },
+      });
+    },
+    [router]
+  );
+
   const openInMaps = useCallback((nombre: string, ubicacion: string) => {
     Linking.openURL(
       `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
@@ -574,6 +587,7 @@ export default function ExplorarScreen() {
         onCategoria={filtrarCategoria}
         onUbicacion={obtenerUbicacion}
         onOpenMaps={openInMaps}
+        onSelectItem={irAlDetalle}
         isDark={isDark}
       />
     ),
@@ -592,6 +606,7 @@ export default function ExplorarScreen() {
       filtrarCategoria,
       obtenerUbicacion,
       openInMaps,
+      irAlDetalle,
       isDark,
     ]
   );
