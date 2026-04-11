@@ -225,7 +225,7 @@ export default function PerfilScreen() {
   const [codigo, setCodigo] = useState('');
   const [loading, setLoading] = useState(false);
 
-  type MiNegocio = { id: number; nombre: string; estado: string; id_categoria: number };
+  type MiNegocio = { id: number; nombre: string; estado: string; id_categoria: number; motivo_rechazo?: string | null };
   const [misNegocios, setMisNegocios] = useState<MiNegocio[]>([]);
 
   // Recargar mis negocios y notificaciones cada vez que la pantalla toma foco
@@ -530,25 +530,34 @@ export default function PerfilScreen() {
                     neg.estado === 'aprobado'  ? 'negocio_estado_aprobado' :
                     neg.estado === 'rechazado' ? 'negocio_estado_rechazado' : 'negocio_estado_pendiente';
                   return (
-                    <View
-                      key={neg.id}
-                      style={[styles.misNegociosCard, { backgroundColor: colors.background, borderColor: colors.border }]}
-                    >
-                      <View style={[styles.misNegociosIconWrap, { backgroundColor: 'rgba(233,105,40,0.1)' }]}>
-                        <Ionicons name="storefront-outline" size={18} color="#E96928" />
-                      </View>
-                      <Text
-                        style={[styles.misNegociosName, { color: colors.text, fontSize: fonts.sm }]}
-                        numberOfLines={1}
+                    <View key={neg.id}>
+                      <View
+                        style={[styles.misNegociosCard, { backgroundColor: colors.background, borderColor: colors.border }]}
                       >
-                        {neg.nombre}
-                      </Text>
-                      <View style={[styles.estadoBadge, { backgroundColor: estadoColor + '22' }]}>
-                        <View style={[styles.estadoDot, { backgroundColor: estadoColor }]} />
-                        <Text style={[styles.estadoText, { color: estadoColor, fontSize: fonts.xs }]}>
-                          {t(estadoKey)}
+                        <View style={[styles.misNegociosIconWrap, { backgroundColor: 'rgba(233,105,40,0.1)' }]}>
+                          <Ionicons name="storefront-outline" size={18} color="#E96928" />
+                        </View>
+                        <Text
+                          style={[styles.misNegociosName, { color: colors.text, fontSize: fonts.sm }]}
+                          numberOfLines={1}
+                        >
+                          {neg.nombre}
                         </Text>
+                        <View style={[styles.estadoBadge, { backgroundColor: estadoColor + '22' }]}>
+                          <View style={[styles.estadoDot, { backgroundColor: estadoColor }]} />
+                          <Text style={[styles.estadoText, { color: estadoColor, fontSize: fonts.xs }]}>
+                            {t(estadoKey)}
+                          </Text>
+                        </View>
                       </View>
+                      {neg.estado === 'rechazado' && neg.motivo_rechazo ? (
+                        <View style={[styles.rechazoMotivo, { backgroundColor: '#fef2f2', borderColor: '#fecaca' }]}>
+                          <Ionicons name="information-circle-outline" size={16} color="#ef4444" />
+                          <Text style={[styles.rechazoMotivoText, { fontSize: fonts.xs }]}>
+                            {neg.motivo_rechazo}
+                          </Text>
+                        </View>
+                      ) : null}
                     </View>
                   );
                 })}
@@ -1109,6 +1118,22 @@ const styles = StyleSheet.create({
   },
   estadoText: {
     fontWeight: '700',
+  },
+  rechazoMotivo: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    marginTop: -4,
+    marginBottom: 8,
+    marginHorizontal: 4,
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  rechazoMotivoText: {
+    flex: 1,
+    color: '#b91c1c',
+    lineHeight: 18,
   },
   appInfo: {
     marginTop: 34,

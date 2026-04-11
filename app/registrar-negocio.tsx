@@ -1,9 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -13,13 +15,15 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getCategoriasAPI, getMisLugares, registrarComercio } from '../src/api/api';
+import { getCategoriasAPI, getMisLugares, registrarComercio, subirFotoLugar } from '../src/api/api';
+import { useAuth } from '../src/context/AuthContext';
 
 type Categoria = { id: number; nombre: string };
 type Lugar = { id: number; nombre: string; estado: string; direccion?: string };
 
 export default function RegistrarNegocioScreen() {
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
 
   // Formulario
   const [nombre, setNombre] = useState('');
@@ -27,6 +31,7 @@ export default function RegistrarNegocioScreen() {
   const [direccion, setDireccion] = useState('');
   const [telefono, setTelefono] = useState('');
   const [idCategoria, setIdCategoria] = useState<number | null>(null);
+  const [fotos, setFotos] = useState<string[]>([]);
 
   // Datos externos
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -35,8 +40,16 @@ export default function RegistrarNegocioScreen() {
   const [loadingDatos, setLoadingDatos] = useState(true);
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      Alert.alert(
+        'Inicia sesión',
+        'Necesitas iniciar sesión para registrar un negocio.',
+        [{ text: 'Ir al login', onPress: () => router.replace('/login') }]
+      );
+      return;
+    }
     cargarDatos();
-  }, []);
+  }, [isAuthenticated]);
 
   const cargarDatos = async () => {
     try {
@@ -53,7 +66,36 @@ export default function RegistrarNegocioScreen() {
     }
   };
 
+  const MAX_FOTOS = 4;
+
+  const agregarFoto = async () => {
+    if (fotos.length >= MAX_FOTOS) {
+      Alert.alert('Límite alcanzado', `Máximo ${MAX_FOTOS} fotos por negocio`);
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.7,
+      base64: true,
+    });
+    if (!result.canceled && result.assets[0].base64) {
+      const mime = result.assets[0].mimeType || 'image/jpeg';
+      const base64 = `data:${mime};base64,${result.assets[0].base64}`;
+      setFotos(prev => [...prev, base64]);
+    }
+  };
+
+  const quitarFoto = (index: number) => {
+    setFotos(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleRegistrar = async () => {
+    if (!isAuthenticated) {
+      Alert.alert('Inicia sesión', 'Tu sesión expiró. Inicia sesión nuevamente.', [
+        { text: 'Ir al login', onPress: () => router.replace('/login') },
+      ]);
+      return;
+    }
     if (!nombre.trim()) {
       Alert.alert('Campo requerido', 'El nombre del negocio es obligatorio');
       return;
@@ -72,6 +114,13 @@ export default function RegistrarNegocioScreen() {
         telefono: telefono.trim() || undefined,
       });
       if (res.success) {
+        // Subir fotos si hay
+        const idLugar = res.data?.id;
+        if (idLugar && fotos.length > 0) {
+          await Promise.all(
+            fotos.map((foto, i) => subirFotoLugar(idLugar, foto, i + 1).catch(() => null))
+          );
+        }
         Alert.alert(
           '¡Negocio registrado!',
           'Tu comercio está pendiente de aprobación. El equipo de GuadalupeGO lo revisará pronto.',
@@ -82,7 +131,13 @@ export default function RegistrarNegocioScreen() {
       }
     } catch (e: any) {
       const msg = e.response?.data?.error?.mensaje || 'Error de conexión';
-      Alert.alert('Error', msg);
+      if (msg.toLowerCase().includes('autenticación')) {
+        Alert.alert('Sesión expirada', 'Tu sesión ha expirado. Inicia sesión nuevamente.', [
+          { text: 'Ir al login', onPress: () => router.replace('/login') },
+        ]);
+      } else {
+        Alert.alert('Error', msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -94,6 +149,7 @@ export default function RegistrarNegocioScreen() {
     setDireccion('');
     setTelefono('');
     setIdCategoria(null);
+    setFotos([]);
   };
 
   const estadoColor = (estado: string) => {
@@ -228,6 +284,28 @@ export default function RegistrarNegocioScreen() {
               />
             </View>
 
+            {/* Fotos */}
+            <Text style={[styles.fieldLabel, { marginTop: 16 }]}>
+              Fotos del negocio ({fotos.length}/{MAX_FOTOS})
+            </Text>
+            <Text style={styles.fotosHint}>Agrega hasta {MAX_FOTOS} fotos para mostrar tu negocio</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
+              {fotos.map((foto, i) => (
+                <View key={i} style={styles.fotoWrapper}>
+                  <Image source={{ uri: foto }} style={styles.fotoThumb} />
+                  <Pressable style={styles.fotoRemove} onPress={() => quitarFoto(i)}>
+                    <Ionicons name="close-circle" size={22} color="#ef4444" />
+                  </Pressable>
+                </View>
+              ))}
+              {fotos.length < MAX_FOTOS && (
+                <Pressable style={styles.fotoAdd} onPress={agregarFoto}>
+                  <Ionicons name="camera-outline" size={28} color="#E96928" />
+                  <Text style={styles.fotoAddText}>Agregar</Text>
+                </Pressable>
+              )}
+            </ScrollView>
+
             {/* Botón registrar */}
             <Pressable
               style={[styles.submitButton, loading && { opacity: 0.6 }]}
@@ -326,6 +404,22 @@ const styles = StyleSheet.create({
   catChipActive: { borderColor: '#E96928', backgroundColor: '#FFF3ED' },
   catChipText: { fontSize: 13, color: '#64748b', fontWeight: '600' },
   catChipTextActive: { color: '#E96928' },
+  fotosHint: { fontSize: 12, color: '#94a3b8', marginBottom: 10 },
+  fotoWrapper: { position: 'relative', marginRight: 10 },
+  fotoThumb: { width: 90, height: 90, borderRadius: 12 },
+  fotoRemove: { position: 'absolute', top: -6, right: -6 },
+  fotoAdd: {
+    width: 90,
+    height: 90,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFF8F5',
+  },
+  fotoAddText: { fontSize: 11, color: '#E96928', marginTop: 4, fontWeight: '600' },
   submitButton: {
     backgroundColor: '#E96928',
     borderRadius: 16,
