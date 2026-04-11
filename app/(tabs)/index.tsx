@@ -169,12 +169,10 @@ export default function HomeScreen() {
   const { fecha, hora } = useDateTime();
 
   const mapRef = useRef<MapView>(null);
-  const searchBoxRef = useRef<View>(null);
   const [search, setSearch] = useState("");
   const [region, setRegion] = useState<any>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [searchBoxBottom, setSearchBoxBottom] = useState(0);
 
   const headerAnim = useRef(new Animated.Value(0)).current;
   const row1Anim = useRef(new Animated.Value(0)).current;
@@ -463,15 +461,7 @@ export default function HomeScreen() {
                 </View>
               </View>
 
-              <View
-                ref={searchBoxRef}
-                style={s.searchWrapper}
-                onLayout={() => {
-                  searchBoxRef.current?.measureInWindow((_x, y, _w, h) => {
-                    setSearchBoxBottom(y + h + 8);
-                  });
-                }}
-              >
+              <View style={s.searchWrapper}>
                 <Animated.View style={[s.searchBox, animatedSearchBoxStyle]}>
                   <Ionicons name="search" size={22} color={colors.subtext} />
                   <TextInput
@@ -480,12 +470,7 @@ export default function HomeScreen() {
                     style={[s.searchInput, { fontSize: fonts.base }]}
                     value={search}
                     onChangeText={setSearch}
-                    onFocus={() => {
-                      setIsSearchFocused(true);
-                      searchBoxRef.current?.measureInWindow((_x, y, _w, h) => {
-                        setSearchBoxBottom(y + h + 8);
-                      });
-                    }}
+                    onFocus={() => setIsSearchFocused(true)}
                     onBlur={() => setIsSearchFocused(false)}
                   />
                   {search.length > 0 && (
@@ -494,6 +479,43 @@ export default function HomeScreen() {
                     </Pressable>
                   )}
                 </Animated.View>
+
+                {searchResults.length > 0 && (
+                  <View style={s.searchResults}>
+                    <Text style={[s.searchResultsTitle, { fontSize: fonts.sm }]}>
+                      {t("search")}
+                    </Text>
+                    {searchResults.slice(0, 6).map((item, index) => (
+                      <Pressable
+                        key={item.id ?? index}
+                        style={s.searchItem}
+                        onPress={() => {
+                          setSearch("");
+                          Keyboard.dismiss();
+                          router.push(`/lugar/${item.id}` as any);
+                        }}
+                      >
+                        <View style={s.searchItemIcon}>
+                          <Ionicons name="location-outline" size={16} color="#E96928" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text
+                            style={[s.searchItemTitle, { fontSize: fonts.sm }]}
+                            numberOfLines={1}
+                          >
+                            {item.nombre}
+                          </Text>
+                          {item.ubicacion ? (
+                            <Text style={[s.searchSub, { fontSize: fonts.xs }]} numberOfLines={1}>
+                              {item.ubicacion}
+                            </Text>
+                          ) : null}
+                        </View>
+                        <Ionicons name="chevron-forward" size={16} color={colors.subtext} />
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
               </View>
             </LinearGradient>
           </Animated.View>
@@ -783,46 +805,6 @@ export default function HomeScreen() {
           </Pressable>
         </Animated.View>
       </Animated.ScrollView>
-
-      {searchResults.length > 0 && (
-        <View style={s.searchOverlay}>
-          <Pressable style={s.searchOverlayBg} onPress={() => { setSearch(""); Keyboard.dismiss(); }} />
-          <View style={[s.searchResults, { marginTop: searchBoxBottom || 260 }]}>
-            <Text style={[s.searchResultsTitle, { fontSize: fonts.sm }]}>
-              {t("search")}
-            </Text>
-            {searchResults.slice(0, 6).map((item, index) => (
-              <Pressable
-                key={item.id ?? index}
-                style={s.searchItem}
-                onPress={() => {
-                  setSearch("");
-                  Keyboard.dismiss();
-                  router.push(`/lugar/${item.id}` as any);
-                }}
-              >
-                <View style={s.searchItemIcon}>
-                  <Ionicons name="location-outline" size={16} color="#E96928" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={[s.searchItemTitle, { fontSize: fonts.sm }]}
-                    numberOfLines={1}
-                  >
-                    {item.nombre}
-                  </Text>
-                  {item.ubicacion ? (
-                    <Text style={[s.searchSub, { fontSize: fonts.xs }]} numberOfLines={1}>
-                      {item.ubicacion}
-                    </Text>
-                  ) : null}
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.subtext} />
-              </Pressable>
-            ))}
-          </View>
-        </View>
-      )}
     </View>
   );
 }
@@ -947,26 +929,16 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       color: c.text,
     },
 
-    searchOverlay: {
+    searchResults: {
       position: "absolute",
-      top: 0,
+      top: 72,
       left: 0,
       right: 0,
-      bottom: 0,
-      zIndex: 9999,
-    },
-
-    searchOverlayBg: {
-      ...StyleSheet.absoluteFillObject,
-      backgroundColor: "rgba(0,0,0,0.3)",
-    },
-
-    searchResults: {
-      marginHorizontal: 20,
       backgroundColor: c.card,
       borderRadius: 20,
       padding: 14,
       elevation: 12,
+      zIndex: 999,
       borderWidth: 1,
       borderColor: c.border,
       shadowColor: "#000",
