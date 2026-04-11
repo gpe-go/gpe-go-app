@@ -138,6 +138,7 @@ type ExplorarHeaderProps = {
   onUbicacion: () => void;
   onOpenMaps: (nombre: string, ubicacion: string) => void;
   onSelectItem: (item: Lugar) => void;
+  onExpandMap: () => void;
   isDark: boolean;
 };
 
@@ -159,6 +160,7 @@ const ExplorarHeader = React.memo(
     onUbicacion,
     onOpenMaps,
     onSelectItem,
+    onExpandMap,
     isDark,
   }: ExplorarHeaderProps) => {
     const bannerAnim = useRef(new Animated.Value(0)).current;
@@ -365,6 +367,16 @@ const ExplorarHeader = React.memo(
               >
                 <MaterialCommunityIcons name="crosshairs-gps" size={22} color="#E96928" />
               </Pressable>
+
+              <Pressable
+                style={({ pressed }) => [
+                  s.expandMapBtn,
+                  { opacity: pressed ? 0.85 : 1 },
+                ]}
+                onPress={onExpandMap}
+              >
+                <Ionicons name="expand-outline" size={18} color="#E96928" />
+              </Pressable>
             </View>
           </View>
         </Animated.View>
@@ -550,6 +562,15 @@ export default function ExplorarScreen() {
     setRefreshing(false);
   }, [fetchData]);
 
+  const expandMap = useCallback(() => {
+    router.push({
+      pathname: '/(stack)/mapaCompleto',
+      params: region
+        ? { latitude: String(region.latitude), longitude: String(region.longitude), from: 'explorar' }
+        : { from: 'explorar' },
+    });
+  }, [router, region]);
+
   const irAlDetalle = useCallback(
     (item: Lugar) => {
       setSearch('');
@@ -588,6 +609,7 @@ export default function ExplorarScreen() {
         onUbicacion={obtenerUbicacion}
         onOpenMaps={openInMaps}
         onSelectItem={irAlDetalle}
+        onExpandMap={expandMap}
         isDark={isDark}
       />
     ),
@@ -607,6 +629,7 @@ export default function ExplorarScreen() {
       obtenerUbicacion,
       openInMaps,
       irAlDetalle,
+      expandMap,
       isDark,
     ]
   );
@@ -991,6 +1014,25 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       width: 46,
       height: 46,
       borderRadius: 14,
+      justifyContent: 'center',
+      alignItems: 'center',
+      elevation: 5,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 5,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+
+    expandMapBtn: {
+      position: 'absolute',
+      top: 14,
+      left: 14,
+      backgroundColor: c.card,
+      width: 40,
+      height: 40,
+      borderRadius: 12,
       justifyContent: 'center',
       alignItems: 'center',
       elevation: 5,

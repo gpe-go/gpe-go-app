@@ -761,6 +761,23 @@ export default function HomeScreen() {
                   </Marker>
                 )}
               </MapView>
+
+              <Pressable
+                style={({ pressed }) => [
+                  s.expandMapBtn,
+                  { opacity: pressed ? 0.85 : 1 },
+                ]}
+                onPress={() =>
+                  router.push({
+                    pathname: '/(stack)/mapaCompleto',
+                    params: region
+                      ? { latitude: String(region.latitude), longitude: String(region.longitude), from: 'home' }
+                      : { from: 'home' },
+                  })
+                }
+              >
+                <Ionicons name="expand-outline" size={20} color={isDark ? '#e5e5e5' : '#222'} />
+              </Pressable>
             </View>
           </View>
 
@@ -1128,6 +1145,25 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       height: 285,
       borderRadius: 28,
       overflow: "hidden",
+    },
+
+    expandMapBtn: {
+      position: "absolute",
+      top: 14,
+      left: 14,
+      backgroundColor: c.card,
+      width: 40,
+      height: 40,
+      borderRadius: 12,
+      justifyContent: "center",
+      alignItems: "center",
+      elevation: 5,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 5,
+      borderWidth: 1,
+      borderColor: c.border,
     },
 
     userMarker: {

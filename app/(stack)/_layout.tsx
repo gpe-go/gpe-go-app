@@ -40,6 +40,10 @@ export default function StackLayout() {
         name="configuracion"
         options={{ animation: "slide_from_bottom", presentation: "modal", gestureEnabled: true, gestureDirection: "vertical", contentStyle: { backgroundColor: colors.background } }}
       />
+      <Stack.Screen
+        name="mapaCompleto"
+        options={{ animation: "slide_from_bottom", gestureEnabled: true, gestureDirection: "vertical", contentStyle: { backgroundColor: '#000' } }}
+      />
     </Stack>
   );
 }
