@@ -319,7 +319,10 @@ export default function EventosScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchData();
+    await Promise.all([
+      fetchData(),
+      new Promise((r) => setTimeout(r, 1000)),
+    ]);
     setRefreshing(false);
   }, [fetchData]);
 
