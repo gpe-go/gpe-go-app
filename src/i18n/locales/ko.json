@@ -388,5 +388,5 @@
   "onboarding_got_it": "알겠습니다",
   "onboarding_step": "{{total}} 중 {{current}}",
   "settings_reset_tutorial": "튜토리얼 다시 보기",
-  "settings_reset_tutorial_desc": "앱의 전체 가이드 투어를 다시 보세요"
+  "settings_reset_tutorial_desc": "앱 투어 다시 보기"
 }

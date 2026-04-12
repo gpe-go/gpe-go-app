@@ -388,5 +388,5 @@
   "onboarding_got_it": "了解",
   "onboarding_step": "{{total}}中{{current}}",
   "settings_reset_tutorial": "チュートリアルを再表示",
-  "settings_reset_tutorial_desc": "アプリの全ガイドツアーをもう一度見る"
+  "settings_reset_tutorial_desc": "アプリツアーを再表示"
 }

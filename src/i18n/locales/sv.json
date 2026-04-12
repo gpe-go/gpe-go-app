@@ -388,5 +388,5 @@
   "onboarding_got_it": "Förstått",
   "onboarding_step": "{{current}} av {{total}}",
   "settings_reset_tutorial": "Se handledning igen",
-  "settings_reset_tutorial_desc": "Se den fullständiga appguiden igen"
+  "settings_reset_tutorial_desc": "Visa appguiden igen"
 }

@@ -388,5 +388,5 @@
   "onboarding_got_it": "Compris",
   "onboarding_step": "{{current}} sur {{total}}",
   "settings_reset_tutorial": "Revoir le tutoriel",
-  "settings_reset_tutorial_desc": "Revoyez la présentation complète de l'appli"
+  "settings_reset_tutorial_desc": "Revoir le guide de l'appli"
 }

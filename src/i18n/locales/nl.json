@@ -388,5 +388,5 @@
   "onboarding_got_it": "Begrepen",
   "onboarding_step": "{{current}} van {{total}}",
   "settings_reset_tutorial": "Tutorial opnieuw bekijken",
-  "settings_reset_tutorial_desc": "Bekijk de volledige app-rondleiding opnieuw"
+  "settings_reset_tutorial_desc": "App-rondleiding opnieuw"
 }

@@ -388,5 +388,5 @@
   "onboarding_got_it": "Got it",
   "onboarding_step": "{{current}} of {{total}}",
   "settings_reset_tutorial": "View tutorial again",
-  "settings_reset_tutorial_desc": "Watch the full app walkthrough again"
+  "settings_reset_tutorial_desc": "Replay the app walkthrough"
 }

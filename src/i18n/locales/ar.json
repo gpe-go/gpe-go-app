@@ -388,5 +388,5 @@
   "onboarding_got_it": "فهمت",
   "onboarding_step": "{{current}} من {{total}}",
   "settings_reset_tutorial": "مشاهدة البرنامج التعليمي مجدداً",
-  "settings_reset_tutorial_desc": "شاهد الجولة الكاملة للتطبيق مرة أخرى"
+  "settings_reset_tutorial_desc": "إعادة جولة التطبيق"
 }

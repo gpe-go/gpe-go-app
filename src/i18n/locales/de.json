@@ -388,5 +388,5 @@
   "onboarding_got_it": "Verstanden",
   "onboarding_step": "{{current}} von {{total}}",
   "settings_reset_tutorial": "Tutorial erneut ansehen",
-  "settings_reset_tutorial_desc": "Sehen Sie sich die vollständige App-Führung erneut an"
+  "settings_reset_tutorial_desc": "App-Führung wiederholen"
 }

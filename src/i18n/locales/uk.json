@@ -388,5 +388,5 @@
   "onboarding_got_it": "Зрозуміло",
   "onboarding_step": "{{current}} з {{total}}",
   "settings_reset_tutorial": "Переглянути посібник знову",
-  "settings_reset_tutorial_desc": "Перегляньте повний тур по додатку ще раз"
+  "settings_reset_tutorial_desc": "Повторити тур додатком"
 }

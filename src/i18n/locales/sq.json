@@ -388,5 +388,5 @@
   "onboarding_got_it": "Kuptova",
   "onboarding_step": "{{current}} nga {{total}}",
   "settings_reset_tutorial": "Shikoni tutorialin sërish",
-  "settings_reset_tutorial_desc": "Shikoni turneun e plotë të aplikacionit sërish"
+  "settings_reset_tutorial_desc": "Rishiko turneun e app-it"
 }
