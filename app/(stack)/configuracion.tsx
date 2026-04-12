@@ -432,7 +432,7 @@ export default function ConfiguracionScreen() {
                     {t('settings_reset_tutorial')}
                   </Text>
                 </View>
-                <Text style={[s.rowSub, { fontSize: fonts.xs, marginLeft: 58, marginTop: 3 }]} numberOfLines={2}>
+                <Text style={[s.rowSub, { fontSize: fonts.xs, marginLeft: 58, marginTop: -8 }]} numberOfLines={2}>
                   {t('settings_reset_tutorial_desc')}
                 </Text>
               </View>
@@ -458,7 +458,7 @@ export default function ConfiguracionScreen() {
                   </View>
                   <Text style={[s.rowTitle, { fontSize: fonts.base, flex: 1 }]}>{t('privacy')}</Text>
                 </View>
-                <Text style={[s.rowSub, { fontSize: fonts.xs, marginLeft: 58, marginTop: 3 }]} numberOfLines={2}>
+                <Text style={[s.rowSub, { fontSize: fonts.xs, marginLeft: 58, marginTop: -8 }]} numberOfLines={2}>
                   {t('privacy_sub')}
                 </Text>
               </View>
