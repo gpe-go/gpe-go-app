@@ -402,18 +402,15 @@ export default function ConfiguracionScreen() {
 
             <Pressable
               style={({ pressed }) => [
-                s.privacyRow,
-                {
-                  opacity: pressed ? 0.94 : 1,
-                  transform: [{ scale: pressed ? 0.99 : 1 }],
-                },
+                s.row, { marginTop: 14 },
+                { opacity: pressed ? 0.94 : 1, transform: [{ scale: pressed ? 0.99 : 1 }] },
               ]}
               onPress={() => {
                 try { router.dismiss(); } catch { router.back(); }
                 setTimeout(() => { resetOnboarding(); }, 500);
               }}
             >
-              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 14 }}>
+              <View style={s.rowLeft}>
                 <View
                   style={[
                     s.iconBox,
@@ -421,7 +418,6 @@ export default function ConfiguracionScreen() {
                       backgroundColor: isDark
                         ? 'rgba(233,105,40,0.15)'
                         : 'rgba(233,105,40,0.1)',
-                      flexShrink: 0,
                     },
                   ]}
                 >
@@ -436,23 +432,20 @@ export default function ConfiguracionScreen() {
                   </Text>
                 </View>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.subtext} style={{ flexShrink: 0, marginLeft: 8 }} />
+              <Ionicons name="chevron-forward" size={18} color={colors.subtext} />
             </Pressable>
 
             <View style={s.infoDivider} />
 
             <Pressable
               style={({ pressed }) => [
-                s.privacyRow,
-                {
-                  opacity: pressed ? 0.94 : 1,
-                  transform: [{ scale: pressed ? 0.99 : 1 }],
-                },
+                s.row, { marginTop: 14 },
+                { opacity: pressed ? 0.94 : 1, transform: [{ scale: pressed ? 0.99 : 1 }] },
               ]}
               onPress={() => setPrivacyModal(true)}
             >
-              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 14 }}>
-                <View style={[s.iconBox, { backgroundColor: isDark ? '#1a2e1a' : '#F0FDF4', flexShrink: 0 }]}>
+              <View style={s.rowLeft}>
+                <View style={[s.iconBox, { backgroundColor: isDark ? '#1a2e1a' : '#F0FDF4' }]}>
                   <Ionicons name="shield-checkmark-outline" size={22} color="#22C55E" />
                 </View>
                 <View style={{ flex: 1 }}>
@@ -460,7 +453,7 @@ export default function ConfiguracionScreen() {
                   <Text style={[s.rowSub, { fontSize: fonts.xs }]} numberOfLines={2}>{t('privacy_sub')}</Text>
                 </View>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.subtext} style={{ flexShrink: 0, marginLeft: 8 }} />
+              <Ionicons name="chevron-forward" size={18} color={colors.subtext} />
             </Pressable>
           </View>
         </Animated.View>
@@ -891,11 +884,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
     },
 
     privacyRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      marginTop: 14,
-      minHeight: 52,
+      /* conservado por compatibilidad, no se usa activamente */
     },
 
     modalBackdrop: {
