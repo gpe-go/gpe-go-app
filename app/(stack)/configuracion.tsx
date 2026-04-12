@@ -358,7 +358,7 @@ export default function ConfiguracionScreen() {
           <SectionLabel label={t('information')} colors={colors} fonts={fonts} />
 
           <View style={s.card}>
-            <View style={[s.row, { marginBottom: 14 }]}>
+            <View style={s.row}>
               <View style={s.rowLeft}>
                 <View
                   style={[
@@ -398,11 +398,11 @@ export default function ConfiguracionScreen() {
               </Pressable>
             </View>
 
-            <View style={s.infoDivider} />
+            <View style={[s.infoDivider, { marginVertical: 14 }]} />
 
             <Pressable
               style={({ pressed }) => [
-                s.row, { marginTop: 14 },
+                s.row,
                 { opacity: pressed ? 0.94 : 1, transform: [{ scale: pressed ? 0.99 : 1 }] },
               ]}
               onPress={() => {
@@ -435,11 +435,11 @@ export default function ConfiguracionScreen() {
               <Ionicons name="chevron-forward" size={18} color={colors.subtext} />
             </Pressable>
 
-            <View style={s.infoDivider} />
+            <View style={[s.infoDivider, { marginVertical: 14 }]} />
 
             <Pressable
               style={({ pressed }) => [
-                s.row, { marginTop: 14 },
+                s.row,
                 { opacity: pressed ? 0.94 : 1, transform: [{ scale: pressed ? 0.99 : 1 }] },
               ]}
               onPress={() => setPrivacyModal(true)}
@@ -450,7 +450,7 @@ export default function ConfiguracionScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[s.rowTitle, { fontSize: fonts.base }]}>{t('privacy')}</Text>
-                  <Text style={[s.rowSub, { fontSize: fonts.xs }]} numberOfLines={2}>{t('privacy_sub')}</Text>
+                  <Text style={[s.rowSub, { fontSize: fonts.xs }]} numberOfLines={1}>{t('privacy_sub')}</Text>
                 </View>
               </View>
               <Ionicons name="chevron-forward" size={18} color={colors.subtext} />
