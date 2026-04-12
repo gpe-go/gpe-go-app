@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useOnboarding } from '../../src/context/OnboardingContext';
 import {
   Animated,
   AppState,
@@ -31,6 +32,7 @@ export default function ConfiguracionScreen() {
   const [currentLang, setCurrentLang] = useState<AppLanguage>((i18n.language ?? 'es') as AppLanguage);
   const [connStatus, setConnStatus] = useState<ConnectionStatus>('stable');
   const router = useRouter();
+  const { resetOnboarding } = useOnboarding();
 
   const bannerAnim = useRef(new Animated.Value(0)).current;
   const appearanceAnim = useRef(new Animated.Value(0)).current;
@@ -395,6 +397,46 @@ export default function ConfiguracionScreen() {
                 </Text>
               </Pressable>
             </View>
+
+            <View style={s.infoDivider} />
+
+            <Pressable
+              style={({ pressed }) => [
+                s.privacyRow,
+                {
+                  opacity: pressed ? 0.94 : 1,
+                  transform: [{ scale: pressed ? 0.99 : 1 }],
+                },
+              ]}
+              onPress={async () => {
+                await resetOnboarding();
+                router.back();
+              }}
+            >
+              <View style={s.rowLeft}>
+                <View
+                  style={[
+                    s.iconBox,
+                    {
+                      backgroundColor: isDark
+                        ? 'rgba(233,105,40,0.15)'
+                        : 'rgba(233,105,40,0.1)',
+                    },
+                  ]}
+                >
+                  <Ionicons name="play-circle-outline" size={22} color="#E96928" />
+                </View>
+                <View>
+                  <Text style={[s.rowTitle, { fontSize: fonts.base }]}>
+                    {t('settings_reset_tutorial')}
+                  </Text>
+                  <Text style={[s.rowSub, { fontSize: fonts.xs }]}>
+                    {t('settings_reset_tutorial_desc')}
+                  </Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.subtext} />
+            </Pressable>
 
             <View style={s.infoDivider} />
 

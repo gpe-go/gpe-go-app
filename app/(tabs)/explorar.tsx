@@ -1,7 +1,7 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -21,7 +21,9 @@ import {
   View,
 } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
+import TooltipOverlay from '../../components/TooltipOverlay';
 import { Lugar, useFavoritos } from '../../src/context/FavoritosContext';
+import { useOnboarding } from '../../src/context/OnboardingContext';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useLugares } from '../../src/hooks/useLugares';
 
@@ -461,6 +463,24 @@ export default function ExplorarScreen() {
   const { t } = useTranslation();
   const { colors, fonts, isDark } = useTheme();
   const s = makeStyles(colors, fonts, isDark);
+  const { slidesReady, showSlides, tooltipSeen, markTooltipSeen } = useOnboarding();
+
+  const [showExplorarTooltip, setShowExplorarTooltip] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!tooltipSeen.explorar && slidesReady && !showSlides) {
+        const timer = setTimeout(() => setShowExplorarTooltip(true), 500);
+        return () => clearTimeout(timer);
+      }
+      return undefined;
+    }, [tooltipSeen.explorar, slidesReady, showSlides])
+  );
+
+  const handleExplorarTooltipDismiss = useCallback(() => {
+    markTooltipSeen('explorar');
+    setShowExplorarTooltip(false);
+  }, [markTooltipSeen]);
 
   const router = useRouter();
   const { toggleFavorito, esFavorito } = useFavoritos();
@@ -816,6 +836,18 @@ export default function ExplorarScreen() {
             </Pressable>
           );
         }}
+      />
+
+      <TooltipOverlay
+        visible={showExplorarTooltip}
+        title={t('onboarding_tooltip_explorar_title')}
+        description={t('onboarding_tooltip_explorar_desc')}
+        arrowDirection="down"
+        arrowOffset={{ x: 20, y: -20 }}
+        onNext={handleExplorarTooltipDismiss}
+        onSkip={handleExplorarTooltipDismiss}
+        currentStep={2}
+        totalSteps={4}
       />
     </>
   );

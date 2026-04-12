@@ -1,7 +1,7 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -19,7 +19,9 @@ import {
   View,
 } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import TooltipOverlay from '../../components/TooltipOverlay';
 import { Lugar, useFavoritos } from '../../src/context/FavoritosContext';
+import { useOnboarding } from '../../src/context/OnboardingContext';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useLugares } from '../../src/hooks/useLugares';
 
@@ -463,6 +465,24 @@ export default function DirectorioScreen() {
   const { t } = useTranslation();
   const { colors, fonts, isDark } = useTheme();
   const s = makeStyles(colors, fonts, isDark);
+  const { slidesReady, showSlides, tooltipSeen, markTooltipSeen } = useOnboarding();
+
+  const [showDirTooltip, setShowDirTooltip] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!tooltipSeen.directorio && slidesReady && !showSlides) {
+        const timer = setTimeout(() => setShowDirTooltip(true), 500);
+        return () => clearTimeout(timer);
+      }
+      return undefined;
+    }, [tooltipSeen.directorio, slidesReady, showSlides])
+  );
+
+  const handleDirTooltipDismiss = useCallback(() => {
+    markTooltipSeen('directorio');
+    setShowDirTooltip(false);
+  }, [markTooltipSeen]);
 
   const router = useRouter();
   const mapRef = useRef<MapView>(null);
@@ -796,6 +816,18 @@ export default function DirectorioScreen() {
             </Pressable>
           );
         }}
+      />
+
+      <TooltipOverlay
+        visible={showDirTooltip}
+        title={t('onboarding_tooltip_directorio_title')}
+        description={t('onboarding_tooltip_directorio_desc')}
+        arrowDirection="down"
+        arrowOffset={{ x: 0, y: -30 }}
+        onNext={handleDirTooltipDismiss}
+        onSkip={handleDirTooltipDismiss}
+        currentStep={1}
+        totalSteps={4}
       />
     </>
   );
