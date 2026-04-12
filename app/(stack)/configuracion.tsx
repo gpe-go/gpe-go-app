@@ -409,11 +409,11 @@ export default function ConfiguracionScreen() {
                 },
               ]}
               onPress={() => {
-                router.back();
-                setTimeout(() => { resetOnboarding(); }, 420);
+                try { router.dismiss(); } catch { router.back(); }
+                setTimeout(() => { resetOnboarding(); }, 500);
               }}
             >
-              <View style={[s.rowLeft, { alignItems: 'flex-start' }]}>
+              <View style={[s.rowLeft]}>
                 <View
                   style={[
                     s.iconBox,
@@ -451,7 +451,7 @@ export default function ConfiguracionScreen() {
               ]}
               onPress={() => setPrivacyModal(true)}
             >
-              <View style={[s.rowLeft, { alignItems: 'flex-start' }]}>
+              <View style={[s.rowLeft]}>
                 <View style={[s.iconBox, { backgroundColor: isDark ? '#1a2e1a' : '#F0FDF4', flexShrink: 0 }]}>
                   <Ionicons name="shield-checkmark-outline" size={22} color="#22C55E" />
                 </View>
