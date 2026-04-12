@@ -28,6 +28,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOnboarding } from '../src/context/OnboardingContext';
 import { useTheme } from '../src/context/ThemeContext';
 
+// ── Phantom interaction types ────────────────────────────────────────────────
+interface PhantomAction {
+  type: 'tap' | 'type' | 'swipe-down' | 'swipe-up';
+  x: number;  // absolute pixel X from screen left
+  y: number;  // absolute pixel Y from screen top
+  text?: string;  // only for 'type'
+  delay: number;  // ms after contentVisible becomes true before starting
+}
+
 // ── Definición de pasos ──────────────────────────────────────────────────────
 interface TourStep {
   type: 'tab' | 'stack';
@@ -39,7 +48,10 @@ interface TourStep {
   arrowDir: 'up' | 'down';
   icon: keyof typeof Ionicons.glyphMap;
   color: string;
+  interactions?: PhantomAction[];
 }
+
+const { width: W, height: H } = Dimensions.get('window');
 
 const STEPS: TourStep[] = [
   {
@@ -49,6 +61,10 @@ const STEPS: TourStep[] = [
     descKey: 'onboarding_tooltip_home_desc',
     arrowX: 0, arrowY: -16, arrowDir: 'up',
     icon: 'home-outline', color: '#E96928',
+    interactions: [
+      { type: 'tap', x: W * 0.5, y: H * 0.22, delay: 600 },
+      { type: 'type', x: W * 0.5 - 110, y: H * 0.20, text: 'Restaurante...', delay: 1200 },
+    ],
   },
   {
     type: 'stack',
@@ -57,6 +73,10 @@ const STEPS: TourStep[] = [
     descKey: 'onboarding_tooltip_mapaCompleto_desc',
     arrowX: 0, arrowY: 0, arrowDir: 'up',
     icon: 'map-outline', color: '#10B981',
+    interactions: [
+      { type: 'swipe-down', x: W * 0.5, y: H * 0.38, delay: 700 },
+      { type: 'tap', x: W * 0.88, y: H * 0.55, delay: 1200 },
+    ],
   },
   {
     type: 'tab',
@@ -65,6 +85,9 @@ const STEPS: TourStep[] = [
     descKey: 'onboarding_tooltip_noticias_desc',
     arrowX: 0, arrowY: -18, arrowDir: 'up',
     icon: 'newspaper-outline', color: '#3B82F6',
+    interactions: [
+      { type: 'swipe-down', x: W * 0.5, y: H * 0.42, delay: 700 },
+    ],
   },
   {
     type: 'tab',
@@ -73,6 +96,10 @@ const STEPS: TourStep[] = [
     descKey: 'onboarding_tooltip_directorio_desc',
     arrowX: 0, arrowY: -22, arrowDir: 'up',
     icon: 'business-outline', color: '#8B5CF6',
+    interactions: [
+      { type: 'tap', x: W * 0.22, y: H * 0.33, delay: 700 },
+      { type: 'tap', x: W * 0.5, y: H * 0.52, delay: 1500 },
+    ],
   },
   {
     type: 'tab',
@@ -81,6 +108,10 @@ const STEPS: TourStep[] = [
     descKey: 'onboarding_tooltip_explorar_desc',
     arrowX: 0, arrowY: -22, arrowDir: 'up',
     icon: 'compass-outline', color: '#10B981',
+    interactions: [
+      { type: 'tap', x: W * 0.18, y: H * 0.33, delay: 700 },
+      { type: 'swipe-down', x: W * 0.5, y: H * 0.48, delay: 1400 },
+    ],
   },
   {
     type: 'tab',
@@ -89,6 +120,10 @@ const STEPS: TourStep[] = [
     descKey: 'onboarding_tooltip_eventos_desc',
     arrowX: 0, arrowY: -22, arrowDir: 'up',
     icon: 'calendar-outline', color: '#F59E0B',
+    interactions: [
+      { type: 'tap', x: W * 0.22, y: H * 0.32, delay: 700 },
+      { type: 'tap', x: W * 0.5, y: H * 0.50, delay: 1500 },
+    ],
   },
   {
     type: 'tab',
@@ -97,6 +132,9 @@ const STEPS: TourStep[] = [
     descKey: 'onboarding_tooltip_favoritos_desc',
     arrowX: 0, arrowY: -22, arrowDir: 'up',
     icon: 'heart-outline', color: '#EF4444',
+    interactions: [
+      { type: 'swipe-down', x: W * 0.5, y: H * 0.45, delay: 700 },
+    ],
   },
   {
     type: 'tab',
@@ -105,6 +143,10 @@ const STEPS: TourStep[] = [
     descKey: 'onboarding_tooltip_contacto_desc',
     arrowX: 0, arrowY: -22, arrowDir: 'up',
     icon: 'mail-outline', color: '#0EA5E9',
+    interactions: [
+      { type: 'tap', x: W * 0.5, y: H * 0.36, delay: 700 },
+      { type: 'swipe-down', x: W * 0.5, y: H * 0.48, delay: 1400 },
+    ],
   },
   {
     type: 'tab',
@@ -113,6 +155,9 @@ const STEPS: TourStep[] = [
     descKey: 'onboarding_tooltip_barraLateral_desc',
     arrowX: -41, arrowY: -36, arrowDir: 'up',
     icon: 'menu-outline', color: '#E96928',
+    interactions: [
+      { type: 'tap', x: W * 0.10, y: H * 0.088, delay: 600 },
+    ],
   },
   {
     type: 'stack',
@@ -121,6 +166,9 @@ const STEPS: TourStep[] = [
     descKey: 'onboarding_tooltip_notificaciones_desc',
     arrowX: 0, arrowY: -16, arrowDir: 'up',
     icon: 'notifications-outline', color: '#F97316',
+    interactions: [
+      { type: 'swipe-down', x: W * 0.5, y: H * 0.42, delay: 700 },
+    ],
   },
   {
     type: 'stack',
@@ -129,6 +177,9 @@ const STEPS: TourStep[] = [
     descKey: 'onboarding_tooltip_perfil_desc',
     arrowX: 0, arrowY: -18, arrowDir: 'up',
     icon: 'person-outline', color: '#6366F1',
+    interactions: [
+      { type: 'tap', x: W * 0.5, y: H * 0.28, delay: 700 },
+    ],
   },
   {
     type: 'stack',
@@ -137,6 +188,10 @@ const STEPS: TourStep[] = [
     descKey: 'onboarding_tooltip_registrarNegocio_desc',
     arrowX: 0, arrowY: -18, arrowDir: 'up',
     icon: 'storefront-outline', color: '#EC4899',
+    interactions: [
+      { type: 'tap', x: W * 0.5, y: H * 0.32, delay: 700 },
+      { type: 'swipe-down', x: W * 0.5, y: H * 0.46, delay: 1400 },
+    ],
   },
   {
     type: 'stack',
@@ -145,11 +200,216 @@ const STEPS: TourStep[] = [
     descKey: 'onboarding_tooltip_configuracion_desc',
     arrowX: 0, arrowY: -18, arrowDir: 'up',
     icon: 'settings-outline', color: '#64748B',
+    interactions: [
+      { type: 'tap', x: W * 0.5, y: H * 0.36, delay: 700 },
+      { type: 'swipe-down', x: W * 0.5, y: H * 0.50, delay: 1400 },
+    ],
   },
 ];
 
-const { width: W, height: H } = Dimensions.get('window');
 const TOTAL = STEPS.length;
+
+// ── Phantom interaction sub-components ──────────────────────────────────────
+
+function TapIndicator({ x, y, color, delay }: { x: number; y: number; color: string; delay: number }) {
+  const scale = useRef(new Animated.Value(0.3)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
+  const rippleScale = useRef(new Animated.Value(0.5)).current;
+  const rippleOpacity = useRef(new Animated.Value(0)).current;
+  const loopRef = useRef<Animated.CompositeAnimation | null>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const loop = Animated.loop(
+        Animated.sequence([
+          // tap circle appears
+          Animated.parallel([
+            Animated.spring(scale, { toValue: 1.0, tension: 80, friction: 6, useNativeDriver: true }),
+            Animated.timing(opacity, { toValue: 0.9, duration: 200, useNativeDriver: true }),
+          ]),
+          // ripple expands
+          Animated.parallel([
+            Animated.timing(rippleScale, { toValue: 1.8, duration: 600, useNativeDriver: true }),
+            Animated.timing(rippleOpacity, { toValue: 0, duration: 600, useNativeDriver: true }),
+            Animated.timing(opacity, { toValue: 0.3, duration: 400, useNativeDriver: true }),
+          ]),
+          // reset
+          Animated.parallel([
+            Animated.timing(scale, { toValue: 0.3, duration: 0, useNativeDriver: true }),
+            Animated.timing(opacity, { toValue: 0, duration: 0, useNativeDriver: true }),
+            Animated.timing(rippleScale, { toValue: 0.5, duration: 0, useNativeDriver: true }),
+            Animated.timing(rippleOpacity, { toValue: 0.6, duration: 0, useNativeDriver: true }),
+          ]),
+          Animated.delay(500),
+        ])
+      );
+      loopRef.current = loop;
+      loop.start();
+    }, delay);
+    return () => {
+      clearTimeout(timer);
+      loopRef.current?.stop();
+      scale.setValue(0.3);
+      opacity.setValue(0);
+      rippleScale.setValue(0.5);
+      rippleOpacity.setValue(0);
+    };
+  }, []); // empty deps - rerenders are handled by parent unmount/remount
+
+  return (
+    <View pointerEvents="none" style={{ position: 'absolute', left: x - 20, top: y - 20, width: 40, height: 40, zIndex: 9997 }}>
+      {/* Ripple ring */}
+      <Animated.View style={{
+        position: 'absolute',
+        left: -20, top: -20, width: 80, height: 80,
+        borderRadius: 40, borderWidth: 2, borderColor: color,
+        transform: [{ scale: rippleScale }], opacity: rippleOpacity,
+      }} />
+      {/* Tap circle */}
+      <Animated.View style={{
+        width: 40, height: 40, borderRadius: 20,
+        borderWidth: 3, borderColor: color,
+        backgroundColor: color + '22',
+        transform: [{ scale }], opacity,
+      }} />
+    </View>
+  );
+}
+
+function SwipeIndicator({ x, y, color, delay, direction }: { x: number; y: number; color: string; delay: number; direction: 'swipe-down' | 'swipe-up' }) {
+  const translateY = useRef(new Animated.Value(0)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const targetY = direction === 'swipe-down' ? 50 : -50;
+      const loop = Animated.loop(
+        Animated.sequence([
+          Animated.parallel([
+            Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+            Animated.timing(translateY, { toValue: targetY, duration: 700, useNativeDriver: true }),
+          ]),
+          Animated.timing(opacity, { toValue: 0, duration: 200, useNativeDriver: true }),
+          Animated.timing(translateY, { toValue: 0, duration: 0, useNativeDriver: true }),
+          Animated.delay(400),
+        ])
+      );
+      loop.start();
+      return () => loop.stop();
+    }, delay);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <Animated.View pointerEvents="none" style={{
+      position: 'absolute', left: x - 4, top: y,
+      alignItems: 'center', gap: 8,
+      transform: [{ translateY }], opacity,
+      zIndex: 9997,
+    }}>
+      {[0, 1, 2].map(i => (
+        <View key={i} style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: color, opacity: 1 - i * 0.25 }} />
+      ))}
+    </Animated.View>
+  );
+}
+
+function TypingIndicator({ x, y, text, delay }: { x: number; y: number; text: string; delay: number }) {
+  const [displayText, setDisplayText] = useState('');
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+  const [cursorVisible, setCursorVisible] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    const startTyping = () => {
+      if (!mounted) return;
+      Animated.timing(opacityAnim, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+
+      let i = 0;
+      const typeNext = () => {
+        if (!mounted) return;
+        if (i <= text.length) {
+          setDisplayText(text.slice(0, i));
+          i++;
+          timeoutId = setTimeout(typeNext, 45);
+        } else {
+          // Pause then erase
+          timeoutId = setTimeout(() => {
+            let j = text.length;
+            const eraseNext = () => {
+              if (!mounted) return;
+              if (j >= 0) {
+                setDisplayText(text.slice(0, j));
+                j--;
+                timeoutId = setTimeout(eraseNext, 28);
+              } else {
+                // Pause then repeat
+                timeoutId = setTimeout(() => { i = 0; typeNext(); }, 600);
+              }
+            };
+            eraseNext();
+          }, 900);
+        }
+      };
+      typeNext();
+    };
+
+    timeoutId = setTimeout(startTyping, delay);
+
+    // Blinking cursor
+    const cursorInterval = setInterval(() => {
+      if (mounted) setCursorVisible(v => !v);
+    }, 530);
+
+    return () => {
+      mounted = false;
+      clearTimeout(timeoutId);
+      clearInterval(cursorInterval);
+    };
+  }, []);
+
+  return (
+    <Animated.View pointerEvents="none" style={{
+      position: 'absolute', left: x, top: y,
+      width: 220,
+      backgroundColor: 'rgba(255,255,255,0.97)',
+      borderRadius: 12,
+      paddingHorizontal: 12, paddingVertical: 9,
+      flexDirection: 'row', alignItems: 'center', gap: 8,
+      shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.18, shadowRadius: 12, elevation: 8,
+      zIndex: 9997,
+      opacity: opacityAnim,
+    }}>
+      <Ionicons name="search-outline" size={15} color="#E96928" />
+      <Text style={{ fontSize: 14, color: '#111', fontWeight: '500', flex: 1 }}>
+        {displayText}<Text style={{ opacity: cursorVisible ? 1 : 0, color: '#E96928' }}>|</Text>
+      </Text>
+    </Animated.View>
+  );
+}
+
+function PhantomInteraction({ actions, color, active }: { actions: PhantomAction[]; color: string; active: boolean }) {
+  if (!active || actions.length === 0) return null;
+  return (
+    <>
+      {actions.map((action, i) => {
+        if (action.type === 'tap') {
+          return <TapIndicator key={i} x={action.x} y={action.y} color={color} delay={action.delay} />;
+        }
+        if (action.type === 'swipe-down' || action.type === 'swipe-up') {
+          return <SwipeIndicator key={i} x={action.x} y={action.y} color={color} delay={action.delay} direction={action.type} />;
+        }
+        if (action.type === 'type') {
+          return <TypingIndicator key={i} x={action.x} y={action.y} text={action.text ?? ''} delay={action.delay} />;
+        }
+        return null;
+      })}
+    </>
+  );
+}
 
 // ── Componente principal ─────────────────────────────────────────────────────
 export default function TourGuide() {
@@ -339,6 +599,13 @@ export default function TourGuide() {
           />
         </Animated.View>
       )}
+
+      {/* ── Phantom interaction overlay ──────────────────────────────────── */}
+      <PhantomInteraction
+        actions={step.interactions ?? []}
+        color={step.color}
+        active={contentVisible && !showFinish}
+      />
 
       {/* ── Tarjeta liquid-glass (pasos normales) ───────────────────────── */}
       {contentVisible && !showFinish && (

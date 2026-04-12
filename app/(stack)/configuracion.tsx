@@ -408,12 +408,12 @@ export default function ConfiguracionScreen() {
                   transform: [{ scale: pressed ? 0.99 : 1 }],
                 },
               ]}
-              onPress={async () => {
-                await resetOnboarding();
+              onPress={() => {
                 router.back();
+                setTimeout(() => { resetOnboarding(); }, 420);
               }}
             >
-              <View style={s.rowLeft}>
+              <View style={[s.rowLeft, { alignItems: 'flex-start' }]}>
                 <View
                   style={[
                     s.iconBox,
@@ -421,21 +421,22 @@ export default function ConfiguracionScreen() {
                       backgroundColor: isDark
                         ? 'rgba(233,105,40,0.15)'
                         : 'rgba(233,105,40,0.1)',
+                      flexShrink: 0,
                     },
                   ]}
                 >
                   <Ionicons name="play-circle-outline" size={22} color="#E96928" />
                 </View>
-                <View>
+                <View style={{ flex: 1 }}>
                   <Text style={[s.rowTitle, { fontSize: fonts.base }]}>
                     {t('settings_reset_tutorial')}
                   </Text>
-                  <Text style={[s.rowSub, { fontSize: fonts.xs }]}>
+                  <Text style={[s.rowSub, { fontSize: fonts.xs }]} numberOfLines={2}>
                     {t('settings_reset_tutorial_desc')}
                   </Text>
                 </View>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.subtext} />
+              <Ionicons name="chevron-forward" size={18} color={colors.subtext} style={{ flexShrink: 0, marginLeft: 4 }} />
             </Pressable>
 
             <View style={s.infoDivider} />
@@ -450,16 +451,16 @@ export default function ConfiguracionScreen() {
               ]}
               onPress={() => setPrivacyModal(true)}
             >
-              <View style={s.rowLeft}>
-                <View style={[s.iconBox, { backgroundColor: isDark ? '#1a2e1a' : '#F0FDF4' }]}>
+              <View style={[s.rowLeft, { alignItems: 'flex-start' }]}>
+                <View style={[s.iconBox, { backgroundColor: isDark ? '#1a2e1a' : '#F0FDF4', flexShrink: 0 }]}>
                   <Ionicons name="shield-checkmark-outline" size={22} color="#22C55E" />
                 </View>
-                <View>
+                <View style={{ flex: 1 }}>
                   <Text style={[s.rowTitle, { fontSize: fonts.base }]}>{t('privacy')}</Text>
-                  <Text style={[s.rowSub, { fontSize: fonts.xs }]}>{t('privacy_sub')}</Text>
+                  <Text style={[s.rowSub, { fontSize: fonts.xs }]} numberOfLines={2}>{t('privacy_sub')}</Text>
                 </View>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.subtext} />
+              <Ionicons name="chevron-forward" size={18} color={colors.subtext} style={{ flexShrink: 0, marginLeft: 4 }} />
             </Pressable>
           </View>
         </Animated.View>
@@ -894,6 +895,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       alignItems: 'center',
       justifyContent: 'space-between',
       marginTop: 14,
+      minHeight: 52,
     },
 
     modalBackdrop: {
