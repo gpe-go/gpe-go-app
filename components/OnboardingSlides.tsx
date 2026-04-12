@@ -44,6 +44,9 @@ interface TourStep {
   icon: keyof typeof Ionicons.glyphMap;
   color: string;
   interactions?: PhantomAction[];
+  /** Si true, la tarjeta aparece en la parte SUPERIOR de la pantalla
+   *  dejando libre la parte inferior para mostrar las interacciones */
+  cardAtTop?: boolean;
 }
 
 const { width: W, height: H } = Dimensions.get('window');
@@ -72,17 +75,19 @@ const STEPS: TourStep[] = [
   },
   {
     // Step 1 — Mapa completo: scroll + botón ubicación
+    // cardAtTop: la tarjeta va ARRIBA para dejar el botón de ubicación (abajo-derecha) visible
     type: 'stack',
     route: '/(stack)/mapaCompleto',
     titleKey: 'onboarding_tooltip_mapaCompleto_title',
     descKey: 'onboarding_tooltip_mapaCompleto_desc',
-    arrowX: 0, arrowY: 0, arrowDir: 'up',
+    arrowX: 41, arrowY: 19, arrowDir: 'down',
     icon: 'map-outline', color: '#10B981',
+    cardAtTop: true,
     interactions: [
-      // Deslizar el mapa (zona media de la pantalla)
-      { type: 'swipe-down', x: W * 0.50, y: H * 0.32, delay: 700 },
+      // Deslizar el mapa (zona media-baja, visible debajo de la tarjeta)
+      { type: 'swipe-down', x: W * 0.50, y: H * 0.60, delay: 700 },
       // TAP en botón de centrar ubicación (esquina inferior derecha)
-      { type: 'tap', x: W * 0.86, y: H * 0.72, delay: 1400 },
+      { type: 'tap', x: W * 0.86, y: H * 0.75, delay: 1400 },
     ],
   },
   {
@@ -99,30 +104,34 @@ const STEPS: TourStep[] = [
   },
   {
     // Step 3 — Directorio: tap categoría + scroll lista
+    // cardAtTop: tarjeta arriba para dejar visibles los chips de categoría (abajo del mapa)
     type: 'tab',
     route: '/(tabs)/directorio',
     titleKey: 'onboarding_tooltip_directorio_title',
     descKey: 'onboarding_tooltip_directorio_desc',
-    arrowX: 0, arrowY: -22, arrowDir: 'up',
+    arrowX: -22, arrowY: 19, arrowDir: 'down',
     icon: 'business-outline', color: '#8B5CF6',
+    cardAtTop: true,
     interactions: [
-      // TAP en primer chip de categoría (izquierda, ~41% vertical)
-      { type: 'tap',        x: W * 0.13, y: H * 0.41, delay: 700 },
+      // TAP en primer chip de categoría — aparece DEBAJO del mapa, visible bajo la tarjeta
+      { type: 'tap',        x: W * 0.18, y: H * 0.65, delay: 700 },
       // Scroll lista de lugares
-      { type: 'swipe-down', x: W * 0.50, y: H * 0.50, delay: 1500 },
+      { type: 'swipe-down', x: W * 0.50, y: H * 0.75, delay: 1500 },
     ],
   },
   {
     // Step 4 — Explorar: tap categoría + scroll
+    // cardAtTop: mismo razonamiento que directorio
     type: 'tab',
     route: '/(tabs)/explorar',
     titleKey: 'onboarding_tooltip_explorar_title',
     descKey: 'onboarding_tooltip_explorar_desc',
-    arrowX: 0, arrowY: -22, arrowDir: 'up',
+    arrowX: -22, arrowY: 19, arrowDir: 'down',
     icon: 'compass-outline', color: '#10B981',
+    cardAtTop: true,
     interactions: [
-      { type: 'tap',        x: W * 0.13, y: H * 0.41, delay: 700 },
-      { type: 'swipe-down', x: W * 0.50, y: H * 0.50, delay: 1500 },
+      { type: 'tap',        x: W * 0.18, y: H * 0.65, delay: 700 },
+      { type: 'swipe-down', x: W * 0.50, y: H * 0.75, delay: 1500 },
     ],
   },
   {
@@ -173,8 +182,8 @@ const STEPS: TourStep[] = [
     arrowX: -41, arrowY: -36, arrowDir: 'up',
     icon: 'menu-outline', color: '#E96928',
     interactions: [
-      // El ☰ está aprox en x=33px, y=73px en iPhone (dentro del header)
-      { type: 'tap', x: W * 0.085, y: H * 0.073, delay: 700 },
+      // El ☰ está en el header: x≈28px, y≈78px en iPhone 14 (status bar ~50px + header/2 ~28px)
+      { type: 'tap', x: W * 0.072, y: H * 0.092, delay: 700 },
     ],
   },
   {
@@ -494,7 +503,8 @@ export default function TourGuide() {
 
     setContentVisible(false);
     cardOpacity.setValue(0);
-    cardSlideY.setValue(32);
+    // Slide desde abajo (32) para tarjeta en parte inferior; desde arriba (-32) si cardAtTop
+    cardSlideY.setValue(currentStep.cardAtTop ? -32 : 32);
     cardScale.setValue(0.93);
     bounceRef.current?.stop();
     arrowBounce.setValue(0);
@@ -635,7 +645,9 @@ export default function TourGuide() {
             {
               backgroundColor: glassBg,
               borderColor: glassBorder,
-              bottom: insets.bottom + 16,
+              ...(step.cardAtTop
+                ? { top: insets.top + 12 }
+                : { bottom: insets.bottom + 16 }),
               opacity: cardOpacity,
               transform: [{ translateY: cardSlideY }, { scale: cardScale }],
             },

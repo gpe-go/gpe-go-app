@@ -413,30 +413,30 @@ export default function ConfiguracionScreen() {
                 setTimeout(() => { resetOnboarding(); }, 500);
               }}
             >
-              <View style={[s.rowLeft]}>
-                <View
-                  style={[
-                    s.iconBox,
-                    {
-                      backgroundColor: isDark
-                        ? 'rgba(233,105,40,0.15)'
-                        : 'rgba(233,105,40,0.1)',
-                      flexShrink: 0,
-                    },
-                  ]}
-                >
-                  <Ionicons name="play-circle-outline" size={22} color="#E96928" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[s.rowTitle, { fontSize: fonts.base }]}>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                  <View
+                    style={[
+                      s.iconBox,
+                      {
+                        backgroundColor: isDark
+                          ? 'rgba(233,105,40,0.15)'
+                          : 'rgba(233,105,40,0.1)',
+                        flexShrink: 0,
+                      },
+                    ]}
+                  >
+                    <Ionicons name="play-circle-outline" size={22} color="#E96928" />
+                  </View>
+                  <Text style={[s.rowTitle, { fontSize: fonts.base, flex: 1 }]}>
                     {t('settings_reset_tutorial')}
                   </Text>
-                  <Text style={[s.rowSub, { fontSize: fonts.xs }]} numberOfLines={2}>
-                    {t('settings_reset_tutorial_desc')}
-                  </Text>
                 </View>
+                <Text style={[s.rowSub, { fontSize: fonts.xs, marginLeft: 58, marginTop: 3 }]} numberOfLines={2}>
+                  {t('settings_reset_tutorial_desc')}
+                </Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.subtext} style={{ flexShrink: 0, marginLeft: 4 }} />
+              <Ionicons name="chevron-forward" size={18} color={colors.subtext} style={{ alignSelf: 'center', marginLeft: 8 }} />
             </Pressable>
 
             <View style={s.infoDivider} />
@@ -451,16 +451,18 @@ export default function ConfiguracionScreen() {
               ]}
               onPress={() => setPrivacyModal(true)}
             >
-              <View style={[s.rowLeft]}>
-                <View style={[s.iconBox, { backgroundColor: isDark ? '#1a2e1a' : '#F0FDF4', flexShrink: 0 }]}>
-                  <Ionicons name="shield-checkmark-outline" size={22} color="#22C55E" />
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                  <View style={[s.iconBox, { backgroundColor: isDark ? '#1a2e1a' : '#F0FDF4', flexShrink: 0 }]}>
+                    <Ionicons name="shield-checkmark-outline" size={22} color="#22C55E" />
+                  </View>
+                  <Text style={[s.rowTitle, { fontSize: fonts.base, flex: 1 }]}>{t('privacy')}</Text>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[s.rowTitle, { fontSize: fonts.base }]}>{t('privacy')}</Text>
-                  <Text style={[s.rowSub, { fontSize: fonts.xs }]} numberOfLines={2}>{t('privacy_sub')}</Text>
-                </View>
+                <Text style={[s.rowSub, { fontSize: fonts.xs, marginLeft: 58, marginTop: 3 }]} numberOfLines={2}>
+                  {t('privacy_sub')}
+                </Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.subtext} style={{ flexShrink: 0, marginLeft: 4 }} />
+              <Ionicons name="chevron-forward" size={18} color={colors.subtext} style={{ alignSelf: 'center', marginLeft: 8 }} />
             </Pressable>
           </View>
         </Animated.View>
@@ -892,9 +894,10 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
 
     privacyRow: {
       flexDirection: 'row',
-      alignItems: 'center',
+      alignItems: 'flex-start',
       justifyContent: 'space-between',
       marginTop: 14,
+      paddingVertical: 4,
       minHeight: 52,
     },
 
