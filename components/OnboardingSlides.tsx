@@ -2,14 +2,16 @@
  * TourGuide — recorrido guiado dentro de la app
  *
  * Se renderiza como overlay raíz encima del navegador de tabs.
- * En cada paso navega a la pestaña correspondiente y muestra
+ * En cada paso navega a la pantalla correspondiente y muestra
  * una tarjeta liquid-glass con flecha animada apuntando al feature.
+ * Al terminar, muestra una pantalla de cierre con branding GuadalupeGO.
  *
- * Pasos: 0=Home · 1=Directorio · 2=Explorar · 3=Eventos
+ * Pasos: 0=Home · 1=Noticias · 2=Directorio · 3=Explorar
+ *        4=Eventos · 5=Favoritos · 6=Contacto · →Finish card
  */
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Animated,
@@ -41,8 +43,15 @@ const STEPS: TourStep[] = [
     route: '/(tabs)/',
     titleKey: 'onboarding_tooltip_home_title',
     descKey: 'onboarding_tooltip_home_desc',
-    arrowX: 0, arrowY: -16, arrowDir: 'up',
-    icon: 'search-outline', color: '#E96928',
+    arrowX: 0, arrowY: -18, arrowDir: 'up',
+    icon: 'home-outline', color: '#E96928',
+  },
+  {
+    route: '/(tabs)/noticias',
+    titleKey: 'onboarding_tooltip_noticias_title',
+    descKey: 'onboarding_tooltip_noticias_desc',
+    arrowX: 0, arrowY: -18, arrowDir: 'up',
+    icon: 'newspaper-outline', color: '#3B82F6',
   },
   {
     route: '/(tabs)/directorio',
@@ -65,6 +74,20 @@ const STEPS: TourStep[] = [
     arrowX: 0, arrowY: -22, arrowDir: 'up',
     icon: 'calendar-outline', color: '#F59E0B',
   },
+  {
+    route: '/(tabs)/favoritos',
+    titleKey: 'onboarding_tooltip_favoritos_title',
+    descKey: 'onboarding_tooltip_favoritos_desc',
+    arrowX: 0, arrowY: -22, arrowDir: 'up',
+    icon: 'heart-outline', color: '#EF4444',
+  },
+  {
+    route: '/(tabs)/contacto',
+    titleKey: 'onboarding_tooltip_contacto_title',
+    descKey: 'onboarding_tooltip_contacto_desc',
+    arrowX: 0, arrowY: -22, arrowDir: 'up',
+    icon: 'mail-outline', color: '#0EA5E9',
+  },
 ];
 
 const { width: W, height: H } = Dimensions.get('window');
@@ -79,8 +102,9 @@ export default function TourGuide() {
   const router = useRouter();
 
   const [contentVisible, setContentVisible] = useState(false);
+  const [showFinish, setShowFinish] = useState(false);
 
-  // Animated values
+  // Animated values — tooltip card
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const cardOpacity    = useRef(new Animated.Value(0)).current;
   const cardSlideY     = useRef(new Animated.Value(32)).current;
@@ -88,12 +112,27 @@ export default function TourGuide() {
   const arrowBounce    = useRef(new Animated.Value(0)).current;
   const bounceRef      = useRef<Animated.CompositeAnimation | null>(null);
 
+  // Animated values — finish card
+  const finishOpacity = useRef(new Animated.Value(0)).current;
+  const finishSlideY  = useRef(new Animated.Value(44)).current;
+  const finishScale   = useRef(new Animated.Value(0.88)).current;
+
   const step   = STEPS[tourStep] ?? STEPS[0];
   const isLast = tourStep === TOTAL - 1;
 
+  // ── Reset estado finish cuando el tour se reinicia ───────────────────────
+  useEffect(() => {
+    if (tourActive) {
+      setShowFinish(false);
+      finishOpacity.setValue(0);
+      finishSlideY.setValue(44);
+      finishScale.setValue(0.88);
+    }
+  }, [tourActive, finishOpacity, finishSlideY, finishScale]);
+
   // ── Navegar + mostrar tooltip al cambiar de paso ─────────────────────────
   useEffect(() => {
-    if (!tourReady || !tourActive) return;
+    if (!tourReady || !tourActive || showFinish) return;
 
     // Reset card
     setContentVisible(false);
@@ -103,7 +142,7 @@ export default function TourGuide() {
     bounceRef.current?.stop();
     arrowBounce.setValue(0);
 
-    // Navegar a la pestaña
+    // Navegar a la pantalla
     try { router.navigate(step.route as any); } catch { /* ignore */ }
 
     // Fade in overlay
@@ -146,6 +185,22 @@ export default function TourGuide() {
     }
   }, [tourActive, overlayOpacity]);
 
+  // ── Transición al finish card (último paso → pantalla final) ────────────
+  const handleShowFinish = useCallback(() => {
+    bounceRef.current?.stop();
+    setContentVisible(false);
+    cardOpacity.setValue(0);
+
+    setTimeout(() => {
+      setShowFinish(true);
+      Animated.parallel([
+        Animated.timing(finishOpacity, { toValue: 1, duration: 360, useNativeDriver: true }),
+        Animated.spring(finishSlideY,  { toValue: 0, tension: 55, friction: 9, useNativeDriver: true }),
+        Animated.spring(finishScale,   { toValue: 1, tension: 60, friction: 9, useNativeDriver: true }),
+      ]).start();
+    }, 240);
+  }, [cardOpacity, finishOpacity, finishSlideY, finishScale]);
+
   if (!tourReady || !tourActive) return null;
 
   // ── Posición de la flecha ────────────────────────────────────────────────
@@ -155,8 +210,8 @@ export default function TourGuide() {
     ? arrowBounce
     : Animated.multiply(arrowBounce, new Animated.Value(-1));
 
-  // ── Estilos adaptativos de la tarjeta glass ──────────────────────────────
-  const glassBg     = isDark ? 'rgba(16,16,16,0.84)' : 'rgba(255,255,255,0.90)';
+  // ── Estilos adaptativos ──────────────────────────────────────────────────
+  const glassBg     = isDark ? 'rgba(16,16,16,0.88)' : 'rgba(255,255,255,0.93)';
   const glassBorder = isDark ? 'rgba(255,255,255,0.13)' : 'rgba(200,200,200,0.6)';
   const titleColor  = isDark ? '#ffffff' : '#111111';
   const descColor   = isDark ? 'rgba(255,255,255,0.70)' : 'rgba(0,0,0,0.60)';
@@ -165,16 +220,19 @@ export default function TourGuide() {
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
 
-      {/* Overlay semitransparente — el contenido de la app se ve detrás */}
+      {/* Overlay semitransparente */}
       <Animated.View
         style={[s.overlay, { opacity: overlayOpacity }]}
         pointerEvents="auto"
       >
-        <Pressable style={StyleSheet.absoluteFill} onPress={skipTour} />
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={showFinish ? nextTourStep : skipTour}
+        />
       </Animated.View>
 
-      {/* Flecha animada */}
-      {contentVisible && (
+      {/* ── Flecha animada (solo en pasos normales) ─────────────────────── */}
+      {contentVisible && !showFinish && (
         <Animated.View
           pointerEvents="none"
           style={[
@@ -190,8 +248,8 @@ export default function TourGuide() {
         </Animated.View>
       )}
 
-      {/* Tarjeta liquid-glass */}
-      {contentVisible && (
+      {/* ── Tarjeta liquid-glass (pasos normales) ───────────────────────── */}
+      {contentVisible && !showFinish && (
         <Animated.View
           pointerEvents="auto"
           style={[
@@ -205,7 +263,7 @@ export default function TourGuide() {
             },
           ]}
         >
-          {/* Cabecera: icono de sección + "Paso X de Y" + "Saltar todo" */}
+          {/* Cabecera */}
           <View style={s.cardHeader}>
             <View style={[s.iconBadge, { backgroundColor: step.color + '1E', borderColor: step.color + '44' }]}>
               <Ionicons name={step.icon} size={19} color={step.color} />
@@ -232,7 +290,7 @@ export default function TourGuide() {
             {t(step.descKey)}
           </Text>
 
-          {/* Puntos de progreso (el activo es una píldora alargada) */}
+          {/* Puntos de progreso */}
           <View style={s.dotsRow}>
             {STEPS.map((_, i) => (
               <View
@@ -269,13 +327,75 @@ export default function TourGuide() {
                   transform: [{ scale: pressed ? 0.97 : 1 }],
                 },
               ]}
-              onPress={nextTourStep}
+              onPress={isLast ? handleShowFinish : nextTourStep}
             >
               <Text style={s.nextBtnText}>
                 {isLast ? t('onboarding_start') : `${t('onboarding_next')} →`}
               </Text>
             </Pressable>
           </View>
+        </Animated.View>
+      )}
+
+      {/* ── Finish card — pantalla de cierre con branding ───────────────── */}
+      {showFinish && (
+        <Animated.View
+          pointerEvents="auto"
+          style={[
+            s.finishCard,
+            {
+              backgroundColor: glassBg,
+              borderColor: glassBorder,
+              bottom: insets.bottom + 16,
+              opacity: finishOpacity,
+              transform: [{ translateY: finishSlideY }, { scale: finishScale }],
+            },
+          ]}
+        >
+          {/* Logo con anillos decorativos */}
+          <View style={s.finishLogoArea}>
+            <View style={[s.finishRingOuter, { borderColor: 'rgba(233,105,40,0.16)' }]}>
+              <View style={[s.finishRingInner, { borderColor: 'rgba(233,105,40,0.30)' }]}>
+                <View style={s.finishLogoBg}>
+                  <Ionicons name="location" size={30} color="#fff" />
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Nombre app */}
+          <Text style={[s.finishAppName, { color: titleColor }]}>
+            Guadalupe<Text style={{ color: '#E96928' }}>GO</Text>
+          </Text>
+
+          {/* Slogan con líneas decorativas */}
+          <View style={s.finishSloganRow}>
+            <View style={[s.finishSloganLine, { backgroundColor: '#E96928' }]} />
+            <Text style={[s.finishSlogan, { color: '#E96928' }]}>
+              {t('onboarding_finish_tagline')}
+            </Text>
+            <View style={[s.finishSloganLine, { backgroundColor: '#E96928' }]} />
+          </View>
+
+          {/* Descripción */}
+          <Text style={[s.finishDesc, { color: descColor }]}>
+            {t('onboarding_finish_desc')}
+          </Text>
+
+          {/* Botón principal */}
+          <Pressable
+            style={({ pressed }) => [
+              s.finishBtn,
+              {
+                opacity: pressed ? 0.88 : 1,
+                transform: [{ scale: pressed ? 0.97 : 1 }],
+              },
+            ]}
+            onPress={nextTourStep}
+          >
+            <Ionicons name="rocket-outline" size={18} color="#fff" style={{ marginRight: 8 }} />
+            <Text style={s.finishBtnText}>{t('onboarding_finish_btn')}</Text>
+          </Pressable>
         </Animated.View>
       )}
     </View>
@@ -301,6 +421,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
 
+  // ── Tooltip card ────────────────────────────────────────────────────────
   card: {
     position: 'absolute',
     left: 16,
@@ -360,7 +481,7 @@ const s = StyleSheet.create({
   dotsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
+    gap: 6,
     marginBottom: 18,
   },
 
@@ -369,14 +490,14 @@ const s = StyleSheet.create({
   },
 
   dotActive: {
-    width: 22,
-    height: 8,
+    width: 20,
+    height: 7,
     borderRadius: 4,
   },
 
   dotInactive: {
-    width: 8,
-    height: 8,
+    width: 7,
+    height: 7,
   },
 
   btnRow: {
@@ -410,5 +531,123 @@ const s = StyleSheet.create({
     fontSize: 15,
     fontWeight: '800',
     letterSpacing: 0.2,
+  },
+
+  // ── Finish card ──────────────────────────────────────────────────────────
+  finishCard: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    borderWidth: 1.5,
+    borderRadius: 32,
+    paddingHorizontal: 28,
+    paddingTop: 32,
+    paddingBottom: 28,
+    zIndex: 9995,
+    elevation: Platform.OS === 'android' ? 9995 : 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.30,
+    shadowRadius: 26,
+    alignItems: 'center',
+  },
+
+  finishLogoArea: {
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+
+  finishRingOuter: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  finishRingInner: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  finishLogoBg: {
+    width: 58,
+    height: 58,
+    borderRadius: 20,
+    backgroundColor: '#E96928',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#E96928',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.50,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+
+  finishAppName: {
+    fontSize: 32,
+    fontWeight: '900',
+    letterSpacing: -0.8,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+
+  finishSloganRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 16,
+    width: '100%',
+    paddingHorizontal: 4,
+  },
+
+  finishSloganLine: {
+    flex: 1,
+    height: 1.5,
+    borderRadius: 1,
+    opacity: 0.35,
+  },
+
+  finishSlogan: {
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 1.8,
+    textAlign: 'center',
+    textTransform: 'uppercase',
+  },
+
+  finishDesc: {
+    fontSize: 14,
+    lineHeight: 22,
+    textAlign: 'center',
+    marginBottom: 26,
+    paddingHorizontal: 4,
+  },
+
+  finishBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E96928',
+    borderRadius: 50,
+    paddingVertical: 15,
+    width: '100%',
+    shadowColor: '#E96928',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.45,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+
+  finishBtnText: {
+    color: '#ffffff',
+    fontSize: 17,
+    fontWeight: '900',
+    letterSpacing: 0.4,
   },
 });
