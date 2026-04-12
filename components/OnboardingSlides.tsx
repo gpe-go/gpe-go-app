@@ -6,8 +6,10 @@
  * una tarjeta liquid-glass con flecha animada apuntando al feature.
  * Al terminar, muestra una pantalla de cierre con branding GuadalupeGO.
  *
- * Pasos: 0=Home · 1=Noticias · 2=Directorio · 3=Explorar
- *        4=Eventos · 5=Favoritos · 6=Contacto · →Finish card
+ * Pasos: 0=Home · 1=MapaCompleto · 2=Noticias · 3=Directorio
+ *        4=Explorar · 5=Eventos · 6=Favoritos · 7=Contacto
+ *        8=BarraLateral · 9=Notificaciones · 10=Perfil
+ *        11=RegistrarNegocio · 12=Configuracion · →Finish card
  */
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -28,11 +30,12 @@ import { useTheme } from '../src/context/ThemeContext';
 
 // ── Definición de pasos ──────────────────────────────────────────────────────
 interface TourStep {
+  type: 'tab' | 'stack';
   route: string;
   titleKey: string;
   descKey: string;
-  arrowX: number;   // % desde el centro horizontal (-50..50)
-  arrowY: number;   // % desde el centro vertical   (-50..50)
+  arrowX: number;   // offset px desde el centro horizontal
+  arrowY: number;   // offset % desde el centro vertical
   arrowDir: 'up' | 'down';
   icon: keyof typeof Ionicons.glyphMap;
   color: string;
@@ -40,13 +43,23 @@ interface TourStep {
 
 const STEPS: TourStep[] = [
   {
+    type: 'tab',
     route: '/(tabs)/',
     titleKey: 'onboarding_tooltip_home_title',
     descKey: 'onboarding_tooltip_home_desc',
-    arrowX: 0, arrowY: -18, arrowDir: 'up',
+    arrowX: 0, arrowY: -16, arrowDir: 'up',
     icon: 'home-outline', color: '#E96928',
   },
   {
+    type: 'stack',
+    route: '/(stack)/mapaCompleto',
+    titleKey: 'onboarding_tooltip_mapaCompleto_title',
+    descKey: 'onboarding_tooltip_mapaCompleto_desc',
+    arrowX: 0, arrowY: 0, arrowDir: 'up',
+    icon: 'map-outline', color: '#10B981',
+  },
+  {
+    type: 'tab',
     route: '/(tabs)/noticias',
     titleKey: 'onboarding_tooltip_noticias_title',
     descKey: 'onboarding_tooltip_noticias_desc',
@@ -54,6 +67,7 @@ const STEPS: TourStep[] = [
     icon: 'newspaper-outline', color: '#3B82F6',
   },
   {
+    type: 'tab',
     route: '/(tabs)/directorio',
     titleKey: 'onboarding_tooltip_directorio_title',
     descKey: 'onboarding_tooltip_directorio_desc',
@@ -61,6 +75,7 @@ const STEPS: TourStep[] = [
     icon: 'business-outline', color: '#8B5CF6',
   },
   {
+    type: 'tab',
     route: '/(tabs)/explorar',
     titleKey: 'onboarding_tooltip_explorar_title',
     descKey: 'onboarding_tooltip_explorar_desc',
@@ -68,6 +83,7 @@ const STEPS: TourStep[] = [
     icon: 'compass-outline', color: '#10B981',
   },
   {
+    type: 'tab',
     route: '/(tabs)/eventos',
     titleKey: 'onboarding_tooltip_eventos_title',
     descKey: 'onboarding_tooltip_eventos_desc',
@@ -75,6 +91,7 @@ const STEPS: TourStep[] = [
     icon: 'calendar-outline', color: '#F59E0B',
   },
   {
+    type: 'tab',
     route: '/(tabs)/favoritos',
     titleKey: 'onboarding_tooltip_favoritos_title',
     descKey: 'onboarding_tooltip_favoritos_desc',
@@ -82,11 +99,52 @@ const STEPS: TourStep[] = [
     icon: 'heart-outline', color: '#EF4444',
   },
   {
+    type: 'tab',
     route: '/(tabs)/contacto',
     titleKey: 'onboarding_tooltip_contacto_title',
     descKey: 'onboarding_tooltip_contacto_desc',
     arrowX: 0, arrowY: -22, arrowDir: 'up',
     icon: 'mail-outline', color: '#0EA5E9',
+  },
+  {
+    type: 'tab',
+    route: '/(tabs)/',
+    titleKey: 'onboarding_tooltip_barraLateral_title',
+    descKey: 'onboarding_tooltip_barraLateral_desc',
+    arrowX: -41, arrowY: -36, arrowDir: 'up',
+    icon: 'menu-outline', color: '#E96928',
+  },
+  {
+    type: 'stack',
+    route: '/(stack)/notificaciones',
+    titleKey: 'onboarding_tooltip_notificaciones_title',
+    descKey: 'onboarding_tooltip_notificaciones_desc',
+    arrowX: 0, arrowY: -16, arrowDir: 'up',
+    icon: 'notifications-outline', color: '#F97316',
+  },
+  {
+    type: 'stack',
+    route: '/(stack)/perfil',
+    titleKey: 'onboarding_tooltip_perfil_title',
+    descKey: 'onboarding_tooltip_perfil_desc',
+    arrowX: 0, arrowY: -18, arrowDir: 'up',
+    icon: 'person-outline', color: '#6366F1',
+  },
+  {
+    type: 'stack',
+    route: '/(stack)/registrar-negocio',
+    titleKey: 'onboarding_tooltip_registrarNegocio_title',
+    descKey: 'onboarding_tooltip_registrarNegocio_desc',
+    arrowX: 0, arrowY: -18, arrowDir: 'up',
+    icon: 'storefront-outline', color: '#EC4899',
+  },
+  {
+    type: 'stack',
+    route: '/(stack)/configuracion',
+    titleKey: 'onboarding_tooltip_configuracion_title',
+    descKey: 'onboarding_tooltip_configuracion_desc',
+    arrowX: 0, arrowY: -18, arrowDir: 'up',
+    icon: 'settings-outline', color: '#64748B',
   },
 ];
 
@@ -103,6 +161,9 @@ export default function TourGuide() {
 
   const [contentVisible, setContentVisible] = useState(false);
   const [showFinish, setShowFinish] = useState(false);
+
+  // Tracks whether the current visible screen is a stack screen
+  const currentStepTypeRef = useRef<'tab' | 'stack'>('tab');
 
   // Animated values — tooltip card
   const overlayOpacity = useRef(new Animated.Value(0)).current;
@@ -124,6 +185,7 @@ export default function TourGuide() {
   useEffect(() => {
     if (tourActive) {
       setShowFinish(false);
+      currentStepTypeRef.current = 'tab';
       finishOpacity.setValue(0);
       finishSlideY.setValue(44);
       finishScale.setValue(0.88);
@@ -134,6 +196,10 @@ export default function TourGuide() {
   useEffect(() => {
     if (!tourReady || !tourActive || showFinish) return;
 
+    const prevStep = tourStep > 0 ? STEPS[tourStep - 1] : null;
+    const needsBack = prevStep?.type === 'stack';
+    const currentStep = STEPS[tourStep] ?? STEPS[0];
+
     // Reset card
     setContentVisible(false);
     cardOpacity.setValue(0);
@@ -142,36 +208,58 @@ export default function TourGuide() {
     bounceRef.current?.stop();
     arrowBounce.setValue(0);
 
-    // Navegar a la pantalla
-    try { router.navigate(step.route as any); } catch { /* ignore */ }
-
     // Fade in overlay
     Animated.timing(overlayOpacity, {
       toValue: 1, duration: 300, useNativeDriver: true,
     }).start();
 
-    // Mostrar card después de que la navegación se estabilice
-    const delay = tourStep === 0 ? 950 : 480;
-    const timer = setTimeout(() => {
-      setContentVisible(true);
+    const doNavigateAndAnimate = () => {
+      currentStepTypeRef.current = currentStep.type;
+      if (currentStep.type === 'tab') {
+        try { router.navigate(currentStep.route as any); } catch { /* ignore */ }
+      } else if (currentStep.type === 'stack') {
+        try { router.push(currentStep.route as any); } catch { /* ignore */ }
+      }
 
-      Animated.parallel([
-        Animated.timing(cardOpacity,  { toValue: 1, duration: 260, useNativeDriver: true }),
-        Animated.spring(cardSlideY,   { toValue: 0, tension: 60, friction: 9, useNativeDriver: true }),
-        Animated.spring(cardScale,    { toValue: 1, tension: 65, friction: 9, useNativeDriver: true }),
-      ]).start();
+      // Delay: step 0 needs extra time; stack screens need extra time; others 480ms
+      const delay = tourStep === 0 ? 950 : currentStep.type === 'stack' ? 680 : 480;
 
-      // Flecha animada (bounce loop)
-      bounceRef.current = Animated.loop(
-        Animated.sequence([
-          Animated.timing(arrowBounce, { toValue: 11, duration: 540, useNativeDriver: true }),
-          Animated.timing(arrowBounce, { toValue: 0,  duration: 540, useNativeDriver: true }),
-        ])
-      );
-      bounceRef.current.start();
-    }, delay);
+      cardTimer = setTimeout(() => {
+        setContentVisible(true);
 
-    return () => { clearTimeout(timer); bounceRef.current?.stop(); };
+        Animated.parallel([
+          Animated.timing(cardOpacity,  { toValue: 1, duration: 260, useNativeDriver: true }),
+          Animated.spring(cardSlideY,   { toValue: 0, tension: 60, friction: 9, useNativeDriver: true }),
+          Animated.spring(cardScale,    { toValue: 1, tension: 65, friction: 9, useNativeDriver: true }),
+        ]).start();
+
+        // Flecha animada (bounce loop)
+        bounceRef.current = Animated.loop(
+          Animated.sequence([
+            Animated.timing(arrowBounce, { toValue: 11, duration: 540, useNativeDriver: true }),
+            Animated.timing(arrowBounce, { toValue: 0,  duration: 540, useNativeDriver: true }),
+          ])
+        );
+        bounceRef.current.start();
+      }, delay);
+    };
+
+    let backTimer: ReturnType<typeof setTimeout>;
+    let cardTimer: ReturnType<typeof setTimeout>;
+
+    if (needsBack) {
+      // Pop the previous stack screen before navigating to the new step
+      try { router.back(); } catch { /* ignore */ }
+      backTimer = setTimeout(doNavigateAndAnimate, 320);
+    } else {
+      doNavigateAndAnimate();
+    }
+
+    return () => {
+      clearTimeout(backTimer!);
+      clearTimeout(cardTimer!);
+      bounceRef.current?.stop();
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tourStep, tourActive, tourReady]);
 
@@ -179,6 +267,10 @@ export default function TourGuide() {
   useEffect(() => {
     if (!tourActive) {
       bounceRef.current?.stop();
+      // If we ended while a stack screen was showing, pop back to tabs
+      if (currentStepTypeRef.current === 'stack') {
+        setTimeout(() => { try { router.back(); } catch { /* ignore */ } }, 200);
+      }
       Animated.timing(overlayOpacity, {
         toValue: 0, duration: 220, useNativeDriver: true,
       }).start();
@@ -290,7 +382,7 @@ export default function TourGuide() {
             {t(step.descKey)}
           </Text>
 
-          {/* Puntos de progreso */}
+          {/* Puntos de progreso — 13 dots compactos */}
           <View style={s.dotsRow}>
             {STEPS.map((_, i) => (
               <View
@@ -478,10 +570,11 @@ const s = StyleSheet.create({
     marginBottom: 18,
   },
 
+  // 13 dots — smaller to keep row compact
   dotsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
     marginBottom: 18,
   },
 
@@ -490,14 +583,14 @@ const s = StyleSheet.create({
   },
 
   dotActive: {
-    width: 20,
-    height: 7,
-    borderRadius: 4,
+    width: 14,
+    height: 6,
+    borderRadius: 3,
   },
 
   dotInactive: {
-    width: 7,
-    height: 7,
+    width: 5,
+    height: 5,
   },
 
   btnRow: {
