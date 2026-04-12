@@ -427,7 +427,7 @@ export default function ConfiguracionScreen() {
                   <Text style={[s.rowTitle, { fontSize: fonts.base }]}>
                     {t('settings_reset_tutorial')}
                   </Text>
-                  <Text style={[s.rowSub, { fontSize: fonts.xs }]} numberOfLines={2}>
+                  <Text style={[s.rowSub, { fontSize: fonts.xs }]} numberOfLines={1}>
                     {t('settings_reset_tutorial_desc')}
                   </Text>
                 </View>
