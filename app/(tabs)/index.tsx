@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -18,11 +18,9 @@ import {
   View,
 } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
-import { useOnboarding } from "../../src/context/OnboardingContext";
 import { useTheme } from "../../src/context/ThemeContext";
 import { useLugares } from "../../src/hooks/useLugares";
 import i18n from "../../src/i18n/i18n";
-import TooltipOverlay from "../../components/TooltipOverlay";
 
 // ── Hook: fecha y hora en vivo (reactivo al idioma) ──────
 function useDateTime() {
@@ -167,25 +165,6 @@ export default function HomeScreen() {
   const { t } = useTranslation();
   const { colors, fonts, isDark } = useTheme();
   const s = makeStyles(colors, fonts, isDark);
-  const { slidesReady, showSlides, tooltipSeen, markTooltipSeen } = useOnboarding();
-
-  const [showHomeTooltip, setShowHomeTooltip] = useState(false);
-
-  useFocusEffect(
-    useCallback(() => {
-      if (!tooltipSeen.home && slidesReady && !showSlides) {
-        const timer = setTimeout(() => setShowHomeTooltip(true), 500);
-        return () => clearTimeout(timer);
-      }
-      return undefined;
-    }, [tooltipSeen.home, slidesReady, showSlides])
-  );
-
-  const handleTooltipDismiss = useCallback(() => {
-    markTooltipSeen('home');
-    setShowHomeTooltip(false);
-  }, [markTooltipSeen]);
-
   const { fecha, hora } = useDateTime();
 
   const mapRef = useRef<MapView>(null);
@@ -864,17 +843,6 @@ export default function HomeScreen() {
         </>
       )}
 
-      <TooltipOverlay
-        visible={showHomeTooltip}
-        title={t('onboarding_tooltip_home_title')}
-        description={t('onboarding_tooltip_home_desc')}
-        arrowDirection="down"
-        arrowOffset={{ x: 0, y: -28 }}
-        onNext={handleTooltipDismiss}
-        onSkip={handleTooltipDismiss}
-        currentStep={0}
-        totalSteps={4}
-      />
     </View>
   );
 }

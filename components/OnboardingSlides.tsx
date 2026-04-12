@@ -1,537 +1,367 @@
+/**
+ * TourGuide — recorrido guiado dentro de la app
+ *
+ * Se renderiza como overlay raíz encima del navegador de tabs.
+ * En cada paso navega a la pestaña correspondiente y muestra
+ * una tarjeta liquid-glass con flecha animada apuntando al feature.
+ *
+ * Pasos: 0=Home · 1=Directorio · 2=Explorar · 3=Eventos
+ */
 import { Ionicons } from '@expo/vector-icons';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Animated,
   Dimensions,
   Platform,
   Pressable,
-  StatusBar,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOnboarding } from '../src/context/OnboardingContext';
+import { useTheme } from '../src/context/ThemeContext';
 
-// ── Slide data ───────────────────────────────────────────────────────────────
-interface SlideData {
-  key: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  color: string;
+// ── Definición de pasos ──────────────────────────────────────────────────────
+interface TourStep {
+  route: string;
   titleKey: string;
   descKey: string;
-  isWelcome?: boolean;
-  isLast?: boolean;
+  arrowX: number;   // % desde el centro horizontal (-50..50)
+  arrowY: number;   // % desde el centro vertical   (-50..50)
+  arrowDir: 'up' | 'down';
+  icon: keyof typeof Ionicons.glyphMap;
+  color: string;
 }
 
-const SLIDES: SlideData[] = [
+const STEPS: TourStep[] = [
   {
-    key: 'welcome',
-    icon: 'location',
-    color: '#E96928',
-    titleKey: 'onboarding_welcome_title',
-    descKey: 'onboarding_welcome_desc',
-    isWelcome: true,
+    route: '/(tabs)/',
+    titleKey: 'onboarding_tooltip_home_title',
+    descKey: 'onboarding_tooltip_home_desc',
+    arrowX: 0, arrowY: -16, arrowDir: 'up',
+    icon: 'search-outline', color: '#E96928',
   },
   {
-    key: 'slide_search',
-    icon: 'search-outline',
-    color: '#3B82F6',
-    titleKey: 'onboarding_search_title',
-    descKey: 'onboarding_search_desc',
+    route: '/(tabs)/directorio',
+    titleKey: 'onboarding_tooltip_directorio_title',
+    descKey: 'onboarding_tooltip_directorio_desc',
+    arrowX: 0, arrowY: -22, arrowDir: 'up',
+    icon: 'business-outline', color: '#8B5CF6',
   },
   {
-    key: 'slide_directory',
-    icon: 'business-outline',
-    color: '#8B5CF6',
-    titleKey: 'onboarding_directory_title',
-    descKey: 'onboarding_directory_desc',
+    route: '/(tabs)/explorar',
+    titleKey: 'onboarding_tooltip_explorar_title',
+    descKey: 'onboarding_tooltip_explorar_desc',
+    arrowX: 0, arrowY: -22, arrowDir: 'up',
+    icon: 'compass-outline', color: '#10B981',
   },
   {
-    key: 'slide_explore',
-    icon: 'compass-outline',
-    color: '#10B981',
-    titleKey: 'onboarding_explore_title',
-    descKey: 'onboarding_explore_desc',
-  },
-  {
-    key: 'slide_events',
-    icon: 'calendar-outline',
-    color: '#F59E0B',
-    titleKey: 'onboarding_events_title',
-    descKey: 'onboarding_events_desc',
-  },
-  {
-    key: 'slide_map',
-    icon: 'map-outline',
-    color: '#06B6D4',
-    titleKey: 'onboarding_map_title',
-    descKey: 'onboarding_map_desc',
-  },
-  {
-    key: 'slide_favorites',
-    icon: 'heart-outline',
-    color: '#EF4444',
-    titleKey: 'onboarding_favorites_title',
-    descKey: 'onboarding_favorites_desc',
-  },
-  {
-    key: 'slide_ready',
-    icon: 'checkmark-circle-outline',
-    color: '#E96928',
-    titleKey: 'onboarding_ready_title',
-    descKey: 'onboarding_ready_desc',
-    isLast: true,
+    route: '/(tabs)/eventos',
+    titleKey: 'onboarding_tooltip_eventos_title',
+    descKey: 'onboarding_tooltip_eventos_desc',
+    arrowX: 0, arrowY: -22, arrowDir: 'up',
+    icon: 'calendar-outline', color: '#F59E0B',
   },
 ];
 
-const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+const { width: W, height: H } = Dimensions.get('window');
+const TOTAL = STEPS.length;
 
-// ── Main component ────────────────────────────────────────────────────────────
-export default function OnboardingSlides() {
-  const { showSlides, slidesReady, completeSlides } = useOnboarding();
+// ── Componente principal ─────────────────────────────────────────────────────
+export default function TourGuide() {
+  const { tourReady, tourActive, tourStep, nextTourStep, skipTour } = useOnboarding();
   const { t } = useTranslation();
+  const { isDark } = useTheme();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [contentVisible, setContentVisible] = useState(false);
 
-  // Transition animation (per slide change)
-  const transitionOpacity = useRef(new Animated.Value(1)).current;
-  const transitionScale = useRef(new Animated.Value(1)).current;
+  // Animated values
+  const overlayOpacity = useRef(new Animated.Value(0)).current;
+  const cardOpacity    = useRef(new Animated.Value(0)).current;
+  const cardSlideY     = useRef(new Animated.Value(32)).current;
+  const cardScale      = useRef(new Animated.Value(0.93)).current;
+  const arrowBounce    = useRef(new Animated.Value(0)).current;
+  const bounceRef      = useRef<Animated.CompositeAnimation | null>(null);
 
-  // Icon entrance animation
-  const iconScale = useRef(new Animated.Value(0)).current;
+  const step   = STEPS[tourStep] ?? STEPS[0];
+  const isLast = tourStep === TOTAL - 1;
 
-  // Icon pulse glow (loop)
-  const pulseScale = useRef(new Animated.Value(1)).current;
+  // ── Navegar + mostrar tooltip al cambiar de paso ─────────────────────────
+  useEffect(() => {
+    if (!tourReady || !tourActive) return;
 
-  // Icon float (up/down loop)
-  const floatY = useRef(new Animated.Value(0)).current;
+    // Reset card
+    setContentVisible(false);
+    cardOpacity.setValue(0);
+    cardSlideY.setValue(32);
+    cardScale.setValue(0.93);
+    bounceRef.current?.stop();
+    arrowBounce.setValue(0);
 
-  // Decorative glow radials
-  const glow1Opacity = useRef(new Animated.Value(0)).current;
-  const glow2Opacity = useRef(new Animated.Value(0)).current;
+    // Navegar a la pestaña
+    try { router.navigate(step.route as any); } catch { /* ignore */ }
 
-  // Refs for loops so we can stop them when unmounting
-  const pulseLoopRef = useRef<Animated.CompositeAnimation | null>(null);
-  const floatLoopRef = useRef<Animated.CompositeAnimation | null>(null);
-
-  const slide = SLIDES[currentIndex];
-
-  // ── Start entrance animations when slide changes ──────────────────────────
-  const startEntranceAnims = useCallback(() => {
-    // Reset values
-    iconScale.setValue(0);
-    pulseScale.setValue(1);
-    floatY.setValue(0);
-
-    // Icon spring entrance
-    Animated.spring(iconScale, {
-      toValue: 1,
-      tension: 60,
-      friction: 7,
-      useNativeDriver: true,
+    // Fade in overlay
+    Animated.timing(overlayOpacity, {
+      toValue: 1, duration: 300, useNativeDriver: true,
     }).start();
 
-    // Pulse loop
-    pulseLoopRef.current?.stop();
-    pulseLoopRef.current = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseScale, {
-          toValue: 1.18,
-          duration: 900,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseScale, {
-          toValue: 1,
-          duration: 900,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    pulseLoopRef.current.start();
+    // Mostrar card después de que la navegación se estabilice
+    const delay = tourStep === 0 ? 950 : 480;
+    const timer = setTimeout(() => {
+      setContentVisible(true);
 
-    // Float loop
-    floatLoopRef.current?.stop();
-    floatLoopRef.current = Animated.loop(
-      Animated.sequence([
-        Animated.timing(floatY, {
-          toValue: -10,
-          duration: 1600,
-          useNativeDriver: true,
-        }),
-        Animated.timing(floatY, {
-          toValue: 0,
-          duration: 1600,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    floatLoopRef.current.start();
-  }, [iconScale, pulseScale, floatY]);
-
-  // ── Glow radials entrance on first mount ─────────────────────────────────
-  useEffect(() => {
-    Animated.stagger(300, [
-      Animated.timing(glow1Opacity, { toValue: 1, duration: 800, useNativeDriver: true }),
-      Animated.timing(glow2Opacity, { toValue: 1, duration: 800, useNativeDriver: true }),
-    ]).start();
-  }, [glow1Opacity, glow2Opacity]);
-
-  // ── Run entrance when index changes ──────────────────────────────────────
-  useEffect(() => {
-    startEntranceAnims();
-    return () => {
-      pulseLoopRef.current?.stop();
-      floatLoopRef.current?.stop();
-    };
-  }, [currentIndex, startEntranceAnims]);
-
-  // ── Slide transition helper ───────────────────────────────────────────────
-  const animateTransition = useCallback(
-    (callback: () => void) => {
       Animated.parallel([
-        Animated.timing(transitionOpacity, {
-          toValue: 0,
-          duration: 140,
-          useNativeDriver: true,
-        }),
-        Animated.timing(transitionScale, {
-          toValue: 0.95,
-          duration: 140,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        callback();
-        transitionOpacity.setValue(0);
-        transitionScale.setValue(0.95);
-        Animated.parallel([
-          Animated.timing(transitionOpacity, {
-            toValue: 1,
-            duration: 280,
-            useNativeDriver: true,
-          }),
-          Animated.timing(transitionScale, {
-            toValue: 1,
-            duration: 280,
-            useNativeDriver: true,
-          }),
-        ]).start();
-      });
-    },
-    [transitionOpacity, transitionScale]
-  );
+        Animated.timing(cardOpacity,  { toValue: 1, duration: 260, useNativeDriver: true }),
+        Animated.spring(cardSlideY,   { toValue: 0, tension: 60, friction: 9, useNativeDriver: true }),
+        Animated.spring(cardScale,    { toValue: 1, tension: 65, friction: 9, useNativeDriver: true }),
+      ]).start();
 
-  const goNext = useCallback(() => {
-    if (currentIndex < SLIDES.length - 1) {
-      animateTransition(() => setCurrentIndex((i) => i + 1));
-    } else {
-      completeSlides();
+      // Flecha animada (bounce loop)
+      bounceRef.current = Animated.loop(
+        Animated.sequence([
+          Animated.timing(arrowBounce, { toValue: 11, duration: 540, useNativeDriver: true }),
+          Animated.timing(arrowBounce, { toValue: 0,  duration: 540, useNativeDriver: true }),
+        ])
+      );
+      bounceRef.current.start();
+    }, delay);
+
+    return () => { clearTimeout(timer); bounceRef.current?.stop(); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tourStep, tourActive, tourReady]);
+
+  // ── Ocultar overlay cuando el tour termina ──────────────────────────────
+  useEffect(() => {
+    if (!tourActive) {
+      bounceRef.current?.stop();
+      Animated.timing(overlayOpacity, {
+        toValue: 0, duration: 220, useNativeDriver: true,
+      }).start();
     }
-  }, [currentIndex, animateTransition, completeSlides]);
+  }, [tourActive, overlayOpacity]);
 
-  const skipAll = useCallback(() => {
-    completeSlides();
-  }, [completeSlides]);
+  if (!tourReady || !tourActive) return null;
 
-  const skipCurrent = useCallback(() => {
-    if (currentIndex < SLIDES.length - 1) {
-      animateTransition(() => setCurrentIndex((i) => i + 1));
-    } else {
-      completeSlides();
-    }
-  }, [currentIndex, animateTransition, completeSlides]);
+  // ── Posición de la flecha ────────────────────────────────────────────────
+  const arrowLeft  = W / 2 + (step.arrowX / 100) * W - 20;
+  const arrowTop   = H / 2 + (step.arrowY / 100) * H - 20;
+  const arrowDelta = step.arrowDir === 'down'
+    ? arrowBounce
+    : Animated.multiply(arrowBounce, new Animated.Value(-1));
 
-  // Don't render until storage is loaded, and only when slides should show
-  if (!slidesReady || !showSlides) return null;
+  // ── Estilos adaptativos de la tarjeta glass ──────────────────────────────
+  const glassBg     = isDark ? 'rgba(16,16,16,0.84)' : 'rgba(255,255,255,0.90)';
+  const glassBorder = isDark ? 'rgba(255,255,255,0.13)' : 'rgba(200,200,200,0.6)';
+  const titleColor  = isDark ? '#ffffff' : '#111111';
+  const descColor   = isDark ? 'rgba(255,255,255,0.70)' : 'rgba(0,0,0,0.60)';
+  const dotInactive = isDark ? 'rgba(255,255,255,0.20)' : 'rgba(0,0,0,0.16)';
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
-      {/* Full screen dark gradient background */}
-      <View style={s.bg}>
-        {/* Gradient layers simulated with overlapping views */}
-        <View style={[s.bgLayer, { backgroundColor: '#1a1a2e' }]} />
-        <View style={[s.bgLayer, { backgroundColor: '#16213e', opacity: 0.85 }]} />
-        <View style={[s.bgLayer, { backgroundColor: '#0f3460', opacity: 0.45 }]} />
+      {/* Overlay semitransparente — el contenido de la app se ve detrás */}
+      <Animated.View
+        style={[s.overlay, { opacity: overlayOpacity }]}
+        pointerEvents="auto"
+      >
+        <Pressable style={StyleSheet.absoluteFill} onPress={skipTour} />
+      </Animated.View>
 
-        {/* Decorative animated radial glows */}
+      {/* Flecha animada */}
+      {contentVisible && (
         <Animated.View
+          pointerEvents="none"
           style={[
-            s.glowCircle,
-            s.glowCircle1,
-            { opacity: Animated.multiply(glow1Opacity, new Animated.Value(0.18)) },
+            s.arrowWrap,
+            { left: arrowLeft, top: arrowTop, transform: [{ translateY: arrowDelta }] },
           ]}
-        />
-        <Animated.View
-          style={[
-            s.glowCircle,
-            s.glowCircle2,
-            { opacity: Animated.multiply(glow2Opacity, new Animated.Value(0.12)) },
-          ]}
-        />
+        >
+          <Ionicons
+            name={step.arrowDir === 'down' ? 'chevron-down' : 'chevron-up'}
+            size={38}
+            color={step.color}
+          />
+        </Animated.View>
+      )}
 
-        {/* Skip all — only on first slide */}
-        {currentIndex === 0 && (
-          <Pressable
-            style={[s.skipAllBtn, { top: insets.top + 16 }]}
-            onPress={skipAll}
-            hitSlop={12}
-          >
-            <Text style={s.skipAllText}>{t('onboarding_skip_all')}</Text>
-          </Pressable>
-        )}
-
-        {/* Content area */}
+      {/* Tarjeta liquid-glass */}
+      {contentVisible && (
         <Animated.View
+          pointerEvents="auto"
           style={[
-            s.contentArea,
+            s.card,
             {
-              opacity: transitionOpacity,
-              transform: [{ scale: transitionScale }],
-              paddingTop: insets.top + 60,
+              backgroundColor: glassBg,
+              borderColor: glassBorder,
+              bottom: insets.bottom + 16,
+              opacity: cardOpacity,
+              transform: [{ translateY: cardSlideY }, { scale: cardScale }],
             },
           ]}
         >
-          {/* Icon area */}
-          <View style={s.iconArea}>
-            {/* Pulse glow ring */}
-            <Animated.View
-              style={[
-                s.pulseRing,
-                {
-                  backgroundColor: slide.color + '22',
-                  borderColor: slide.color + '55',
-                  transform: [{ scale: pulseScale }],
-                },
-              ]}
-            />
+          {/* Cabecera: icono de sección + "Paso X de Y" + "Saltar todo" */}
+          <View style={s.cardHeader}>
+            <View style={[s.iconBadge, { backgroundColor: step.color + '1E', borderColor: step.color + '44' }]}>
+              <Ionicons name={step.icon} size={19} color={step.color} />
+            </View>
 
-            {/* Icon with float + scale entrance */}
-            <Animated.View
-              style={[
-                s.iconWrapper,
-                {
-                  backgroundColor: slide.color + '20',
-                  borderColor: slide.color + '40',
-                  transform: [{ scale: iconScale }, { translateY: floatY }],
-                },
-              ]}
-            >
-              <Ionicons name={slide.icon} size={72} color={slide.color} />
-            </Animated.View>
+            <Text style={[s.stepLabel, { color: step.color }]}>
+              {t('onboarding_step', { current: tourStep + 1, total: TOTAL })}
+            </Text>
 
-            {/* Welcome branding text */}
-            {slide.isWelcome && (
-              <Animated.View style={[s.brandingWrap, { opacity: iconScale }]}>
-                <Text style={s.brandingText}>
-                  Guadalupe<Text style={{ color: '#E96928' }}>GO</Text>
-                </Text>
-              </Animated.View>
-            )}
+            <Pressable onPress={skipTour} hitSlop={12}>
+              <Text style={[s.skipAllText, { color: descColor }]}>
+                {t('onboarding_skip_all')}
+              </Text>
+            </Pressable>
           </View>
-        </Animated.View>
 
-        {/* Bottom glass card */}
-        <Animated.View
-          style={[
-            s.glassCard,
-            { marginBottom: insets.bottom + 12, opacity: transitionOpacity },
-          ]}
-        >
-          <Text style={s.cardTitle}>{t(slide.titleKey)}</Text>
-          <Text style={s.cardDesc}>{t(slide.descKey)}</Text>
+          {/* Título */}
+          <Text style={[s.cardTitle, { color: titleColor }]}>
+            {t(step.titleKey)}
+          </Text>
 
-          {/* Progress dots */}
+          {/* Descripción */}
+          <Text style={[s.cardDesc, { color: descColor }]}>
+            {t(step.descKey)}
+          </Text>
+
+          {/* Puntos de progreso (el activo es una píldora alargada) */}
           <View style={s.dotsRow}>
-            {SLIDES.map((_, i) => (
+            {STEPS.map((_, i) => (
               <View
                 key={i}
                 style={[
                   s.dot,
-                  i === currentIndex ? s.dotActive : s.dotInactive,
+                  i === tourStep
+                    ? [s.dotActive, { backgroundColor: step.color }]
+                    : [s.dotInactive, { backgroundColor: dotInactive }],
                 ]}
               />
             ))}
           </View>
 
-          {/* Button row */}
+          {/* Botones */}
           <View style={s.btnRow}>
-            {/* Skip button — left */}
-            {!slide.isLast && (
-              <Pressable
-                style={({ pressed }) => [s.skipBtn, { opacity: pressed ? 0.65 : 1 }]}
-                onPress={skipCurrent}
-                hitSlop={8}
-              >
-                <Text style={s.skipBtnText}>{t('onboarding_skip')}</Text>
-              </Pressable>
-            )}
+            <Pressable
+              style={({ pressed }) => [s.skipBtn, { opacity: pressed ? 0.6 : 1 }]}
+              onPress={skipTour}
+              hitSlop={8}
+            >
+              <Text style={[s.skipBtnText, { color: descColor }]}>
+                {t('onboarding_skip')}
+              </Text>
+            </Pressable>
 
-            {slide.isLast ? (
-              /* Full-width orange CTA on last slide */
-              <Pressable
-                style={({ pressed }) => [
-                  s.startBtn,
-                  { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
-                ]}
-                onPress={goNext}
-              >
-                <Text style={s.startBtnText}>{t('onboarding_start')}</Text>
-              </Pressable>
-            ) : (
-              /* Next glass pill button — right */
-              <Pressable
-                style={({ pressed }) => [
-                  s.nextBtn,
-                  { opacity: pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
-                ]}
-                onPress={goNext}
-              >
-                <Text style={s.nextBtnText}>{t('onboarding_next')} →</Text>
-              </Pressable>
-            )}
+            <Pressable
+              style={({ pressed }) => [
+                s.nextBtn,
+                {
+                  backgroundColor: step.color,
+                  shadowColor: step.color,
+                  opacity: pressed ? 0.88 : 1,
+                  transform: [{ scale: pressed ? 0.97 : 1 }],
+                },
+              ]}
+              onPress={nextTourStep}
+            >
+              <Text style={s.nextBtnText}>
+                {isLast ? t('onboarding_start') : `${t('onboarding_next')} →`}
+              </Text>
+            </Pressable>
           </View>
         </Animated.View>
-      </View>
+      )}
     </View>
   );
 }
 
-// ── Styles ────────────────────────────────────────────────────────────────────
+// ── Estilos ──────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  bg: {
+  overlay: {
     ...StyleSheet.absoluteFillObject,
-    zIndex: 9999,
-    elevation: Platform.OS === 'android' ? 9999 : 0,
+    backgroundColor: 'rgba(0,0,0,0.42)',
+    zIndex: 9990,
+    elevation: Platform.OS === 'android' ? 9990 : 0,
   },
 
-  bgLayer: {
-    ...StyleSheet.absoluteFillObject,
-  },
-
-  glowCircle: {
+  arrowWrap: {
     position: 'absolute',
-    borderRadius: 9999,
-    backgroundColor: '#E96928',
+    zIndex: 9996,
+    elevation: Platform.OS === 'android' ? 9996 : 0,
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
-  glowCircle1: {
-    width: SCREEN_W * 1.2,
-    height: SCREEN_W * 1.2,
-    top: -SCREEN_W * 0.5,
-    left: -SCREEN_W * 0.1,
-  },
-
-  glowCircle2: {
-    width: SCREEN_W * 0.8,
-    height: SCREEN_W * 0.8,
-    bottom: SCREEN_H * 0.1,
-    right: -SCREEN_W * 0.3,
-  },
-
-  skipAllBtn: {
+  card: {
     position: 'absolute',
-    right: 20,
-    zIndex: 10,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    left: 16,
+    right: 16,
+    borderWidth: 1.5,
+    borderRadius: 28,
+    padding: 22,
+    zIndex: 9995,
+    elevation: Platform.OS === 'android' ? 9995 : 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.28,
+    shadowRadius: 22,
+  },
+
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 14,
+  },
+
+  iconBadge: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  stepLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+    flex: 1,
   },
 
   skipAllText: {
-    color: 'rgba(255,255,255,0.9)',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-
-  contentArea: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  iconArea: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  pulseRing: {
-    position: 'absolute',
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    borderWidth: 2,
-  },
-
-  iconWrapper: {
-    width: 130,
-    height: 130,
-    borderRadius: 40,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.4,
-    shadowRadius: 20,
-    elevation: 14,
-  },
-
-  brandingWrap: {
-    marginTop: 24,
-    alignItems: 'center',
-  },
-
-  brandingText: {
-    fontSize: 32,
-    fontWeight: '900',
-    color: '#fff',
-    letterSpacing: -0.5,
-  },
-
-  glassCard: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 28,
-    padding: 24,
-    marginHorizontal: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 24,
-    elevation: 12,
+    fontSize: 12,
+    fontWeight: '500',
   },
 
   cardTitle: {
-    color: '#ffffff',
-    fontSize: 22,
+    fontSize: 19,
     fontWeight: '800',
-    marginBottom: 10,
-    textAlign: 'center',
-    letterSpacing: -0.3,
+    marginBottom: 8,
+    letterSpacing: -0.2,
   },
 
   cardDesc: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 15,
-    lineHeight: 22,
-    textAlign: 'center',
-    marginBottom: 20,
+    fontSize: 14,
+    lineHeight: 21,
+    marginBottom: 18,
   },
 
   dotsRow: {
     flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 20,
+    gap: 7,
+    marginBottom: 18,
   },
 
   dot: {
@@ -539,15 +369,14 @@ const s = StyleSheet.create({
   },
 
   dotActive: {
-    width: 10,
-    height: 10,
-    backgroundColor: '#ffffff',
+    width: 22,
+    height: 8,
+    borderRadius: 4,
   },
 
   dotInactive: {
-    width: 7,
-    height: 7,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    width: 8,
+    height: 8,
   },
 
   btnRow: {
@@ -558,46 +387,27 @@ const s = StyleSheet.create({
 
   skipBtn: {
     paddingVertical: 10,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
   },
 
   skipBtnText: {
-    color: 'rgba(255,255,255,0.65)',
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '500',
   },
 
   nextBtn: {
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.3)',
     borderRadius: 50,
-    paddingVertical: 12,
+    paddingVertical: 13,
     paddingHorizontal: 28,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.32,
+    shadowRadius: 10,
+    elevation: 6,
   },
 
   nextBtnText: {
     color: '#ffffff',
     fontSize: 15,
-    fontWeight: '700',
-  },
-
-  startBtn: {
-    flex: 1,
-    backgroundColor: '#E96928',
-    borderRadius: 50,
-    paddingVertical: 16,
-    alignItems: 'center',
-    shadowColor: '#E96928',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.45,
-    shadowRadius: 14,
-    elevation: 8,
-  },
-
-  startBtnText: {
-    color: '#ffffff',
-    fontSize: 17,
     fontWeight: '800',
     letterSpacing: 0.2,
   },

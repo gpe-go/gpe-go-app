@@ -1,6 +1,6 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -18,8 +18,6 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
-import TooltipOverlay from '../../components/TooltipOverlay';
-import { useOnboarding } from '../../src/context/OnboardingContext';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useEventos } from '../../src/hooks/useEventos';
 
@@ -212,25 +210,6 @@ export default function EventosScreen() {
   const { colors, fonts, isDark } = useTheme();
   const s = makeStyles(colors, fonts, isDark);
   const router = useRouter();
-  const { slidesReady, showSlides, tooltipSeen, markTooltipSeen } = useOnboarding();
-
-  const [showEventosTooltip, setShowEventosTooltip] = useState(false);
-
-  useFocusEffect(
-    useCallback(() => {
-      if (!tooltipSeen.eventos && slidesReady && !showSlides) {
-        const timer = setTimeout(() => setShowEventosTooltip(true), 500);
-        return () => clearTimeout(timer);
-      }
-      return undefined;
-    }, [tooltipSeen.eventos, slidesReady, showSlides])
-  );
-
-  const handleEventosTooltipDismiss = useCallback(() => {
-    markTooltipSeen('eventos');
-    setShowEventosTooltip(false);
-  }, [markTooltipSeen]);
-
   const { data: eventos, refresh: refreshEventos } = useEventos();
 
   const [search, setSearch] = useState('');
@@ -761,17 +740,6 @@ export default function EventosScreen() {
         }
       />
 
-      <TooltipOverlay
-        visible={showEventosTooltip}
-        title={t('onboarding_tooltip_eventos_title')}
-        description={t('onboarding_tooltip_eventos_desc')}
-        arrowDirection="down"
-        arrowOffset={{ x: 0, y: -32 }}
-        onNext={handleEventosTooltipDismiss}
-        onSkip={handleEventosTooltipDismiss}
-        currentStep={3}
-        totalSteps={4}
-      />
     </View>
   );
 }
