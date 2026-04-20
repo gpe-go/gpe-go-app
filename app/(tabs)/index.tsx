@@ -196,26 +196,27 @@ export default function HomeScreen() {
   };
 
   // ── Wave animation for 👋 ────────────────────────────────────────────────────
+  // The emoji pivots from its BOTTOM (the wrist) so fingers always wave upward.
+  // We simulate a custom transform-origin with translate → rotate → translate-back.
   const waveAnim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     const wave = Animated.loop(
       Animated.sequence([
-        // 3 quick waves
-        Animated.timing(waveAnim, { toValue:  1, duration: 160, useNativeDriver: true }),
-        Animated.timing(waveAnim, { toValue: -1, duration: 160, useNativeDriver: true }),
-        Animated.timing(waveAnim, { toValue:  1, duration: 160, useNativeDriver: true }),
-        Animated.timing(waveAnim, { toValue: -1, duration: 160, useNativeDriver: true }),
-        Animated.timing(waveAnim, { toValue:  0, duration: 160, useNativeDriver: true }),
-        // pause before next wave
+        Animated.timing(waveAnim, { toValue:  1, duration: 150, useNativeDriver: true }),
+        Animated.timing(waveAnim, { toValue: -1, duration: 150, useNativeDriver: true }),
+        Animated.timing(waveAnim, { toValue:  1, duration: 150, useNativeDriver: true }),
+        Animated.timing(waveAnim, { toValue: -1, duration: 150, useNativeDriver: true }),
+        Animated.timing(waveAnim, { toValue:  0, duration: 150, useNativeDriver: true }),
         Animated.delay(2400),
       ])
     );
     wave.start();
     return () => wave.stop();
   }, [waveAnim]);
+  // Keep rotation in the positive (right) range so fingers tilt right, never down
   const waveRotate = waveAnim.interpolate({
     inputRange: [-1, 0, 1],
-    outputRange: ["-22deg", "0deg", "22deg"],
+    outputRange: ["-5deg", "15deg", "30deg"],
   });
 
   // Animated rotating placeholder hints
@@ -508,9 +509,15 @@ export default function HomeScreen() {
                 <Animated.Text
                   style={{
                     fontSize: fonts["2xl"],
-                    transform: [{ rotate: waveRotate }],
-                    // anchor rotation from the bottom-center (wrist)
-                    includeFontPadding: false,
+                    // Simulate pivot at wrist (bottom of emoji):
+                    // 1. shift down so the wrist aligns with the rotation center
+                    // 2. rotate
+                    // 3. shift back up
+                    transform: [
+                      { translateY: 10 },
+                      { rotate: waveRotate },
+                      { translateY: -10 },
+                    ],
                   }}
                 >
                   👋
@@ -972,7 +979,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
 
     scrollContent: {
       paddingBottom: 150,
-      paddingTop: 0,
+      paddingTop: 6,
     },
 
     headerShell: {
@@ -985,7 +992,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       paddingHorizontal: 20,
       paddingTop: 10,
       paddingBottom: 28,
-      marginTop: 0,
+      marginTop: 8,
       borderBottomLeftRadius: 32,
       borderBottomRightRadius: 32,
     },
