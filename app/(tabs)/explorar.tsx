@@ -23,6 +23,7 @@ import {
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import { Lugar, useFavoritos } from '../../src/context/FavoritosContext';
 import { useTheme } from '../../src/context/ThemeContext';
+import { useAnimatedPlaceholder } from '../../src/hooks/useAnimatedPlaceholder';
 import { useLugares } from '../../src/hooks/useLugares';
 
 const COSTOS_GRATIS = ['Gratis', 'Gratis (entrada)'];
@@ -168,6 +169,17 @@ const ExplorarHeader = React.memo(
     const catAnim = useRef(new Animated.Value(0)).current;
     const listAnim = useRef(new Animated.Value(0)).current;
 
+    // Animated rotating placeholder hints
+    const searchHints = useMemo(
+      () => [
+        `${t('search')} ${t('cat_pueblos_magicos')}...`,
+        `${t('search')} ${t('cat_museos')}...`,
+        `${t('search')} ${t('cat_parques')}...`,
+      ],
+      [t]
+    );
+    const { index: hintIdx, opacity: hintOpacity } = useAnimatedPlaceholder(searchHints.length);
+
     useEffect(() => {
       Animated.stagger(120, [
         Animated.timing(bannerAnim, {
@@ -270,13 +282,35 @@ const ExplorarHeader = React.memo(
             <View style={s.searchArea}>
               <View style={s.searchBox}>
                 <Ionicons name="search" size={20} color="#94A3B8" />
-                <TextInput
-                  placeholder={t('search')}
-                  placeholderTextColor="#94A3B8"
-                  value={search}
-                  onChangeText={onSearch}
-                  style={[s.searchInput, { fontSize: fonts.base }]}
-                />
+                <View style={{ flex: 1 }}>
+                  {/* Animated rotating placeholder — behind TextInput */}
+                  {search.length === 0 && (
+                    <Animated.Text
+                      style={{
+                        position: 'absolute',
+                        left: 10,
+                        right: 0,
+                        top: 0,
+                        bottom: 0,
+                        color: '#94A3B8',
+                        fontSize: fonts.base,
+                        fontWeight: '500',
+                        textAlignVertical: 'center',
+                        opacity: hintOpacity,
+                      }}
+                      numberOfLines={1}
+                    >
+                      {searchHints[hintIdx]}
+                    </Animated.Text>
+                  )}
+                  <TextInput
+                    placeholder=""
+                    placeholderTextColor="transparent"
+                    value={search}
+                    onChangeText={onSearch}
+                    style={[s.searchInput, { fontSize: fonts.base }]}
+                  />
+                </View>
                 {search.length > 0 && (
                   <Pressable
                     onPress={onLimpiar}

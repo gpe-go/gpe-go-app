@@ -19,6 +19,7 @@ import {
   View,
 } from 'react-native';
 import { useTheme } from '../../src/context/ThemeContext';
+import { useAnimatedPlaceholder } from '../../src/hooks/useAnimatedPlaceholder';
 import { useEventos } from '../../src/hooks/useEventos';
 
 const SUB_KEYS: Record<string, string> = {
@@ -216,6 +217,17 @@ export default function EventosScreen() {
   const [activeCat, setActiveCat] = useState('Todas');
   const [playVideo, setPlayVideo] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Animated rotating placeholder hints
+  const searchHints = useMemo(
+    () => [
+      `${t('search')} ${t('cat_deporte')}...`,
+      `${t('search')} ${t('cat_cultural')}...`,
+      `${t('search')} ${t('cat_sociales')}...`,
+    ],
+    [t]
+  );
+  const { index: hintIdx, opacity: hintOpacity } = useAnimatedPlaceholder(searchHints.length);
 
   const bannerAnim = useRef(new Animated.Value(0)).current;
   const categoryAnim = useRef(new Animated.Value(0)).current;
@@ -480,13 +492,35 @@ export default function EventosScreen() {
                 <View style={s.searchArea}>
                   <View style={s.floatingSearch}>
                     <Ionicons name="search" size={20} color="#94a3b8" />
-                    <TextInput
-                      placeholder={t('search')}
-                      placeholderTextColor="#94a3b8"
-                      style={[s.searchInput, { fontSize: fonts.base }]}
-                      value={search}
-                      onChangeText={setSearch}
-                    />
+                    <View style={{ flex: 1 }}>
+                      {/* Animated rotating placeholder — behind TextInput */}
+                      {search.length === 0 && (
+                        <Animated.Text
+                          style={{
+                            position: 'absolute',
+                            left: 10,
+                            right: 0,
+                            top: 0,
+                            bottom: 0,
+                            color: '#94a3b8',
+                            fontSize: fonts.base,
+                            fontWeight: '500',
+                            textAlignVertical: 'center',
+                            opacity: hintOpacity,
+                          }}
+                          numberOfLines={1}
+                        >
+                          {searchHints[hintIdx]}
+                        </Animated.Text>
+                      )}
+                      <TextInput
+                        placeholder=""
+                        placeholderTextColor="transparent"
+                        style={[s.searchInput, { fontSize: fonts.base }]}
+                        value={search}
+                        onChangeText={setSearch}
+                      />
+                    </View>
                     {search.length > 0 && (
                       <Pressable
                         onPress={limpiarSearch}

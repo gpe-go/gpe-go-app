@@ -19,6 +19,7 @@ import {
 } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { useTheme } from "../../src/context/ThemeContext";
+import { useAnimatedPlaceholder } from "../../src/hooks/useAnimatedPlaceholder";
 import { useLugares } from "../../src/hooks/useLugares";
 import i18n from "../../src/i18n/i18n";
 
@@ -175,6 +176,18 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [dropdownTop, setDropdownTop] = useState(0);
+
+  // Animated rotating placeholder hints
+  const searchHints = useMemo(
+    () => [
+      `${t("search")} ${t("cat_hoteles")}...`,
+      `${t("search")} ${t("cat_restaurantes")}...`,
+      `${t("search")} ${t("cat_magic")}...`,
+      `${t("search")} ${t("cat_cerros")}...`,
+    ],
+    [t]
+  );
+  const { index: hintIdx, opacity: hintOpacity } = useAnimatedPlaceholder(searchHints.length);
 
   const headerAnim = useRef(new Animated.Value(0)).current;
   const row1Anim = useRef(new Animated.Value(0)).current;
@@ -478,15 +491,36 @@ export default function HomeScreen() {
               >
                 <Animated.View style={[s.searchBox, animatedSearchBoxStyle]}>
                   <Ionicons name="search" size={22} color={colors.subtext} />
-                  <TextInput
-                    placeholder={t("search")}
-                    placeholderTextColor={colors.subtext}
-                    style={[s.searchInput, { fontSize: fonts.base }]}
-                    value={search}
-                    onChangeText={setSearch}
-                    onFocus={() => setIsSearchFocused(true)}
-                    onBlur={() => setIsSearchFocused(false)}
-                  />
+                  <View style={{ flex: 1 }}>
+                    {/* Animated rotating placeholder — behind TextInput */}
+                    {search.length === 0 && (
+                      <Animated.Text
+                        style={{
+                          position: "absolute",
+                          left: 10,
+                          right: 0,
+                          top: 0,
+                          bottom: 0,
+                          color: colors.subtext,
+                          fontSize: fonts.base,
+                          textAlignVertical: "center",
+                          opacity: hintOpacity,
+                        }}
+                        numberOfLines={1}
+                      >
+                        {searchHints[hintIdx]}
+                      </Animated.Text>
+                    )}
+                    <TextInput
+                      placeholder=""
+                      placeholderTextColor="transparent"
+                      style={[s.searchInput, { fontSize: fonts.base }]}
+                      value={search}
+                      onChangeText={setSearch}
+                      onFocus={() => setIsSearchFocused(true)}
+                      onBlur={() => setIsSearchFocused(false)}
+                    />
+                  </View>
                   {search.length > 0 && (
                     <Pressable onPress={() => setSearch("")}>
                       <Ionicons name="close-circle" size={20} color={colors.subtext} />
