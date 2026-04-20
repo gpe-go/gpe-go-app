@@ -195,6 +195,29 @@ export default function HomeScreen() {
     setLangModal(false);
   };
 
+  // ── Wave animation for 👋 ────────────────────────────────────────────────────
+  const waveAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const wave = Animated.loop(
+      Animated.sequence([
+        // 3 quick waves
+        Animated.timing(waveAnim, { toValue:  1, duration: 160, useNativeDriver: true }),
+        Animated.timing(waveAnim, { toValue: -1, duration: 160, useNativeDriver: true }),
+        Animated.timing(waveAnim, { toValue:  1, duration: 160, useNativeDriver: true }),
+        Animated.timing(waveAnim, { toValue: -1, duration: 160, useNativeDriver: true }),
+        Animated.timing(waveAnim, { toValue:  0, duration: 160, useNativeDriver: true }),
+        // pause before next wave
+        Animated.delay(2400),
+      ])
+    );
+    wave.start();
+    return () => wave.stop();
+  }, [waveAnim]);
+  const waveRotate = waveAnim.interpolate({
+    inputRange: [-1, 0, 1],
+    outputRange: ["-22deg", "0deg", "22deg"],
+  });
+
   // Animated rotating placeholder hints
   const searchHints = useMemo(
     () => [
@@ -478,9 +501,21 @@ export default function HomeScreen() {
             >
               <Animated.View style={[s.headerGlow, glowScrollStyle]} />
 
-              <Text style={[s.searchTitle, { fontSize: fonts["2xl"] }]}>
-                {t("welcome1")} 👋
-              </Text>
+              <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center" }}>
+                <Text style={[s.searchTitle, { fontSize: fonts["2xl"] }]}>
+                  {t("welcome1")}{" "}
+                </Text>
+                <Animated.Text
+                  style={{
+                    fontSize: fonts["2xl"],
+                    transform: [{ rotate: waveRotate }],
+                    // anchor rotation from the bottom-center (wrist)
+                    includeFontPadding: false,
+                  }}
+                >
+                  👋
+                </Animated.Text>
+              </View>
 
               <View style={s.dateTimeRow}>
                 <View style={s.dateChip}>
@@ -1284,8 +1319,8 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
     // ── Floating language chip ───────────────────────────────────────────────
     langChip: {
       position: "absolute",
-      top: 14,
-      right: 16,
+      top: 4,
+      right: 8,
       zIndex: 1000,
       flexDirection: "row",
       alignItems: "center",
