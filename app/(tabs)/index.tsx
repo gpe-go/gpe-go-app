@@ -502,22 +502,15 @@ export default function HomeScreen() {
             >
               <Animated.View style={[s.headerGlow, glowScrollStyle]} />
 
-              <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center" }}>
+              <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "baseline" }}>
                 <Text style={[s.searchTitle, { fontSize: fonts["2xl"] }]}>
                   {t("welcome1")}{" "}
                 </Text>
                 <Animated.Text
                   style={{
                     fontSize: fonts["2xl"],
-                    // Simulate pivot at wrist (bottom of emoji):
-                    // 1. shift down so the wrist aligns with the rotation center
-                    // 2. rotate
-                    // 3. shift back up
-                    transform: [
-                      { translateY: 10 },
-                      { rotate: waveRotate },
-                      { translateY: -10 },
-                    ],
+                    lineHeight: 42,
+                    transform: [{ rotate: waveRotate }],
                   }}
                 >
                   👋
