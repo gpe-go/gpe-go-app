@@ -910,7 +910,6 @@ export default function HomeScreen() {
         <Ionicons name="globe-outline" size={14} color={isDark ? colors.text : "#444"} />
         <View style={s.langDivider} />
         <Text style={s.langCode}>{currentLang.toUpperCase()}</Text>
-        <Text style={s.langFlag}>{currentFlag}</Text>
       </Pressable>
 
       {/* ── Language picker bottom sheet ───────────────────────────────────── */}
@@ -938,7 +937,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
 
     scrollContent: {
       paddingBottom: 150,
-      paddingTop: 6,
+      paddingTop: 0,
     },
 
     headerShell: {
@@ -951,7 +950,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       paddingHorizontal: 20,
       paddingTop: 10,
       paddingBottom: 28,
-      marginTop: 8,
+      marginTop: 0,
       borderBottomLeftRadius: 32,
       borderBottomRightRadius: 32,
     },
@@ -1313,9 +1312,5 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       fontWeight: "800",
       color: isDark ? "#e5e5e5" : "#222",
       letterSpacing: 0.6,
-    },
-    langFlag: {
-      fontSize: 16,
-      lineHeight: 20,
     },
   });
