@@ -178,21 +178,48 @@ export default function HomeScreen() {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [dropdownTop, setDropdownTop] = useState(0);
 
-  // ── Language chip state ─────────────────────────────────────────────────────
+  // ── Language chip state + transition ────────────────────────────────────────
   const [langModal, setLangModal] = useState(false);
   const [currentLang, setCurrentLang] = useState<AppLanguage>(
     (i18n.language ?? "es") as AppLanguage
   );
+  // Chip transition animations
+  const chipScale    = useRef(new Animated.Value(1)).current;
+  const codeOpacity  = useRef(new Animated.Value(1)).current;
+  const codeSlide    = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
     const onLangChange = (lng: string) => setCurrentLang(lng as AppLanguage);
     i18n.on("languageChanged", onLangChange);
     return () => i18n.off("languageChanged", onLangChange);
   }, []);
+
   const currentFlag = LANGUAGE_LIST.find((l) => l.code === currentLang)?.flag ?? "🌐";
-  const handleSelectLang = async (code: AppLanguage) => {
-    await cambiarIdioma(code);
-    setCurrentLang(code);
+
+  const handleSelectLang = (code: AppLanguage) => {
+    // Close sheet immediately
     setLangModal(false);
+
+    // Phase 1 — code slides UP & fades out, chip shrinks
+    Animated.parallel([
+      Animated.timing(codeOpacity, { toValue: 0, duration: 110, useNativeDriver: true }),
+      Animated.timing(codeSlide,   { toValue: -10, duration: 110, useNativeDriver: true }),
+      Animated.timing(chipScale,   { toValue: 0.84, duration: 110, useNativeDriver: true }),
+    ]).start(async () => {
+      // Phase 2 — apply the new language
+      await cambiarIdioma(code);
+      setCurrentLang(code);
+
+      // Reset slide to come from below
+      codeSlide.setValue(10);
+
+      // Phase 3 — code slides UP into place, chip bounces back
+      Animated.parallel([
+        Animated.timing(codeOpacity, { toValue: 1, duration: 160, useNativeDriver: true }),
+        Animated.spring(codeSlide,   { toValue: 0, useNativeDriver: true, tension: 160, friction: 8 }),
+        Animated.spring(chipScale,   { toValue: 1, useNativeDriver: true, tension: 180, friction: 6 }),
+      ]).start();
+    });
   };
 
   // ── Wave animation for 👋 ────────────────────────────────────────────────────
@@ -935,17 +962,32 @@ export default function HomeScreen() {
       )}
 
       {/* ── Floating language chip — top-right corner ──────────────────────── */}
-      <Pressable
-        onPress={() => setLangModal(true)}
-        style={({ pressed }) => [
-          s.langChip,
-          { opacity: pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.96 : 1 }] },
-        ]}
-      >
-        <Ionicons name="globe-outline" size={14} color={isDark ? colors.text : "#444"} />
-        <View style={s.langDivider} />
-        <Text style={s.langCode}>{currentLang.toUpperCase()}</Text>
-      </Pressable>
+      <Animated.View style={[s.langChip, { transform: [{ scale: chipScale }] }]}>
+        <Pressable
+          onPress={() => setLangModal(true)}
+          style={({ pressed }) => ({
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 6,
+            opacity: pressed ? 0.8 : 1,
+          })}
+        >
+          <Ionicons name="globe-outline" size={14} color={isDark ? colors.text : "#444"} />
+          <View style={s.langDivider} />
+          {/* Code text with slide + fade transition */}
+          <Animated.Text
+            style={[
+              s.langCode,
+              {
+                opacity: codeOpacity,
+                transform: [{ translateY: codeSlide }],
+              },
+            ]}
+          >
+            {currentLang.toUpperCase()}
+          </Animated.Text>
+        </Pressable>
+      </Animated.View>
 
       {/* ── Language picker bottom sheet ───────────────────────────────────── */}
       <LanguageSheet
