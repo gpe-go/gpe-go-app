@@ -21,7 +21,8 @@ import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { useTheme } from "../../src/context/ThemeContext";
 import { useAnimatedPlaceholder } from "../../src/hooks/useAnimatedPlaceholder";
 import { useLugares } from "../../src/hooks/useLugares";
-import i18n from "../../src/i18n/i18n";
+import i18n, { AppLanguage, cambiarIdioma, LANGUAGE_LIST } from "../../src/i18n/i18n";
+import LanguageSheet from "../../components/LanguageSheet";
 
 // ── Hook: fecha y hora en vivo (reactivo al idioma) ──────
 function useDateTime() {
@@ -176,6 +177,23 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [dropdownTop, setDropdownTop] = useState(0);
+
+  // ── Language chip state ─────────────────────────────────────────────────────
+  const [langModal, setLangModal] = useState(false);
+  const [currentLang, setCurrentLang] = useState<AppLanguage>(
+    (i18n.language ?? "es") as AppLanguage
+  );
+  useEffect(() => {
+    const onLangChange = (lng: string) => setCurrentLang(lng as AppLanguage);
+    i18n.on("languageChanged", onLangChange);
+    return () => i18n.off("languageChanged", onLangChange);
+  }, []);
+  const currentFlag = LANGUAGE_LIST.find((l) => l.code === currentLang)?.flag ?? "🌐";
+  const handleSelectLang = async (code: AppLanguage) => {
+    await cambiarIdioma(code);
+    setCurrentLang(code);
+    setLangModal(false);
+  };
 
   // Animated rotating placeholder hints
   const searchHints = useMemo(
@@ -881,6 +899,31 @@ export default function HomeScreen() {
         </>
       )}
 
+      {/* ── Floating language chip — top-right corner ──────────────────────── */}
+      <Pressable
+        onPress={() => setLangModal(true)}
+        style={({ pressed }) => [
+          s.langChip,
+          { opacity: pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.96 : 1 }] },
+        ]}
+      >
+        <Ionicons name="globe-outline" size={14} color={isDark ? colors.text : "#444"} />
+        <View style={s.langDivider} />
+        <Text style={s.langCode}>{currentLang.toUpperCase()}</Text>
+        <Text style={s.langFlag}>{currentFlag}</Text>
+      </Pressable>
+
+      {/* ── Language picker bottom sheet ───────────────────────────────────── */}
+      <LanguageSheet
+        visible={langModal}
+        onClose={() => setLangModal(false)}
+        currentLang={currentLang}
+        onSelect={handleSelectLang}
+        colors={colors}
+        fonts={fonts}
+        isDark={isDark}
+      />
+
     </View>
   );
 }
@@ -1237,5 +1280,42 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       color: "#fff",
       fontWeight: "800",
       letterSpacing: 0.2,
+    },
+
+    // ── Floating language chip ───────────────────────────────────────────────
+    langChip: {
+      position: "absolute",
+      top: 14,
+      right: 16,
+      zIndex: 1000,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      backgroundColor: isDark ? "rgba(30,30,30,0.92)" : "rgba(255,255,255,0.96)",
+      borderRadius: 22,
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      borderWidth: 1,
+      borderColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.07)",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: isDark ? 0.35 : 0.12,
+      shadowRadius: 8,
+      elevation: 6,
+    },
+    langDivider: {
+      width: 1,
+      height: 13,
+      backgroundColor: isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.15)",
+    },
+    langCode: {
+      fontSize: 12,
+      fontWeight: "800",
+      color: isDark ? "#e5e5e5" : "#222",
+      letterSpacing: 0.6,
+    },
+    langFlag: {
+      fontSize: 16,
+      lineHeight: 20,
     },
   });
