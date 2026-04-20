@@ -492,35 +492,13 @@ export default function EventosScreen() {
                 <View style={s.searchArea}>
                   <View style={s.floatingSearch}>
                     <Ionicons name="search" size={20} color="#94a3b8" />
-                    <View style={{ flex: 1 }}>
-                      {/* Animated rotating placeholder — behind TextInput */}
-                      {search.length === 0 && (
-                        <Animated.Text
-                          style={{
-                            position: 'absolute',
-                            left: 10,
-                            right: 0,
-                            top: 0,
-                            bottom: 0,
-                            color: '#94a3b8',
-                            fontSize: fonts.base,
-                            fontWeight: '500',
-                            textAlignVertical: 'center',
-                            opacity: hintOpacity,
-                          }}
-                          numberOfLines={1}
-                        >
-                          {searchHints[hintIdx]}
-                        </Animated.Text>
-                      )}
-                      <TextInput
-                        placeholder=""
-                        placeholderTextColor="transparent"
-                        style={[s.searchInput, { fontSize: fonts.base }]}
-                        value={search}
-                        onChangeText={setSearch}
-                      />
-                    </View>
+                    <TextInput
+                      placeholder=""
+                      placeholderTextColor="transparent"
+                      style={[s.searchInput, { fontSize: fonts.base }]}
+                      value={search}
+                      onChangeText={setSearch}
+                    />
                     {search.length > 0 && (
                       <Pressable
                         onPress={limpiarSearch}
@@ -531,6 +509,32 @@ export default function EventosScreen() {
                       >
                         <Ionicons name="close-circle" size={20} color="#94a3b8" />
                       </Pressable>
+                    )}
+                    {/* Animated rotating placeholder — absolute inside floatingSearch */}
+                    {search.length === 0 && (
+                      <Animated.View
+                        pointerEvents="none"
+                        style={{
+                          position: 'absolute',
+                          left: 46,
+                          right: 16,
+                          top: 0,
+                          bottom: 0,
+                          justifyContent: 'center',
+                          opacity: hintOpacity,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            color: '#94a3b8',
+                            fontSize: fonts.base,
+                            fontWeight: '500',
+                          }}
+                          numberOfLines={1}
+                        >
+                          {searchHints[hintIdx]}
+                        </Text>
+                      </Animated.View>
                     )}
                   </View>
 

@@ -283,35 +283,13 @@ const DirectorioHeader = React.memo(
             <View style={s.searchArea}>
               <View style={s.searchBox}>
                 <Ionicons name="search" size={20} color="#94A3B8" />
-                <View style={{ flex: 1 }}>
-                  {/* Animated rotating placeholder — behind TextInput */}
-                  {search.length === 0 && (
-                    <Animated.Text
-                      style={{
-                        position: 'absolute',
-                        left: 10,
-                        right: 0,
-                        top: 0,
-                        bottom: 0,
-                        color: '#94A3B8',
-                        fontSize: fonts.base,
-                        fontWeight: '500',
-                        textAlignVertical: 'center',
-                        opacity: hintOpacity,
-                      }}
-                      numberOfLines={1}
-                    >
-                      {searchHints[hintIdx]}
-                    </Animated.Text>
-                  )}
-                  <TextInput
-                    placeholder=""
-                    placeholderTextColor="transparent"
-                    value={search}
-                    onChangeText={onSearch}
-                    style={[s.searchInput, { fontSize: fonts.base }]}
-                  />
-                </View>
+                <TextInput
+                  placeholder=""
+                  placeholderTextColor="transparent"
+                  value={search}
+                  onChangeText={onSearch}
+                  style={[s.searchInput, { fontSize: fonts.base }]}
+                />
                 {search.length > 0 && (
                   <Pressable
                     onPress={onLimpiar}
@@ -322,6 +300,32 @@ const DirectorioHeader = React.memo(
                   >
                     <Ionicons name="close-circle" size={20} color="#94A3B8" />
                   </Pressable>
+                )}
+                {/* Animated rotating placeholder — absolute inside searchBox */}
+                {search.length === 0 && (
+                  <Animated.View
+                    pointerEvents="none"
+                    style={{
+                      position: 'absolute',
+                      left: 46,
+                      right: 16,
+                      top: 0,
+                      bottom: 0,
+                      justifyContent: 'center',
+                      opacity: hintOpacity,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: '#94A3B8',
+                        fontSize: fonts.base,
+                        fontWeight: '500',
+                      }}
+                      numberOfLines={1}
+                    >
+                      {searchHints[hintIdx]}
+                    </Text>
+                  </Animated.View>
                 )}
               </View>
 

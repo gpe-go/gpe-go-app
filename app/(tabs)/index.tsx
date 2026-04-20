@@ -491,40 +491,44 @@ export default function HomeScreen() {
               >
                 <Animated.View style={[s.searchBox, animatedSearchBoxStyle]}>
                   <Ionicons name="search" size={22} color={colors.subtext} />
-                  <View style={{ flex: 1 }}>
-                    {/* Animated rotating placeholder — behind TextInput */}
-                    {search.length === 0 && (
-                      <Animated.Text
-                        style={{
-                          position: "absolute",
-                          left: 10,
-                          right: 0,
-                          top: 0,
-                          bottom: 0,
-                          color: colors.subtext,
-                          fontSize: fonts.base,
-                          textAlignVertical: "center",
-                          opacity: hintOpacity,
-                        }}
-                        numberOfLines={1}
-                      >
-                        {searchHints[hintIdx]}
-                      </Animated.Text>
-                    )}
-                    <TextInput
-                      placeholder=""
-                      placeholderTextColor="transparent"
-                      style={[s.searchInput, { fontSize: fonts.base }]}
-                      value={search}
-                      onChangeText={setSearch}
-                      onFocus={() => setIsSearchFocused(true)}
-                      onBlur={() => setIsSearchFocused(false)}
-                    />
-                  </View>
+                  <TextInput
+                    placeholder=""
+                    placeholderTextColor="transparent"
+                    style={[s.searchInput, { fontSize: fonts.base }]}
+                    value={search}
+                    onChangeText={setSearch}
+                    onFocus={() => setIsSearchFocused(true)}
+                    onBlur={() => setIsSearchFocused(false)}
+                  />
                   {search.length > 0 && (
                     <Pressable onPress={() => setSearch("")}>
                       <Ionicons name="close-circle" size={20} color={colors.subtext} />
                     </Pressable>
+                  )}
+                  {/* Animated rotating placeholder — absolute inside searchBox */}
+                  {search.length === 0 && (
+                    <Animated.View
+                      pointerEvents="none"
+                      style={{
+                        position: "absolute",
+                        left: 50,
+                        right: 18,
+                        top: 0,
+                        bottom: 0,
+                        justifyContent: "center",
+                        opacity: hintOpacity,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: colors.subtext,
+                          fontSize: fonts.base,
+                        }}
+                        numberOfLines={1}
+                      >
+                        {searchHints[hintIdx]}
+                      </Text>
+                    </Animated.View>
                   )}
                 </Animated.View>
               </View>
