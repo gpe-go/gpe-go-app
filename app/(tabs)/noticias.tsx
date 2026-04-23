@@ -418,8 +418,8 @@ export default function NoticiasScreen() {
               <Ionicons name="newspaper" size={22} color="#E96928" />
             </View>
             <View>
-              <Text style={[s.bannerTitle, { fontSize: fonts.xl }]}>Noticias</Text>
-              <Text style={[s.bannerSub, { fontSize: fonts.sm }]}>Cargando contenido...</Text>
+              <Text style={[s.bannerTitle, { fontSize: fonts.xl }]}>{t('news_banner_title_text')}</Text>
+              <Text style={[s.bannerSub, { fontSize: fonts.sm }]}>{t('news_banner_sub_loading')}</Text>
             </View>
           </View>
         </LinearGradient>
@@ -438,7 +438,7 @@ export default function NoticiasScreen() {
 
       <FlatList
         data={visible}
-        keyExtractor={(_, i) => i.toString()}
+        keyExtractor={(item, index) => item.link || item.title || String(index)}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}
         onEndReached={cargarMas}
@@ -457,8 +457,8 @@ export default function NoticiasScreen() {
             <View style={s.emptyIconWrap}>
               <Ionicons name="newspaper-outline" size={34} color="#E96928" />
             </View>
-            <Text style={[s.emptyTitle, { fontSize: fonts.lg }]}>No hay noticias disponibles</Text>
-            <Text style={[s.emptySub, { fontSize: fonts.sm }]}>Intenta actualizar más tarde.</Text>
+            <Text style={[s.emptyTitle, { fontSize: fonts.lg }]}>{t('news_empty_title')}</Text>
+            <Text style={[s.emptySub, { fontSize: fonts.sm }]}>{t('news_empty_sub')}</Text>
           </Animated.View>
         }
         ListFooterComponent={() =>
@@ -496,9 +496,9 @@ export default function NoticiasScreen() {
                   <Ionicons name="newspaper" size={22} color="#E96928" />
                 </View>
                 <View>
-                  <Text style={[s.bannerTitle, { fontSize: fonts.xl }]}>Noticias</Text>
+                  <Text style={[s.bannerTitle, { fontSize: fonts.xl }]}>{t('news_banner_title_text')}</Text>
                   <Text style={[s.bannerSub, { fontSize: fonts.sm }]}>
-                    Últimas noticias en tiempo real
+                    {t('news_banner_sub_live')}
                   </Text>
                 </View>
               </View>
@@ -506,7 +506,7 @@ export default function NoticiasScreen() {
               <View style={s.liveRow}>
                 <View style={s.liveDot} />
                 <Text style={[s.liveText, { fontSize: fonts.xs }]}>
-                  {visible.length} noticias · actualizado ahora
+                  {t('news_live_count', { count: visible.length })}
                 </Text>
               </View>
             </LinearGradient>

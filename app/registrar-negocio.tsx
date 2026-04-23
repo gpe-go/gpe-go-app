@@ -49,7 +49,7 @@ export default function RegistrarNegocioScreen() {
       return;
     }
     cargarDatos();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, router]);
 
   const cargarDatos = async () => {
     try {

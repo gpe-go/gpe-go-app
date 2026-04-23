@@ -209,7 +209,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (m === 'light' || m === 'dark') setModeState(m);
         if (f === 'small' || f === 'medium' || f === 'large') setFontSizeState(f);
       } catch (e) {
-        console.warn('[ThemeContext] Error cargando preferencias:', e);
+        if (__DEV__) console.warn('[ThemeContext] Error cargando preferencias:', e);
       } finally {
         setIsLoading(false);
       }
@@ -223,7 +223,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       await AsyncStorage.setItem(KEYS.mode, next);
     } catch (e) {
-      console.warn('[ThemeContext] Error guardando modo:', e);
+      if (__DEV__) console.warn('[ThemeContext] Error guardando modo:', e);
     }
   }, [mode]);
 
@@ -232,7 +232,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       await AsyncStorage.setItem(KEYS.mode, m);
     } catch (e) {
-      console.warn('[ThemeContext] Error guardando modo:', e);
+      if (__DEV__) console.warn('[ThemeContext] Error guardando modo:', e);
     }
   }, []);
 
@@ -241,7 +241,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       await AsyncStorage.setItem(KEYS.fontSize, s);
     } catch (e) {
-      console.warn('[ThemeContext] Error guardando fontSize:', e);
+      if (__DEV__) console.warn('[ThemeContext] Error guardando fontSize:', e);
     }
   }, []);
 

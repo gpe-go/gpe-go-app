@@ -1,6 +1,7 @@
 const PLACEHOLDER_IMG = "https://via.placeholder.com/400x300?text=Sin+Imagen";
 
 export type Noticia = {
+  id: string;
   title: string;
   description: string;
   image: string;
@@ -9,6 +10,7 @@ export type Noticia = {
 };
 
 export const mapNoticia = (raw: any, imagenOverride?: string): Noticia => ({
+  id: String(raw.id ?? ''),
   title: raw.titulo ?? "",
   description: raw.descripcion ?? "",
   image: imagenOverride ?? PLACEHOLDER_IMG,

@@ -33,7 +33,7 @@ export const useNoticias = (busqueda?: string) => {
         }
       } catch (e) {
         setError("Error cargando noticias");
-        console.log("No se pudieron cargar noticias");
+        if (__DEV__) console.warn('[useNoticias] Error cargando noticias:', e);
       } finally {
         setLoading(false);
       }

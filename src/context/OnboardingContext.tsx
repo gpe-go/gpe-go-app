@@ -26,7 +26,7 @@ interface OnboardingContextValue {
 
 const OnboardingContext = createContext<OnboardingContextValue | null>(null);
 
-const TOTAL_STEPS = 13;
+const TOTAL_STEPS = 14;
 
 export function OnboardingProvider({ children }: { children: React.ReactNode }) {
   const [tourReady, setTourReady] = useState(false);

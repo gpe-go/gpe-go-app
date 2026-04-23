@@ -6,7 +6,6 @@ import { useTranslation } from "react-i18next";
 import {
   Animated,
   Image,
-  Linking,
   Modal,
   Platform,
   Pressable,
@@ -21,6 +20,7 @@ import Reseñas from "../../components/Reseñas";
 import { useAuth } from "../../src/context/AuthContext";
 import { useFavoritos } from "../../src/context/FavoritosContext";
 import { useTheme } from "../../src/context/ThemeContext";
+import { abrirEnMapa } from "../../src/utils/abrirMapa";
 
 const CATEGORIA_KEYS: Record<string, string> = {
   "Naturaleza & Aventura": "cat_nature",
@@ -121,12 +121,7 @@ export default function DetalleLugar() {
   };
 
   const abrirMapa = () => {
-    const query = encodeURIComponent(
-      `${lugar.nombre || ""} ${lugar.ubicacion || ""}`.trim()
-    );
-    Linking.openURL(
-      `https://www.google.com/maps/search/?api=1&query=${query}`
-    );
+    abrirEnMapa(`${lugar.nombre || ""} ${lugar.ubicacion || ""}`);
   };
 
   const compartir = async () => {

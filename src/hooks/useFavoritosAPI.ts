@@ -55,7 +55,7 @@ export const useFavoritosAPI = () => {
           }
         }
       } catch (e) {
-        console.log("Error cargando favoritos desde API");
+        if (__DEV__) console.warn('[useFavoritosAPI] Error cargando favoritos:', e);
       } finally {
         setLoading(false);
       }
@@ -81,7 +81,7 @@ export const useFavoritosAPI = () => {
           return next;
         });
       } catch (e) {
-        console.log("Error quitando favorito");
+        if (__DEV__) console.warn('[useFavoritosAPI] Error quitando favorito:', e);
       }
     } else {
       try {
@@ -91,7 +91,7 @@ export const useFavoritosAPI = () => {
           setFavIdMap((prev) => ({ ...prev, [lugar.id]: res.data.id }));
         }
       } catch (e) {
-        console.log("Error agregando favorito");
+        if (__DEV__) console.warn('[useFavoritosAPI] Error agregando favorito:', e);
       }
     }
   }, [isAuth, favoritos, favIdMap]);

@@ -6,7 +6,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next";
 import {
   Animated,
-  Image,
   ImageBackground,
   Keyboard,
   Pressable,
@@ -21,7 +20,7 @@ import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { useTheme } from "../../src/context/ThemeContext";
 import { useAnimatedPlaceholder } from "../../src/hooks/useAnimatedPlaceholder";
 import { useLugares } from "../../src/hooks/useLugares";
-import i18n, { AppLanguage, cambiarIdioma, LANGUAGE_LIST } from "../../src/i18n/i18n";
+import i18n, { AppLanguage, cambiarIdioma } from "../../src/i18n/i18n";
 import LanguageSheet from "../../components/LanguageSheet";
 
 // ── Hook: fecha y hora en vivo (reactivo al idioma) ──────
@@ -194,8 +193,6 @@ export default function HomeScreen() {
     return () => i18n.off("languageChanged", onLangChange);
   }, []);
 
-  const currentFlag = LANGUAGE_LIST.find((l) => l.code === currentLang)?.flag ?? "🌐";
-
   const handleSelectLang = (code: AppLanguage) => {
     // Close sheet immediately
     setLangModal(false);
@@ -274,36 +271,40 @@ export default function HomeScreen() {
     let sub: Location.LocationSubscription | undefined;
 
     (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") return;
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") return;
 
-      const current = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
-
-      const initialRegion = {
-        latitude: current.coords.latitude,
-        longitude: current.coords.longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      };
-
-      setRegion(initialRegion);
-
-      sub = await Location.watchPositionAsync(
-        {
+        const current = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.High,
-          timeInterval: 3000,
-          distanceInterval: 5,
-        },
-        (loc) =>
-          setRegion({
-            latitude: loc.coords.latitude,
-            longitude: loc.coords.longitude,
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01,
-          })
-      );
+        });
+
+        const initialRegion = {
+          latitude: current.coords.latitude,
+          longitude: current.coords.longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        };
+
+        setRegion(initialRegion);
+
+        sub = await Location.watchPositionAsync(
+          {
+            accuracy: Location.Accuracy.High,
+            timeInterval: 3000,
+            distanceInterval: 5,
+          },
+          (loc) =>
+            setRegion({
+              latitude: loc.coords.latitude,
+              longitude: loc.coords.longitude,
+              latitudeDelta: 0.01,
+              longitudeDelta: 0.01,
+            })
+        );
+      } catch {
+        // GPS no disponible temporalmente (p.ej. al volver del navegador en iOS)
+      }
     })();
 
     Animated.stagger(110, [
@@ -617,12 +618,12 @@ export default function HomeScreen() {
         </Animated.View>
 
         <Animated.View style={row1AnimatedStyle}>
-          <View style={[s.gridRow, { height: 226, marginTop: 10 }]}>
+          <View style={[s.gridRow, { height: 220, marginTop: 10 }]}>
             <Pressable
               style={({ pressed }) => [
                 s.card,
                 { width: "48%" },
-                { transform: [{ scale: pressed ? 0.96 : 0.98 }] },
+                { transform: [{ scale: pressed ? 0.97 : 1 }] },
               ]}
               onPress={() => router.push("/categorias/explorar")}
             >
@@ -652,7 +653,7 @@ export default function HomeScreen() {
               style={({ pressed }) => [
                 s.card,
                 { width: "48%" },
-                { transform: [{ scale: pressed ? 0.96 : 0.98 }] },
+                { transform: [{ scale: pressed ? 0.97 : 1 }] },
               ]}
               onPress={() => router.push("/categorias/Fin de semana")}
             >
@@ -677,12 +678,12 @@ export default function HomeScreen() {
         </Animated.View>
 
         <Animated.View style={row2AnimatedStyle}>
-          <View style={[s.gridRow, { height: 164 }]}>
+          <View style={[s.gridRow, { height: 168 }]}>
             <Pressable
               style={({ pressed }) => [
                 s.card,
                 { width: "58%" },
-                { transform: [{ scale: pressed ? 0.96 : 0.98 }] },
+                { transform: [{ scale: pressed ? 0.97 : 1 }] },
               ]}
               onPress={() => router.push("/categorias/Naturaleza & Aventura")}
             >
@@ -708,7 +709,7 @@ export default function HomeScreen() {
               style={({ pressed }) => [
                 s.card,
                 { width: "38%" },
-                { transform: [{ scale: pressed ? 0.96 : 0.98 }] },
+                { transform: [{ scale: pressed ? 0.97 : 1 }] },
               ]}
               onPress={() => router.push("/categorias/pueblos Magicos")}
             >
@@ -733,12 +734,12 @@ export default function HomeScreen() {
         </Animated.View>
 
         <Animated.View style={row3AnimatedStyle}>
-          <View style={[s.gridRow, { height: 154 }]}>
+          <View style={[s.gridRow, { height: 168 }]}>
             <Pressable
               style={({ pressed }) => [
                 s.card,
                 { width: "48%" },
-                { transform: [{ scale: pressed ? 0.96 : 0.98 }] },
+                { transform: [{ scale: pressed ? 0.97 : 1 }] },
               ]}
               onPress={() => router.push("/categorias/tours")}
             >
@@ -764,7 +765,7 @@ export default function HomeScreen() {
               style={({ pressed }) => [
                 s.card,
                 { width: "48%" },
-                { transform: [{ scale: pressed ? 0.96 : 0.98 }] },
+                { transform: [{ scale: pressed ? 0.97 : 1 }] },
               ]}
               onPress={() => router.push("/categorias/cultura")}
             >
@@ -789,12 +790,12 @@ export default function HomeScreen() {
         </Animated.View>
 
         <Animated.View style={row4AnimatedStyle}>
-          <View style={[s.gridRow, { height: 184 }]}>
+          <View style={[s.gridRow, { height: 176 }]}>
             <Pressable
               style={({ pressed }) => [
                 s.card,
                 { width: "43%" },
-                { transform: [{ scale: pressed ? 0.96 : 0.98 }] },
+                { transform: [{ scale: pressed ? 0.97 : 1 }] },
               ]}
               onPress={() => router.push("/categorias/compras")}
             >
@@ -820,7 +821,7 @@ export default function HomeScreen() {
               style={({ pressed }) => [
                 s.card,
                 { width: "53%" },
-                { transform: [{ scale: pressed ? 0.96 : 0.98 }] },
+                { transform: [{ scale: pressed ? 0.97 : 1 }] },
               ]}
               onPress={() => router.push("/categorias/servicios")}
             >

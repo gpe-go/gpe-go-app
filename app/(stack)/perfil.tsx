@@ -311,7 +311,7 @@ export default function PerfilScreen() {
 
   const handleSolicitarCodigo = async () => {
     if (!email.trim()) {
-      Alert.alert('Error', 'Ingresa tu correo electrónico');
+      Alert.alert('Error', t('login_error_no_email'));
       return;
     }
 
@@ -321,16 +321,16 @@ export default function PerfilScreen() {
 
       if (res.success) {
         if (res.data?.codigo) {
-          Alert.alert('Código (dev)', `Tu código es: ${res.data.codigo}`);
+          Alert.alert(t('login_code_dev_title'), t('login_code_dev_msg', { code: res.data.codigo }));
         } else {
-          Alert.alert('Código enviado', 'Revisa tu correo electrónico');
+          Alert.alert(t('login_code_sent_title'), t('login_code_sent_msg'));
         }
         setStep('codigo');
       } else {
-        Alert.alert('Error', res.error?.mensaje || 'No se pudo enviar el código');
+        Alert.alert('Error', res.error?.mensaje || t('login_error_send_code'));
       }
     } catch (e: any) {
-      Alert.alert('Error', e.response?.data?.error?.mensaje || 'Error de conexión');
+      Alert.alert('Error', e.response?.data?.error?.mensaje || t('login_error_connection'));
     } finally {
       setLoading(false);
     }
@@ -338,7 +338,7 @@ export default function PerfilScreen() {
 
   const handleRegistro = async () => {
     if (!nombre.trim() || !email.trim()) {
-      Alert.alert('Error', 'Ingresa tu nombre y correo');
+      Alert.alert('Error', t('register_error_no_data'));
       return;
     }
 
@@ -347,14 +347,14 @@ export default function PerfilScreen() {
       const res = await registrarUsuario(nombre.trim(), email.trim().toLowerCase());
 
       if (res.success) {
-        Alert.alert('Cuenta creada', 'Ahora te enviaremos un código de verificación', [
+        Alert.alert(t('register_account_created_title'), t('register_account_created_msg'), [
           { text: 'OK', onPress: handleSolicitarCodigo },
         ]);
       } else {
-        Alert.alert('Error', res.error?.mensaje || 'No se pudo crear la cuenta');
+        Alert.alert('Error', res.error?.mensaje || t('register_error_create'));
       }
     } catch (e: any) {
-      Alert.alert('Error', e.response?.data?.error?.mensaje || 'Error de conexión');
+      Alert.alert('Error', e.response?.data?.error?.mensaje || t('login_error_connection'));
     } finally {
       setLoading(false);
     }
@@ -362,7 +362,7 @@ export default function PerfilScreen() {
 
   const handleVerificarCodigo = async () => {
     if (!codigo.trim()) {
-      Alert.alert('Error', 'Ingresa el código de verificación');
+      Alert.alert('Error', t('login_error_no_code'));
       return;
     }
 
@@ -376,10 +376,10 @@ export default function PerfilScreen() {
         setEmail('');
         setNombre('');
       } else {
-        Alert.alert('Error', res.error?.mensaje || 'Código incorrecto');
+        Alert.alert('Error', res.error?.mensaje || t('login_error_wrong_code'));
       }
     } catch (e: any) {
-      Alert.alert('Error', e.response?.data?.error?.mensaje || 'Error de conexión');
+      Alert.alert('Error', e.response?.data?.error?.mensaje || t('login_error_connection'));
     } finally {
       setLoading(false);
     }
@@ -451,7 +451,7 @@ export default function PerfilScreen() {
             {usuario.rol === 'comercio' && (
               <View style={styles.rolBadge}>
                 <Ionicons name="storefront" size={13} color="#E96928" />
-                <Text style={styles.rolBadgeText}>Locatario</Text>
+                <Text style={styles.rolBadgeText}>{t('role_merchant')}</Text>
               </View>
             )}
           </LinearGradient>
@@ -891,8 +891,8 @@ export default function PerfilScreen() {
             ]}
             onPress={() =>
               Alert.alert(
-                'Google Sign-In',
-                'Próximamente disponible.\nRequiere configuración de Google Cloud Console.'
+                t('google_signin_title'),
+                t('google_signin_coming_soon')
               )
             }
           >
@@ -921,8 +921,8 @@ export default function PerfilScreen() {
             ]}
             onPress={() =>
               Alert.alert(
-                'Apple Sign-In',
-                'Próximamente disponible.\nRequiere cuenta de Apple Developer.'
+                t('apple_signin_title'),
+                t('apple_signin_coming_soon')
               )
             }
           >

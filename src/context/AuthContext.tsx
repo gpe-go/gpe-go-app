@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type Usuario = {
@@ -21,50 +21,69 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue>({} as AuthContextValue);
 
+// Clave de foto por usuario para que sobreviva logout/login
+const fotoKey = (id?: string | number | null) =>
+  id != null ? `fotoPerfil_${id}` : 'fotoPerfil_guest';
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [usuario,    setUsuario]    = useState<Usuario | null>(null);
   const [fotoPerfil, setFotoPerfil] = useState<string | null>(null);
 
+  // Ref para acceder al usuario actual dentro de callbacks sin recrearlos
+  const usuarioRef = useRef<Usuario | null>(null);
+  usuarioRef.current = usuario;
+
   useEffect(() => {
     const cargar = async () => {
       try {
-        const [uData, foto] = await Promise.all([
-          AsyncStorage.getItem('usuario'),
-          AsyncStorage.getItem('fotoPerfil'),
-        ]);
-        if (uData) setUsuario(JSON.parse(uData));
-        if (foto) setFotoPerfil(foto);
-        else if (uData) {
-          // fallback: usar foto_url guardada en el objeto usuario
-          const parsed = JSON.parse(uData);
-          if (parsed.foto_url) setFotoPerfil(parsed.foto_url);
+        const uData = await AsyncStorage.getItem('usuario');
+        if (!uData) return;
+
+        const parsed: Usuario = JSON.parse(uData);
+        setUsuario(parsed);
+
+        // Buscar foto guardada para este usuario específico
+        const foto = await AsyncStorage.getItem(fotoKey(parsed.id));
+        if (foto) {
+          setFotoPerfil(foto);
+        } else if (parsed.foto_url) {
+          // Fallback: foto que vino del servidor en el login anterior
+          setFotoPerfil(parsed.foto_url);
         }
       } catch (e) {
-        console.warn('[AuthContext] Error cargando sesión:', e);
+        if (__DEV__) console.warn('[AuthContext] Error cargando sesión:', e);
       }
     };
     cargar();
   }, []);
 
   const login = useCallback(async (token: string, u: Usuario) => {
-    const items: [string, string][] = [
+    await AsyncStorage.multiSet([
       ['token',   token],
       ['usuario', JSON.stringify(u)],
-    ];
-    if (u.foto_url) {
-      items.push(['fotoPerfil', u.foto_url]);
+    ]);
+    setUsuario(u);
+
+    // 1. Primero intentar foto guardada localmente para este usuario
+    const savedFoto = await AsyncStorage.getItem(fotoKey(u.id));
+
+    if (savedFoto) {
+      // El usuario ya tenía foto guardada en este dispositivo → mantenerla
+      setFotoPerfil(savedFoto);
+    } else if (u.foto_url) {
+      // El servidor trajo foto_url → guardarla y usarla
+      await AsyncStorage.setItem(fotoKey(u.id), u.foto_url);
       setFotoPerfil(u.foto_url);
     } else {
-      // Limpiar foto de un usuario anterior
-      await AsyncStorage.removeItem('fotoPerfil');
+      // Sin foto en ningún lado
       setFotoPerfil(null);
     }
-    await AsyncStorage.multiSet(items);
-    setUsuario(u);
   }, []);
 
   const logout = useCallback(async () => {
-    await AsyncStorage.multiRemove(['token', 'usuario', 'fotoPerfil']);
+    // Solo borrar credenciales — la foto queda guardada por ID de usuario
+    // para restaurarse en el próximo login
+    await AsyncStorage.multiRemove(['token', 'usuario']);
     setUsuario(null);
     setFotoPerfil(null);
   }, []);
@@ -80,8 +99,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const actualizarFoto = useCallback(async (uri: string | null) => {
     setFotoPerfil(uri);
-    if (uri) await AsyncStorage.setItem('fotoPerfil', uri);
-    else     await AsyncStorage.removeItem('fotoPerfil');
+    const key = fotoKey(usuarioRef.current?.id);
+    if (uri) await AsyncStorage.setItem(key, uri);
+    else     await AsyncStorage.removeItem(key);
   }, []);
 
   return (

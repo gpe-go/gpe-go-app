@@ -119,7 +119,7 @@ export default function Reseñas({ lugarId }: Props) {
         setPromedio(res.data?.promedio ?? null);
       }
     } catch (e) {
-      console.warn('[Reseñas] error al cargar:', e);
+      if (__DEV__) console.warn('[Reseñas] error al cargar:', e);
     } finally {
       setCargando(false);
     }
@@ -187,7 +187,7 @@ export default function Reseñas({ lugarId }: Props) {
           try {
             await subirFotoResena(idResena, foto.base64);
           } catch (e) {
-            console.warn('[Reseñas] error subiendo foto:', e);
+            if (__DEV__) console.warn('[Reseñas] error subiendo foto:', e);
             fotosFallidas++;
           }
         }
@@ -237,7 +237,7 @@ export default function Reseñas({ lugarId }: Props) {
           try {
             await subirFotoResena(editandoId!, foto.base64);
           } catch (e) {
-            console.warn('[Reseñas] error subiendo foto edición:', e);
+            if (__DEV__) console.warn('[Reseñas] error subiendo foto edición:', e);
           }
         }
         cancelarEdicion();
@@ -495,7 +495,7 @@ export default function Reseñas({ lugarId }: Props) {
                 )}
 
                 {/* Acciones: editar/eliminar si es propia, reportar si es ajena */}
-                {isAuthenticated && usuario?.id && reseña.id_usuario == usuario.id ? (
+                {isAuthenticated && usuario?.id && String(reseña.id_usuario) === String(usuario.id) ? (
                   <View style={s.accionesRow}>
                     <Pressable style={s.editarBtn} onPress={() => abrirEdicion(reseña)}>
                       <Ionicons name="pencil-outline" size={15} color="#E96928" />

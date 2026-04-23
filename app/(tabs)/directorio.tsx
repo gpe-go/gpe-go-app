@@ -28,15 +28,29 @@ const COSTOS_GRATIS = ['Gratis', 'Gratis (entrada)'];
 
 const CATEGORIAS = [
   { id: '1', value: 'Restaurantes', labelKey: 'cat_restaurantes', icon: 'silverware-fork-knife', color: '#FF6B35' },
-  { id: '2', value: 'Hoteles', labelKey: 'cat_hoteles', icon: 'office-building', color: '#4A90E2' },
-  { id: '3', value: 'Tiendas', labelKey: 'cat_tiendas', icon: 'shopping', color: '#F5BE41' },
-  { id: '4', value: 'Servicios', labelKey: 'cat_servicios', icon: 'hammer-wrench', color: '#E96928' },
-  { id: '5', value: 'Plazas', labelKey: 'cat_plazas', icon: 'storefront', color: '#10B981' },
-  { id: '6', value: 'Hospitales', labelKey: 'cat_hospitales', icon: 'hospital-box', color: '#A2A6A6' },
-  { id: '7', value: 'Farmacias', labelKey: 'cat_farmacias', icon: 'pill', color: '#528968' },
-  { id: '8', value: 'Supermercados', labelKey: 'cat_supermercados', icon: 'cart', color: '#87479C' },
-  { id: '9', value: 'Gasolineras', labelKey: 'cat_gasolineras', icon: 'gas-station', color: '#EF4444' },
+  { id: '2', value: 'Hoteles',      labelKey: 'cat_hoteles',       icon: 'office-building',       color: '#4A90E2' },
+  { id: '3', value: 'Tiendas',      labelKey: 'cat_tiendas',       icon: 'shopping',              color: '#F5BE41' },
+  { id: '4', value: 'Servicios',    labelKey: 'cat_servicios',     icon: 'hammer-wrench',         color: '#E96928' },
+  { id: '5', value: 'Plazas',       labelKey: 'cat_plazas',        icon: 'storefront',            color: '#10B981' },
+  { id: '6', value: 'Hospitales',   labelKey: 'cat_hospitales',    icon: 'hospital-box',          color: '#A2A6A6' },
+  { id: '7', value: 'Farmacias',    labelKey: 'cat_farmacias',     icon: 'pill',                  color: '#528968' },
+  { id: '8', value: 'Supermercados',labelKey: 'cat_supermercados', icon: 'cart',                  color: '#87479C' },
+  { id: '9', value: 'Gasolineras',  labelKey: 'cat_gasolineras',   icon: 'gas-station',           color: '#EF4444' },
 ];
+
+// Mapa: categoría padre → valores exactos que agrupa (para el filtro)
+const CATEGORIA_GRUPOS: Record<string, string[]> = {
+  Hoteles: ['Hoteles', 'Moteles'],
+};
+
+// Subcategorías visuales por categoría padre
+type Subcat = { value: string; labelKey: string; icon: string };
+const SUBCATEGORIAS: Record<string, Subcat[]> = {
+  Hoteles: [
+    { value: 'Hoteles', labelKey: 'sub_hoteles', icon: 'office-building' },
+    { value: 'Moteles', labelKey: 'sub_moteles', icon: 'bed' },
+  ],
+};
 
 function RefreshLogo({ refreshing, isDark }: { refreshing: boolean; isDark: boolean }) {
   const spinAnim = useRef(new Animated.Value(0)).current;
@@ -133,16 +147,24 @@ type HeaderProps = {
   refreshing: boolean;
   search: string;
   categoriaActiva: string | null;
+  subcategoriaActiva: string | null;
   filteredData: Lugar[];
+  horizontalData: Lugar[];
+  todosData: Lugar[];
   region: any;
   mapRef: React.RefObject<MapView | null>;
   onSearch: (text: string) => void;
   onLimpiar: () => void;
   onCategoria: (cat: string) => void;
+  onSubcategoria: (sub: string) => void;
   onUbicacion: () => void;
   onSelectItem: (item: Lugar) => void;
+  onIrAlDetalle: (item: Lugar) => void;
   onExpandMap: () => void;
+  esFavorito: (id: string) => boolean;
+  onToggleFavorito: (item: Lugar) => void;
   isDark: boolean;
+  chipScrollX: React.MutableRefObject<number>;
 };
 
 const DirectorioHeader = React.memo(
@@ -154,21 +176,48 @@ const DirectorioHeader = React.memo(
     refreshing,
     search,
     categoriaActiva,
+    subcategoriaActiva,
     filteredData,
+    horizontalData,
+    todosData,
     region,
     mapRef,
     onSearch,
     onLimpiar,
     onCategoria,
+    onSubcategoria,
     onUbicacion,
     onSelectItem,
+    onIrAlDetalle,
     onExpandMap,
+    esFavorito,
+    onToggleFavorito,
     isDark,
+    chipScrollX,
   }: HeaderProps) => {
     const bannerAnim = useRef(new Animated.Value(0)).current;
     const mapAnim = useRef(new Animated.Value(0)).current;
     const catAnim = useRef(new Animated.Value(0)).current;
+    const subcatAnim = useRef(new Animated.Value(0)).current;
     const listAnim = useRef(new Animated.Value(0)).current;
+
+    // Ref al ScrollView de chips para restaurar posición tras remount
+    const chipScrollViewRef = useRef<ScrollView>(null);
+
+    // Al montar (incluyendo remounts por cambio de categoría), restaurar posición guardada
+    useEffect(() => {
+      const savedX = chipScrollX.current;
+      if (savedX > 0) {
+        const id = setTimeout(() => {
+          chipScrollViewRef.current?.scrollTo({ x: savedX, animated: false });
+        }, 30);
+        return () => clearTimeout(id);
+      }
+    }, [chipScrollX]);
+
+    // Subcategorías disponibles para la categoría activa
+    const subcats = categoriaActiva ? (SUBCATEGORIAS[categoriaActiva] ?? []) : [];
+    const catInfo = categoriaActiva ? CATEGORIAS.find((c) => c.value === categoriaActiva) : null;
 
     // Animated rotating placeholder hints
     const searchHints = useMemo(
@@ -205,6 +254,21 @@ const DirectorioHeader = React.memo(
         }),
       ]).start();
     }, [bannerAnim, mapAnim, catAnim, listAnim]);
+
+    // Animación de entrada de subcategorías cuando aparecen
+    useEffect(() => {
+      if (subcats.length > 0) {
+        subcatAnim.setValue(0);
+        Animated.spring(subcatAnim, {
+          toValue: 1,
+          tension: 60,
+          friction: 9,
+          useNativeDriver: true,
+        }).start();
+      } else {
+        subcatAnim.setValue(0);
+      }
+    }, [categoriaActiva, subcatAnim, subcats.length]);
 
     const bannerAnimatedStyle = {
       opacity: bannerAnim,
@@ -249,6 +313,24 @@ const DirectorioHeader = React.memo(
           translateY: listAnim.interpolate({
             inputRange: [0, 1],
             outputRange: [18, 0],
+          }),
+        },
+      ],
+    };
+
+    const subcatAnimatedStyle = {
+      opacity: subcatAnim,
+      transform: [
+        {
+          translateY: subcatAnim.interpolate({
+            inputRange: [0, 1],
+            outputRange: [-10, 0],
+          }),
+        },
+        {
+          scaleY: subcatAnim.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0.7, 1],
           }),
         },
       ],
@@ -420,73 +502,167 @@ const DirectorioHeader = React.memo(
           </View>
         </Animated.View>
 
+        {/* ── Chips de categoría ─────────────────────────── */}
         <Animated.View style={catAnimatedStyle}>
-          <View style={s.catSection}>
+          <View style={{ paddingHorizontal: 20, marginBottom: 10 }}>
             <View style={s.sectionHeader}>
               <View style={s.sectionDot} />
               <Text style={[s.sectionTitle, { fontSize: fonts.lg }]}>{t('categories')}</Text>
             </View>
+          </View>
+          <ScrollView
+            ref={chipScrollViewRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={s.chipScroll}
+            onScroll={(e) => { chipScrollX.current = e.nativeEvent.contentOffset.x; }}
+            scrollEventThrottle={32}
+          >
+            {CATEGORIAS.map((cat) => {
+              const activa = categoriaActiva === cat.value;
+              return (
+                <Pressable
+                  key={cat.id}
+                  onPress={() => onCategoria(cat.value)}
+                  style={({ pressed }) => [
+                    s.chip,
+                    activa && { backgroundColor: cat.color, borderColor: cat.color },
+                    { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
+                  ]}
+                >
+                  <MaterialCommunityIcons
+                    name={cat.icon as any}
+                    size={15}
+                    color={activa ? '#fff' : cat.color}
+                  />
+                  <Text style={[s.chipText, { fontSize: fonts.xs }, activa && s.chipTextActive]}>
+                    {t(cat.labelKey)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </Animated.View>
 
+        {/* ── Subcategorías (aparecen solo si la cat activa las tiene) ── */}
+        {subcats.length > 0 && (
+          <Animated.View style={[subcatAnimatedStyle, { overflow: 'hidden' }]}>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={s.categoriesScroll}
+              contentContainerStyle={s.subchipScroll}
             >
-              {CATEGORIAS.map((cat) => {
-                const activa = categoriaActiva === cat.value;
-
+              {subcats.map((sub) => {
+                const activa = subcategoriaActiva === sub.value;
                 return (
                   <Pressable
-                    key={cat.id}
-                    onPress={() => onCategoria(cat.value)}
+                    key={sub.value}
+                    onPress={() => onSubcategoria(sub.value)}
                     style={({ pressed }) => [
-                      s.categoryCard,
+                      s.subchip,
                       activa && {
-                        borderColor: cat.color,
-                        borderWidth: 2,
-                        backgroundColor: cat.color + '12',
+                        backgroundColor: catInfo?.color ?? '#4A90E2',
+                        borderColor: catInfo?.color ?? '#4A90E2',
                       },
-                      {
-                        opacity: pressed ? 0.94 : 1,
-                        transform: [{ scale: pressed ? 0.975 : 1 }],
-                      },
+                      { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
                     ]}
                   >
-                    <View style={[s.iconCircle, { backgroundColor: cat.color + '20' }]}>
-                      <MaterialCommunityIcons name={cat.icon as any} size={24} color={cat.color} />
-                    </View>
-
-                    <Text
-                      style={[
-                        s.catName,
-                        { fontSize: fonts.sm },
-                        activa && { color: cat.color, fontWeight: '800' },
-                      ]}
-                    >
-                      {t(cat.labelKey)}
+                    <MaterialCommunityIcons
+                      name={sub.icon as any}
+                      size={13}
+                      color={activa ? '#fff' : (catInfo?.color ?? '#4A90E2')}
+                    />
+                    <Text style={[s.subchipText, { fontSize: fonts.xs }, activa && s.chipTextActive]}>
+                      {t(sub.labelKey)}
                     </Text>
-
-                    {activa && <View style={[s.catActiveDot, { backgroundColor: cat.color }]} />}
                   </Pressable>
                 );
               })}
             </ScrollView>
-          </View>
-        </Animated.View>
+          </Animated.View>
+        )}
 
+        {/* ── Scroll horizontal de resultados ────────────── */}
         <Animated.View style={listAnimatedStyle}>
-          <View style={s.listLabelRow}>
+          <View style={s.hSection}>
+            <View style={[s.sectionHeader, { paddingHorizontal: 20 }]}>
+              <View style={s.sectionDot} />
+              <Text style={[s.sectionTitle, { fontSize: fonts.lg }]}>
+                {subcategoriaActiva
+                  ? t(subcats.find((s) => s.value === subcategoriaActiva)?.labelKey ?? '')
+                  : categoriaActiva
+                  ? t(CATEGORIAS.find((c) => c.value === categoriaActiva)?.labelKey ?? '')
+                  : t('all')}
+              </Text>
+              <View style={s.countBadge}>
+                <Text style={[s.countText, { fontSize: fonts.xs }]}>{horizontalData.length}</Text>
+              </View>
+            </View>
+
+            {horizontalData.length === 0 ? (
+              <Text style={{ paddingHorizontal: 20, color: colors.subtext, fontSize: fonts.sm, marginBottom: 8 }}>
+                {t('no_results')}
+              </Text>
+            ) : (
+              <FlatList
+                horizontal
+                data={horizontalData}
+                keyExtractor={(item) => item.id}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={s.hScroll}
+                renderItem={({ item }) => {
+                  const isFav = esFavorito(item.id);
+                  const catInfo = CATEGORIAS.find((c) => c.value === item.categoria);
+                  return (
+                    <Pressable
+                      onPress={() => onIrAlDetalle(item)}
+                      style={({ pressed }) => [
+                        s.hCard,
+                        { opacity: pressed ? 0.93 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
+                      ]}
+                    >
+                      <Image source={{ uri: item.imagen }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
+                      <LinearGradient
+                        colors={['transparent', 'rgba(0,0,0,0.72)']}
+                        style={StyleSheet.absoluteFillObject}
+                      />
+                      <Pressable
+                        style={({ pressed }) => [s.hCardHeart, { opacity: pressed ? 0.8 : 1 }]}
+                        onPress={() => onToggleFavorito({ ...item, origen: 'detalle' })}
+                      >
+                        <Ionicons
+                          name={isFav ? 'heart' : 'heart-outline'}
+                          size={16}
+                          color={isFav ? '#E11D48' : '#fff'}
+                        />
+                      </Pressable>
+                      <View style={s.hCardInfo}>
+                        {catInfo && (
+                          <View style={[s.hCardTag, { backgroundColor: catInfo.color + 'CC' }]}>
+                            <Text style={s.hCardTagText}>{t(catInfo.labelKey)}</Text>
+                          </View>
+                        )}
+                        <Text style={s.hCardName} numberOfLines={1}>{item.nombre}</Text>
+                        <View style={s.hCardLocRow}>
+                          <Ionicons name="location" size={10} color="rgba(255,255,255,0.85)" />
+                          <Text style={s.hCardLoc} numberOfLines={1}>{item.ubicacion}</Text>
+                        </View>
+                      </View>
+                    </Pressable>
+                  );
+                }}
+              />
+            )}
+          </View>
+
+          {/* ── "Ver más" header ───────────────────────────── */}
+          <View style={s.verMasRow}>
             <View style={s.sectionDot} />
             <Text style={[s.listTitle, { fontSize: fonts.lg }]}>
-              {categoriaActiva
-                ? t(CATEGORIAS.find((c) => c.value === categoriaActiva)?.labelKey ?? '')
-                : t('all')}
+              {t('ver_mas', { defaultValue: 'Ver más' })}
             </Text>
-
             <View style={s.countBadge}>
-              <Text style={[s.countText, { fontSize: fonts.xs }]}>
-                {filteredData.length}
-              </Text>
+              <Text style={[s.countText, { fontSize: fonts.xs }]}>{todosData.length}</Text>
             </View>
           </View>
         </Animated.View>
@@ -505,30 +681,39 @@ export default function DirectorioScreen() {
   const mapRef = useRef<MapView>(null);
   const flatListRef = useRef<FlatList>(null);
   const { toggleFavorito, esFavorito } = useFavoritos();
-  const { data: lugares, refresh: refreshLugares } = useLugares();
 
   const [search, setSearch] = useState('');
   const [categoriaActiva, setCategoriaActiva] = useState<string | null>(null);
+  const [subcategoriaActiva, setSubcategoriaActiva] = useState<string | null>(null);
   const [region, setRegion] = useState<any>(null);
   const [refreshing, setRefreshing] = useState(false);
   const emptyAnim = useRef(new Animated.Value(0)).current;
+  // Guarda la posición X del scroll de chips entre remounts del header
+  const chipScrollX = useRef(0);
 
+  // Radio 10 km · máx 40 lugares. Con búsqueda activa el hook consulta toda la BD.
+  const { data: lugares, refresh: refreshLugares } = useLugares(
+    undefined,
+    search,
+    { radio_km: 10, limite: 40 },
+  );
+
+  // Filtra por categoría (agrupando subcategorías del mismo padre) y luego por subcategoría
   const filteredData = useMemo(() => {
     let data = lugares;
     if (categoriaActiva) {
-      data = data.filter((l) => l.categoria === categoriaActiva);
+      const grupo = CATEGORIA_GRUPOS[categoriaActiva];
+      if (grupo) {
+        data = data.filter((l) => grupo.includes(l.categoria));
+      } else {
+        data = data.filter((l) => l.categoria === categoriaActiva);
+      }
     }
-    if (search) {
-      const q = search.toLowerCase();
-      data = data.filter(
-        (l) =>
-          l.nombre.toLowerCase().includes(q) ||
-          l.categoria.toLowerCase().includes(q) ||
-          l.ubicacion.toLowerCase().includes(q)
-      );
+    if (subcategoriaActiva) {
+      data = data.filter((l) => l.categoria === subcategoriaActiva);
     }
     return data;
-  }, [lugares, search, categoriaActiva]);
+  }, [lugares, categoriaActiva, subcategoriaActiva]);
 
   const isEmpty = filteredData.length === 0 && (search.length > 0 || categoriaActiva !== null);
 
@@ -544,22 +729,26 @@ export default function DirectorioScreen() {
   }, [isEmpty, emptyAnim]);
 
   const obtenerUbicacion = useCallback(async () => {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') return;
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') return;
 
-    const loc = await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.High,
-    });
+      const loc = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
 
-    const r = {
-      latitude: loc.coords.latitude,
-      longitude: loc.coords.longitude,
-      latitudeDelta: 0.01,
-      longitudeDelta: 0.01,
-    };
+      const r = {
+        latitude: loc.coords.latitude,
+        longitude: loc.coords.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      };
 
-    setRegion(r);
-    mapRef.current?.animateToRegion(r, 800);
+      setRegion(r);
+      mapRef.current?.animateToRegion(r, 800);
+    } catch {
+      // GPS no disponible temporalmente (p.ej. al volver del navegador en iOS)
+    }
   }, []);
 
   useEffect(() => {
@@ -576,8 +765,21 @@ export default function DirectorioScreen() {
 
   const seleccionarCategoria = useCallback(
     (cat: string) => {
-      setCategoriaActiva(prev => cat === prev ? null : cat);
-      flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
+      setCategoriaActiva(prev => {
+        if (cat === prev) {
+          setSubcategoriaActiva(null);
+          return null;
+        }
+        setSubcategoriaActiva(null);
+        return cat;
+      });
+    },
+    []
+  );
+
+  const seleccionarSubcategoria = useCallback(
+    (sub: string) => {
+      setSubcategoriaActiva(prev => sub === prev ? null : sub);
     },
     []
   );
@@ -615,46 +817,34 @@ export default function DirectorioScreen() {
     setRefreshing(false);
   }, [fetchData]);
 
-  const listHeader = useMemo(
-    () => (
-      <DirectorioHeader
-        s={s}
-        t={t}
-        colors={colors}
-        fonts={fonts}
-        refreshing={refreshing}
-        search={search}
-        categoriaActiva={categoriaActiva}
-        filteredData={filteredData}
-        region={region}
-        mapRef={mapRef}
-        onSearch={handleSearch}
-        onLimpiar={limpiarSearch}
-        onCategoria={seleccionarCategoria}
-        onUbicacion={obtenerUbicacion}
-        onSelectItem={irAlDetalle}
-        onExpandMap={expandMap}
-        isDark={isDark}
-      />
-    ),
-    [
-      s,
-      t,
-      colors,
-      fonts,
-      refreshing,
-      search,
-      categoriaActiva,
-      filteredData,
-      region,
-      handleSearch,
-      limpiarSearch,
-      seleccionarCategoria,
-      obtenerUbicacion,
-      irAlDetalle,
-      expandMap,
-      isDark,
-    ]
+  const directorioHeader = (
+    <DirectorioHeader
+      s={s}
+      t={t}
+      colors={colors}
+      fonts={fonts}
+      refreshing={refreshing}
+      search={search}
+      categoriaActiva={categoriaActiva}
+      subcategoriaActiva={subcategoriaActiva}
+      filteredData={filteredData}
+      horizontalData={filteredData}
+      todosData={lugares}
+      region={region}
+      mapRef={mapRef}
+      onSearch={handleSearch}
+      onLimpiar={limpiarSearch}
+      onCategoria={seleccionarCategoria}
+      onSubcategoria={seleccionarSubcategoria}
+      onUbicacion={obtenerUbicacion}
+      onSelectItem={irAlDetalle}
+      onIrAlDetalle={irAlDetalle}
+      onExpandMap={expandMap}
+      esFavorito={esFavorito}
+      onToggleFavorito={toggleFavorito}
+      isDark={isDark}
+      chipScrollX={chipScrollX}
+    />
   );
 
   const emptyAnimatedStyle = {
@@ -684,10 +874,10 @@ export default function DirectorioScreen() {
 
       <FlatList
         ref={flatListRef}
-        data={filteredData}
+        data={lugares}
         keyExtractor={(item) => item.id}
         keyboardShouldPersistTaps="handled"
-        ListHeaderComponent={listHeader}
+        ListHeaderComponent={directorioHeader}
         ListEmptyComponent={
           !refreshing ? (
             <Animated.View style={[s.emptyWrap, emptyAnimatedStyle]}>
@@ -1080,62 +1270,158 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       borderColor: '#fff',
     },
 
-    catSection: {
-      marginBottom: 18,
-    },
-
-    categoriesScroll: {
+    // ── Chips de categoría ──────────────────────────────
+    chipScroll: {
       paddingHorizontal: 20,
       paddingRight: 28,
+      paddingBottom: 6,
+      gap: 8,
+      flexDirection: 'row',
     },
 
-    categoryCard: {
-      backgroundColor: c.card,
-      paddingVertical: 16,
-      paddingHorizontal: 14,
-      borderRadius: 20,
-      marginRight: 12,
+    // ── Subchips ─────────────────────────────────────────
+    subchipScroll: {
+      paddingHorizontal: 20,
+      paddingRight: 28,
+      paddingBottom: 10,
+      paddingTop: 2,
+      gap: 8,
+      flexDirection: 'row',
+    },
+
+    subchip: {
+      flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center',
-      minWidth: 104,
-      minHeight: 124,
-      borderWidth: 2,
-      borderColor: 'transparent',
+      gap: 5,
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      borderRadius: 50,
+      backgroundColor: c.card,
+      borderWidth: 1.5,
+      borderColor: c.border,
       elevation: 2,
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: isDark ? 0.16 : 0.06,
-      shadowRadius: 5,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: isDark ? 0.14 : 0.05,
+      shadowRadius: 3,
     },
 
-    iconCircle: {
-      width: 52,
-      height: 52,
-      borderRadius: 26,
-      justifyContent: 'center',
+    subchipText: {
+      fontWeight: '600',
+      color: c.text,
+    },
+
+    chip: {
+      flexDirection: 'row',
       alignItems: 'center',
-      marginBottom: 10,
+      gap: 6,
+      paddingHorizontal: 14,
+      paddingVertical: 9,
+      borderRadius: 50,
+      backgroundColor: c.card,
+      borderWidth: 1.5,
+      borderColor: c.border,
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: isDark ? 0.16 : 0.06,
+      shadowRadius: 3,
     },
 
-    catName: {
+    chipText: {
       fontWeight: '700',
       color: c.text,
-      textAlign: 'center',
     },
 
-    catActiveDot: {
-      width: 7,
-      height: 7,
-      borderRadius: 999,
-      marginTop: 8,
+    chipTextActive: {
+      color: '#fff',
     },
 
-    listLabelRow: {
+    // ── Sección scroll horizontal ────────────────────────
+    hSection: {
+      marginBottom: 6,
+    },
+
+    hScroll: {
+      paddingHorizontal: 20,
+      paddingRight: 28,
+      gap: 12,
+      paddingBottom: 4,
+    },
+
+    hCard: {
+      width: 152,
+      height: 212,
+      borderRadius: 20,
+      overflow: 'hidden',
+      elevation: 5,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: isDark ? 0.22 : 0.14,
+      shadowRadius: 8,
+    },
+
+    hCardHeart: {
+      position: 'absolute',
+      top: 10,
+      right: 10,
+      backgroundColor: 'rgba(0,0,0,0.40)',
+      borderRadius: 12,
+      padding: 6,
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.15)',
+    },
+
+    hCardInfo: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      padding: 12,
+    },
+
+    hCardTag: {
+      alignSelf: 'flex-start',
+      paddingHorizontal: 7,
+      paddingVertical: 2,
+      borderRadius: 6,
+      marginBottom: 5,
+    },
+
+    hCardTagText: {
+      color: '#fff',
+      fontSize: 10,
+      fontWeight: '700',
+    },
+
+    hCardName: {
+      color: '#fff',
+      fontWeight: '800',
+      fontSize: 14,
+      letterSpacing: -0.2,
+      marginBottom: 4,
+    },
+
+    hCardLocRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+    },
+
+    hCardLoc: {
+      color: 'rgba(255,255,255,0.82)',
+      fontSize: 11,
+      flex: 1,
+    },
+
+    // ── "Ver más" header ─────────────────────────────────
+    verMasRow: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 10,
       paddingHorizontal: 20,
       marginBottom: 14,
+      marginTop: 12,
     },
 
     listTitle: {

@@ -162,7 +162,7 @@ export default function DetalleNoticiaScreen() {
           <View style={s.heroBadgeRow}>
             <View style={s.newsBadge}>
               <View style={s.newsDot} />
-              <Text style={[s.newsBadgeText, { fontSize: fonts.xs }]}>Noticia</Text>
+              <Text style={[s.newsBadgeText, { fontSize: fonts.xs }]}>{t('news_badge')}</Text>
             </View>
           </View>
         </View>
@@ -199,7 +199,7 @@ export default function DetalleNoticiaScreen() {
               >
                 <LinearGradient colors={["#E96928", "#c4511a"]} style={s.actionBtnGradient}>
                   <Ionicons name="open-outline" size={16} color="#fff" />
-                  <Text style={[s.actionBtnText, { fontSize: fonts.sm }]}>Fuente original</Text>
+                  <Text style={[s.actionBtnText, { fontSize: fonts.sm }]}>{t('news_source')}</Text>
                 </LinearGradient>
               </Pressable>
 
@@ -253,7 +253,7 @@ export default function DetalleNoticiaScreen() {
             >
               <LinearGradient colors={["#E96928", "#c4511a"]} style={s.fullBtnGradient}>
                 <Ionicons name="globe-outline" size={18} color="#fff" />
-                <Text style={[s.fullBtnText, { fontSize: fonts.base }]}>Ver noticia completa</Text>
+                <Text style={[s.fullBtnText, { fontSize: fonts.base }]}>{t('news_view_full_article')}</Text>
                 <Ionicons name="arrow-forward" size={16} color="#fff" />
               </LinearGradient>
             </Pressable>
@@ -267,7 +267,7 @@ export default function DetalleNoticiaScreen() {
                   Guadalupe<Text style={{ color: "#E96928" }}>GO</Text>
                 </Text>
               </View>
-              <Text style={[s.footerSub, { fontSize: fonts.xs }]}>Tu guía de Guadalupe, NL</Text>
+              <Text style={[s.footerSub, { fontSize: fonts.xs }]}>{t('app_tagline')}</Text>
             </View>
           </View>
         </Animated.View>

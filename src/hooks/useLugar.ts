@@ -17,9 +17,9 @@ export const useLugar = (id: string) => {
         if (res.success && res.data) {
           setData(mapLugar(res.data));
         }
-      } catch (e) {
+      } catch {
         setError("Error cargando lugar");
-        console.log("Usando datos locales para lugar", id);
+        if (__DEV__) console.warn('[useLugar] Error cargando lugar, usando datos locales:', id);
       } finally {
         setLoading(false);
       }

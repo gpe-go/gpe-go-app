@@ -55,23 +55,27 @@ export default function MapaCompletoScreen() {
 
   useEffect(() => {
     (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') return;
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') return;
 
-      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-      const coords = {
-        latitude: loc.coords.latitude,
-        longitude: loc.coords.longitude,
-      };
-      setUserLocation(coords);
+        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+        const coords = {
+          latitude: loc.coords.latitude,
+          longitude: loc.coords.longitude,
+        };
+        setUserLocation(coords);
 
-      if (!initialLat) {
-        const newRegion = { ...coords, latitudeDelta: 0.02, longitudeDelta: 0.02 };
-        setRegion(newRegion);
-        mapRef.current?.animateToRegion(newRegion, 600);
+        if (!initialLat) {
+          const newRegion = { ...coords, latitudeDelta: 0.02, longitudeDelta: 0.02 };
+          setRegion(newRegion);
+          mapRef.current?.animateToRegion(newRegion, 600);
+        }
+      } catch {
+        // GPS no disponible temporalmente (p.ej. al volver del navegador en iOS)
       }
     })();
-  }, []);
+  }, [initialLat, initialLng]);
 
   const centerOnUser = useCallback(() => {
     if (!userLocation) return;
@@ -91,22 +95,27 @@ export default function MapaCompletoScreen() {
           {
             text: 'Apple Maps',
             onPress: () =>
-              Linking.openURL(`maps:?ll=${latitude},${longitude}&z=15`),
+              Linking.openURL(`maps:?ll=${latitude},${longitude}&z=15`).catch(() => {}),
           },
           {
             text: 'Google Maps',
             onPress: () =>
               Linking.openURL(
                 `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`
-              ),
+              ).catch(() => {}),
           },
           { text: t('cancel', { defaultValue: 'Cancelar' }), style: 'cancel' },
         ]
       );
     } else {
-      Linking.openURL(
-        `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`
-      );
+      // Android: geo: abre el selector nativo (Google Maps, Waze, etc.)
+      Linking.openURL(`geo:${latitude},${longitude}?q=${latitude},${longitude}`)
+        .catch(() => {
+          // Fallback: URL web de Google Maps
+          Linking.openURL(
+            `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`
+          ).catch(() => {});
+        });
     }
   }, [userLocation, t]);
 

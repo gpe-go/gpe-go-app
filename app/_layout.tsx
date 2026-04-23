@@ -9,7 +9,9 @@ import OnboardingSlides from '../components/OnboardingSlides';
 import '../src/i18n/i18n';
 
 // Limitar el escalado de fuentes del sistema a 1.2x máximo
-// para que las letras grandes de accesibilidad no rompan los layouts
+// para que las letras grandes de accesibilidad no rompan los layouts.
+// Text.defaultProps no está tipado en @types/react-native pero es
+// la forma oficial de RN para establecer maxFontSizeMultiplier globalmente.
 // @ts-ignore
 if (!Text.defaultProps) Text.defaultProps = {};
 // @ts-ignore

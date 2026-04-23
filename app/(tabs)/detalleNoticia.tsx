@@ -14,6 +14,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { useTranslation } from 'react-i18next';
 import { useTheme } from "../../src/context/ThemeContext";
 
 function limpiarTextoPlano(valor?: string | string[]) {
@@ -23,10 +24,10 @@ function limpiarTextoPlano(valor?: string | string[]) {
 
 function formatearFechaSeguro(fecha?: string | string[]) {
   const valor = limpiarTextoPlano(fecha);
-  if (!valor) return "Fecha no disponible";
+  if (!valor) return null;
 
   if (valor.toLowerCase() === "invalid date") {
-    return "Fecha no disponible";
+    return null;
   }
 
   const parsed = new Date(valor);
@@ -46,6 +47,7 @@ function formatearFechaSeguro(fecha?: string | string[]) {
 
 export default function DetalleNoticiaScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { colors, fonts, isDark } = useTheme();
 
   const { title, description, image, content, date, url } = useLocalSearchParams<{
@@ -57,30 +59,30 @@ export default function DetalleNoticiaScreen() {
     url?: string;
   }>();
 
-  const titulo = limpiarTextoPlano(title) || "Noticia";
+  const titulo = limpiarTextoPlano(title) || t('news_badge');
   const descripcion = limpiarTextoPlano(description);
-  const contenido = limpiarTextoPlano(content) || descripcion || "No hay contenido disponible.";
+  const contenido = limpiarTextoPlano(content) || descripcion || t('news_no_content');
   const imagen = limpiarTextoPlano(image);
   const enlace = limpiarTextoPlano(url);
-  const fechaFormateada = formatearFechaSeguro(date);
+  const fechaFormateada = formatearFechaSeguro(date) ?? t('date_unavailable');
 
   const tieneImagen = imagen.length > 0;
 
   const textoPrincipal = useMemo(() => {
     if (contenido.trim().length > 0) return contenido;
     if (descripcion.trim().length > 0) return descripcion;
-    return "No hay contenido disponible.";
-  }, [contenido, descripcion]);
+    return t('news_no_content');
+  }, [contenido, descripcion, t]);
 
   const abrirFuente = async () => {
     if (!enlace) {
-      Alert.alert("Sin enlace", "Esta noticia no tiene una fuente original disponible.");
+      Alert.alert(t('news_no_link_title'), t('news_no_link_msg'));
       return;
     }
 
     const canOpen = await Linking.canOpenURL(enlace);
     if (!canOpen) {
-      Alert.alert("No se pudo abrir", "El enlace de la noticia no es válido.");
+      Alert.alert(t('news_invalid_link_title'), t('news_invalid_link_msg'));
       return;
     }
 
@@ -92,15 +94,12 @@ export default function DetalleNoticiaScreen() {
       const texto = `${titulo}\n\n${enlace || ""}`.trim();
 
       if (await Sharing.isAvailableAsync()) {
-        Alert.alert(
-          "Compartir",
-          "La opción de compartir ya está lista. Si luego quieres, la conectamos con el flujo nativo completo."
-        );
+        await Sharing.shareAsync(enlace || texto);
       } else {
-        Alert.alert("Compartir", texto);
+        Alert.alert(t('share'), texto);
       }
     } catch {
-      Alert.alert("Error", "No se pudo compartir la noticia.");
+      Alert.alert(t('share'), t('news_share_error'));
     }
   };
 
@@ -153,7 +152,7 @@ export default function DetalleNoticiaScreen() {
           <View style={s.badgeRow}>
             <View style={s.newsBadge}>
               <View style={s.liveDot} />
-              <Text style={[s.newsBadgeText, { fontSize: fonts.sm }]}>Noticia</Text>
+              <Text style={[s.newsBadgeText, { fontSize: fonts.sm }]}>{t('news_badge')}</Text>
             </View>
           </View>
         </View>
@@ -175,7 +174,7 @@ export default function DetalleNoticiaScreen() {
               onPress={abrirFuente}
             >
               <Ionicons name="open-outline" size={20} color="#fff" />
-              <Text style={[s.primaryBtnText, { fontSize: fonts.base }]}>Fuente original</Text>
+              <Text style={[s.primaryBtnText, { fontSize: fonts.base }]}>{t('news_source')}</Text>
             </Pressable>
 
             <Pressable
@@ -186,7 +185,7 @@ export default function DetalleNoticiaScreen() {
               onPress={compartirNoticia}
             >
               <Ionicons name="share-social-outline" size={20} color="#E96928" />
-              <Text style={[s.secondaryBtnText, { fontSize: fonts.base }]}>Compartir</Text>
+              <Text style={[s.secondaryBtnText, { fontSize: fonts.base }]}>{t('share')}</Text>
             </Pressable>
           </View>
         </View>
@@ -220,7 +219,7 @@ export default function DetalleNoticiaScreen() {
             </View>
             <View>
               <Text style={[s.brandTitle, { fontSize: fonts.xl }]}>GuadalupeGO</Text>
-              <Text style={[s.brandSub, { fontSize: fonts.sm }]}>Tu guía de Guadalupe, NL</Text>
+              <Text style={[s.brandSub, { fontSize: fonts.sm }]}>{t('app_tagline')}</Text>
             </View>
           </View>
         </View>

@@ -6,4 +6,5 @@ export type Lugar = {
   categoria: string;
   costo: string;
   rating?: number;
+  origen?: string;
 };

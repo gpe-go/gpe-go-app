@@ -1,10 +1,10 @@
 /**
  * TourGuide — recorrido guiado dentro de la app
  *
- * Pasos: 0=Home · 1=MapaCompleto · 2=Noticias · 3=Directorio
- *        4=Explorar · 5=Eventos · 6=Favoritos · 7=Contacto
- *        8=BarraLateral · 9=Notificaciones · 10=Perfil
- *        11=RegistrarNegocio · 12=Configuracion · →Finish card
+ * Pasos: 0=Home · 1=Idiomas · 2=MapaCompleto · 3=Noticias · 4=Directorio
+ *        5=Explorar · 6=Eventos · 7=Favoritos · 8=Contacto
+ *        9=BarraLateral · 10=Notificaciones · 11=Perfil
+ *        12=RegistrarNegocio · 13=Configuracion · →Finish card
  */
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -29,6 +29,7 @@ interface PhantomAction {
   x: number;
   y: number;
   text?: string;
+  textKey?: string;
   delay: number;
 }
 
@@ -64,78 +65,91 @@ const STEPS: TourStep[] = [
     route: '/(tabs)/',
     titleKey: 'onboarding_tooltip_home_title',
     descKey: 'onboarding_tooltip_home_desc',
-    arrowX: 0, arrowY: -16, arrowDir: 'up',
+    arrowX: 0, arrowY: -18, arrowDir: 'up',
     icon: 'home-outline', color: '#E96928',
     interactions: [
-      // TAP en el buscador (centro horizontal, ~27% desde arriba)
-      { type: 'tap',  x: W * 0.50, y: H * 0.27, delay: 600 },
-      // Overlay de escritura aparece sobre el buscador
-      { type: 'type', x: W * 0.50 - 110, y: H * 0.24, text: 'Restaurante...', delay: 1100 },
+      // TAP en el buscador — ~30% desde el tope de la pantalla
+      { type: 'tap',  x: W * 0.50, y: H * 0.30, delay: 600 },
+      // Overlay de escritura justo encima del círculo
+      { type: 'type', x: W * 0.50 - 110, y: H * 0.265, textKey: 'onboarding_search_demo', delay: 1100 },
     ],
   },
   {
-    // Step 1 — Mapa completo: scroll + botón ubicación
-    // cardAtTop: la tarjeta va ARRIBA para dejar el botón de ubicación (abajo-derecha) visible
+    // Step 1 — Idiomas: chip 🌐 en la esquina superior derecha del inicio
+    type: 'tab',
+    route: '/(tabs)/',
+    titleKey: 'onboarding_tooltip_idiomas_title',
+    descKey: 'onboarding_tooltip_idiomas_desc',
+    // Flecha apunta al chip 🌐 (esquina sup-der, debajo del header)
+    arrowX: 38, arrowY: -32, arrowDir: 'up',
+    icon: 'globe-outline', color: '#E96928',
+    interactions: [
+      // TAP en el chip 🌐 — ~88% horizontal, ~15% vertical (justo bajo el header)
+      { type: 'tap', x: W * 0.88, y: H * 0.155, delay: 700 },
+    ],
+  },
+  {
+    // Step 2 — Mapa completo
     type: 'stack',
     route: '/(stack)/mapaCompleto',
     titleKey: 'onboarding_tooltip_mapaCompleto_title',
     descKey: 'onboarding_tooltip_mapaCompleto_desc',
-    arrowX: 41, arrowY: 19, arrowDir: 'down',
+    // Flecha apunta al botón de ubicación (abajo-derecha) — tarjeta arriba
+    arrowX: 38, arrowY: 22, arrowDir: 'down',
     icon: 'map-outline', color: '#10B981',
     cardAtTop: true,
     interactions: [
-      // Deslizar el mapa (zona media-baja, visible debajo de la tarjeta)
-      { type: 'swipe-down', x: W * 0.50, y: H * 0.60, delay: 700 },
+      // Deslizar el mapa
+      { type: 'swipe-down', x: W * 0.50, y: H * 0.62, delay: 700 },
       // TAP en botón de centrar ubicación (esquina inferior derecha)
-      { type: 'tap', x: W * 0.86, y: H * 0.75, delay: 1400 },
+      { type: 'tap', x: W * 0.86, y: H * 0.80, delay: 1400 },
     ],
   },
   {
-    // Step 2 — Noticias: scroll lista
+    // Step 3 — Noticias: scroll lista
     type: 'tab',
     route: '/(tabs)/noticias',
     titleKey: 'onboarding_tooltip_noticias_title',
     descKey: 'onboarding_tooltip_noticias_desc',
-    arrowX: 0, arrowY: -18, arrowDir: 'up',
+    arrowX: 0, arrowY: -20, arrowDir: 'up',
     icon: 'newspaper-outline', color: '#3B82F6',
     interactions: [
-      { type: 'swipe-down', x: W * 0.50, y: H * 0.36, delay: 700 },
+      { type: 'swipe-down', x: W * 0.50, y: H * 0.38, delay: 700 },
     ],
   },
   {
-    // Step 3 — Directorio: tap categoría + scroll lista
-    // cardAtTop: tarjeta arriba para dejar visibles los chips de categoría (abajo del mapa)
+    // Step 4 — Directorio: tap chip categoría + scroll lista
+    // cardAtTop: tarjeta arriba → interacciones visibles en la mitad inferior
     type: 'tab',
     route: '/(tabs)/directorio',
     titleKey: 'onboarding_tooltip_directorio_title',
     descKey: 'onboarding_tooltip_directorio_desc',
-    arrowX: -22, arrowY: 19, arrowDir: 'down',
+    arrowX: -30, arrowY: 18, arrowDir: 'down',
     icon: 'business-outline', color: '#8B5CF6',
     cardAtTop: true,
     interactions: [
-      // TAP en primer chip de categoría — aparece DEBAJO del mapa, visible bajo la tarjeta
-      { type: 'tap',        x: W * 0.18, y: H * 0.65, delay: 700 },
-      // Scroll lista de lugares
-      { type: 'swipe-down', x: W * 0.50, y: H * 0.75, delay: 1500 },
+      // Chips de categoría aparecen justo bajo el mapa (~42% vertical)
+      { type: 'tap',        x: W * 0.20, y: H * 0.44, delay: 700 },
+      // Scroll en la lista de lugares (~58% vertical)
+      { type: 'swipe-down', x: W * 0.50, y: H * 0.62, delay: 1500 },
     ],
   },
   {
-    // Step 4 — Explorar: tap categoría + scroll
-    // cardAtTop: mismo razonamiento que directorio
+    // Step 5 — Explorar: tap chip categoría + scroll
     type: 'tab',
     route: '/(tabs)/explorar',
     titleKey: 'onboarding_tooltip_explorar_title',
     descKey: 'onboarding_tooltip_explorar_desc',
-    arrowX: -22, arrowY: 19, arrowDir: 'down',
+    arrowX: -30, arrowY: 18, arrowDir: 'down',
     icon: 'compass-outline', color: '#10B981',
     cardAtTop: true,
     interactions: [
-      { type: 'tap',        x: W * 0.18, y: H * 0.65, delay: 700 },
-      { type: 'swipe-down', x: W * 0.50, y: H * 0.75, delay: 1500 },
+      { type: 'tap',        x: W * 0.20, y: H * 0.44, delay: 700 },
+      { type: 'swipe-down', x: W * 0.50, y: H * 0.62, delay: 1500 },
     ],
   },
   {
-    // Step 5 — Eventos: tap categoría + scroll
+    // Step 6 — Eventos: tap chip categoría + scroll
     type: 'tab',
     route: '/(tabs)/eventos',
     titleKey: 'onboarding_tooltip_eventos_title',
@@ -143,63 +157,63 @@ const STEPS: TourStep[] = [
     arrowX: 0, arrowY: -22, arrowDir: 'up',
     icon: 'calendar-outline', color: '#F59E0B',
     interactions: [
-      // TAP en chip "Deporte" (segundo botón, ~38% horizontal, ~43% vertical)
-      { type: 'tap',        x: W * 0.38, y: H * 0.43, delay: 700 },
-      // Scroll eventos
-      { type: 'swipe-down', x: W * 0.50, y: H * 0.53, delay: 1500 },
+      // TAP en chip "Deporte" — ~32% horizontal, ~42% vertical
+      { type: 'tap',        x: W * 0.32, y: H * 0.42, delay: 700 },
+      { type: 'swipe-down', x: W * 0.50, y: H * 0.54, delay: 1500 },
     ],
   },
   {
-    // Step 6 — Favoritos: scroll lista
+    // Step 7 — Favoritos: scroll lista
     type: 'tab',
     route: '/(tabs)/favoritos',
     titleKey: 'onboarding_tooltip_favoritos_title',
     descKey: 'onboarding_tooltip_favoritos_desc',
-    arrowX: 0, arrowY: -22, arrowDir: 'up',
+    arrowX: 0, arrowY: -20, arrowDir: 'up',
     icon: 'heart-outline', color: '#EF4444',
     interactions: [
       { type: 'swipe-down', x: W * 0.50, y: H * 0.40, delay: 700 },
     ],
   },
   {
-    // Step 7 — Contacto: scroll tarjetas de emergencia
+    // Step 8 — Contacto: scroll tarjetas de emergencia
     type: 'tab',
     route: '/(tabs)/contacto',
     titleKey: 'onboarding_tooltip_contacto_title',
     descKey: 'onboarding_tooltip_contacto_desc',
-    arrowX: 0, arrowY: -22, arrowDir: 'up',
+    arrowX: 0, arrowY: -20, arrowDir: 'up',
     icon: 'mail-outline', color: '#0EA5E9',
     interactions: [
-      { type: 'swipe-down', x: W * 0.50, y: H * 0.38, delay: 700 },
+      { type: 'swipe-down', x: W * 0.50, y: H * 0.40, delay: 700 },
     ],
   },
   {
-    // Step 8 — Barra lateral: TAP en el ☰ (posición exacta del header)
+    // Step 9 — Barra lateral: TAP en el ☰ del header
     type: 'tab',
     route: '/(tabs)/',
     titleKey: 'onboarding_tooltip_barraLateral_title',
     descKey: 'onboarding_tooltip_barraLateral_desc',
-    arrowX: -41, arrowY: -36, arrowDir: 'up',
+    // Flecha apunta al ☰ (izquierda del header)
+    arrowX: -40, arrowY: -34, arrowDir: 'up',
     icon: 'menu-outline', color: '#E96928',
     interactions: [
-      // El ☰ está en el header: x≈28px, y≈78px en iPhone 14 (status bar ~50px + header/2 ~28px)
-      { type: 'tap', x: W * 0.072, y: H * 0.092, delay: 700 },
+      // ☰ está a ~x=28px, y=insets.top+26px ≈ H*0.09
+      { type: 'tap', x: W * 0.075, y: H * 0.090, delay: 700 },
     ],
   },
   {
-    // Step 9 — Notificaciones: scroll lista
+    // Step 10 — Notificaciones: scroll lista
     type: 'stack',
     route: '/(stack)/notificaciones',
     titleKey: 'onboarding_tooltip_notificaciones_title',
     descKey: 'onboarding_tooltip_notificaciones_desc',
-    arrowX: 0, arrowY: -16, arrowDir: 'up',
+    arrowX: 0, arrowY: -18, arrowDir: 'up',
     icon: 'notifications-outline', color: '#F97316',
     interactions: [
-      { type: 'swipe-down', x: W * 0.50, y: H * 0.38, delay: 700 },
+      { type: 'swipe-down', x: W * 0.50, y: H * 0.40, delay: 700 },
     ],
   },
   {
-    // Step 10 — Perfil: scroll secciones
+    // Step 11 — Perfil: scroll secciones
     type: 'stack',
     route: '/(stack)/perfil',
     titleKey: 'onboarding_tooltip_perfil_title',
@@ -211,7 +225,7 @@ const STEPS: TourStep[] = [
     ],
   },
   {
-    // Step 11 — Registrar negocio: tap en campo nombre + scroll formulario
+    // Step 12 — Registrar negocio: tap campo nombre + scroll
     type: 'stack',
     route: '/(stack)/registrar-negocio',
     titleKey: 'onboarding_tooltip_registrarNegocio_title',
@@ -219,14 +233,12 @@ const STEPS: TourStep[] = [
     arrowX: 0, arrowY: -18, arrowDir: 'up',
     icon: 'storefront-outline', color: '#EC4899',
     interactions: [
-      // TAP en el campo input del nombre (no el label, sino el input debajo)
       { type: 'tap',        x: W * 0.50, y: H * 0.39, delay: 700 },
-      // Scroll para ver más campos
-      { type: 'swipe-down', x: W * 0.50, y: H * 0.52, delay: 1500 },
+      { type: 'swipe-down', x: W * 0.50, y: H * 0.54, delay: 1500 },
     ],
   },
   {
-    // Step 12 — Configuración: tap toggle modo oscuro + scroll
+    // Step 13 — Configuración: tap toggle modo oscuro + scroll
     type: 'stack',
     route: '/(stack)/configuracion',
     titleKey: 'onboarding_tooltip_configuracion_title',
@@ -234,10 +246,8 @@ const STEPS: TourStep[] = [
     arrowX: 0, arrowY: -18, arrowDir: 'up',
     icon: 'settings-outline', color: '#64748B',
     interactions: [
-      // TAP en el switch de Modo Oscuro (lado derecho, ~24% vertical)
-      { type: 'tap',        x: W * 0.82, y: H * 0.24, delay: 700 },
-      // Scroll para ver más opciones
-      { type: 'swipe-down', x: W * 0.50, y: H * 0.38, delay: 1500 },
+      { type: 'tap',        x: W * 0.82, y: H * 0.25, delay: 700 },
+      { type: 'swipe-down', x: W * 0.50, y: H * 0.40, delay: 1500 },
     ],
   },
 ];
@@ -363,7 +373,9 @@ function FingerIndicator({ x, y, delay, direction }: {
   );
 }
 
-function TypingIndicator({ x, y, text, delay }: { x: number; y: number; text: string; delay: number }) {
+function TypingIndicator({ x, y, text, textKey, delay }: { x: number; y: number; text?: string; textKey?: string; delay: number }) {
+  const { t: tLocal } = useTranslation();
+  const resolvedText = textKey ? tLocal(textKey) : (text ?? '');
   const [displayText, setDisplayText] = useState('');
   const opacityAnim   = useRef(new Animated.Value(0)).current;
   const [cursorOn, setCursorOn] = useState(true);
@@ -378,16 +390,16 @@ function TypingIndicator({ x, y, text, delay }: { x: number; y: number; text: st
       let i = 0;
       const typeNext = () => {
         if (!mounted) return;
-        setDisplayText(text.slice(0, i));
-        if (i < text.length) {
+        setDisplayText(resolvedText.slice(0, i));
+        if (i < resolvedText.length) {
           i++;
           timerId = setTimeout(typeNext, 45);
         } else {
           timerId = setTimeout(() => {
-            let j = text.length;
+            let j = resolvedText.length;
             const eraseNext = () => {
               if (!mounted) return;
-              setDisplayText(text.slice(0, j));
+              setDisplayText(resolvedText.slice(0, j));
               if (j > 0) { j--; timerId = setTimeout(eraseNext, 28); }
               else { timerId = setTimeout(startCycle, 700); }
             };
@@ -444,7 +456,7 @@ function PhantomInteraction({ actions, color, active }: { actions: PhantomAction
           return <FingerIndicator key={i} x={action.x} y={action.y} delay={action.delay} direction={action.type} />;
         }
         if (action.type === 'type') {
-          return <TypingIndicator key={i} x={action.x} y={action.y} text={action.text ?? ''} delay={action.delay} />;
+          return <TypingIndicator key={i} x={action.x} y={action.y} text={action.text} textKey={action.textKey} delay={action.delay} />;
         }
         return null;
       })}
@@ -462,6 +474,7 @@ export default function TourGuide() {
 
   const [contentVisible, setContentVisible] = useState(false);
   const [showFinish,     setShowFinish]     = useState(false);
+  const [showWelcome,    setShowWelcome]    = useState(false);
 
   const currentStepTypeRef = useRef<'tab' | 'stack'>('tab');
 
@@ -478,10 +491,15 @@ export default function TourGuide() {
   const finishSlideY  = useRef(new Animated.Value(44)).current;
   const finishScale   = useRef(new Animated.Value(0.88)).current;
 
+  // Animated — welcome card
+  const welcomeOpacity = useRef(new Animated.Value(0)).current;
+  const welcomeSlideY  = useRef(new Animated.Value(44)).current;
+  const welcomeScale   = useRef(new Animated.Value(0.88)).current;
+
   const step   = STEPS[tourStep] ?? STEPS[0];
   const isLast = tourStep === TOTAL - 1;
 
-  // ── Reset finish cuando el tour (re)arranca ──────────────────────────────
+  // ── Reset finish/welcome cuando el tour (re)arranca ─────────────────────
   useEffect(() => {
     if (tourActive) {
       setShowFinish(false);
@@ -489,13 +507,26 @@ export default function TourGuide() {
       finishOpacity.setValue(0);
       finishSlideY.setValue(44);
       finishScale.setValue(0.88);
+
+      // Mostrar pantalla de bienvenida primero
+      welcomeOpacity.setValue(0);
+      welcomeSlideY.setValue(44);
+      welcomeScale.setValue(0.88);
+      setShowWelcome(true);
+      setTimeout(() => {
+        Animated.parallel([
+          Animated.timing(welcomeOpacity, { toValue: 1, duration: 360, useNativeDriver: true }),
+          Animated.spring(welcomeSlideY,  { toValue: 0, tension: 55, friction: 9, useNativeDriver: true }),
+          Animated.spring(welcomeScale,   { toValue: 1, tension: 60, friction: 9, useNativeDriver: true }),
+        ]).start();
+      }, 200);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tourActive]);
 
   // ── Navegar + mostrar tooltip ────────────────────────────────────────────
   useEffect(() => {
-    if (!tourReady || !tourActive || showFinish) return;
+    if (!tourReady || !tourActive || showFinish || showWelcome) return;
 
     const prevStep    = tourStep > 0 ? STEPS[tourStep - 1] : null;
     const needsBack   = prevStep?.type === 'stack';
@@ -557,7 +588,7 @@ export default function TourGuide() {
       bounceRef.current?.stop();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tourStep, tourActive, tourReady]);
+  }, [tourStep, tourActive, tourReady, showWelcome]);
 
   // ── Ocultar overlay y regresar si estamos en stack ───────────────────────
   useEffect(() => {
@@ -570,6 +601,18 @@ export default function TourGuide() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tourActive]);
+
+  // ── Welcome card → start tour ────────────────────────────────────────────
+  const handleStartTour = useCallback(() => {
+    Animated.parallel([
+      Animated.timing(welcomeOpacity, { toValue: 0, duration: 260, useNativeDriver: true }),
+      Animated.timing(welcomeSlideY,  { toValue: 30, duration: 260, useNativeDriver: true }),
+      Animated.timing(welcomeScale,   { toValue: 0.92, duration: 260, useNativeDriver: true }),
+    ]).start(() => {
+      setShowWelcome(false);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Finish card transition ───────────────────────────────────────────────
   const handleShowFinish = useCallback(() => {
@@ -612,7 +655,10 @@ export default function TourGuide() {
         style={[s.overlay, { opacity: overlayOpacity }]}
         pointerEvents="auto"
       >
-        <Pressable style={StyleSheet.absoluteFill} onPress={showFinish ? nextTourStep : skipTour} />
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={showWelcome ? undefined : showFinish ? nextTourStep : skipTour}
+        />
       </Animated.View>
 
       {/* Flecha animada */}
@@ -709,6 +755,61 @@ export default function TourGuide() {
               </Text>
             </Pressable>
           </View>
+        </Animated.View>
+      )}
+
+      {/* Welcome card */}
+      {showWelcome && (
+        <Animated.View
+          pointerEvents="auto"
+          style={[
+            s.finishCard,
+            {
+              backgroundColor: glassBg,
+              borderColor: glassBorder,
+              bottom: insets.bottom + 16,
+              opacity: welcomeOpacity,
+              transform: [{ translateY: welcomeSlideY }, { scale: welcomeScale }],
+            },
+          ]}
+        >
+          <View style={s.finishLogoArea}>
+            <View style={[s.finishRingOuter, { borderColor: 'rgba(233,105,40,0.16)' }]}>
+              <View style={[s.finishRingInner, { borderColor: 'rgba(233,105,40,0.30)' }]}>
+                <View style={s.finishLogoBg}>
+                  <Ionicons name="location" size={30} color="#fff" />
+                </View>
+              </View>
+            </View>
+          </View>
+
+          <Text style={[s.finishAppName, { color: titleColor }]}>
+            Guadalupe<Text style={{ color: '#E96928' }}>GO</Text>
+          </Text>
+
+          <View style={s.finishSloganRow}>
+            <View style={[s.finishSloganLine, { backgroundColor: '#E96928' }]} />
+            <Text style={[s.finishSlogan, { color: '#E96928' }]}>{t('onboarding_finish_tagline')}</Text>
+            <View style={[s.finishSloganLine, { backgroundColor: '#E96928' }]} />
+          </View>
+
+          <Text style={[s.finishDesc, { color: descColor }]}>{t('onboarding_welcome_desc')}</Text>
+
+          <Pressable
+            style={({ pressed }) => [s.finishBtn, { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] }]}
+            onPress={handleStartTour}
+          >
+            <Ionicons name="play-circle-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
+            <Text style={s.finishBtnText}>{t('onboarding_welcome_btn')}</Text>
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [{ marginTop: 14, opacity: pressed ? 0.6 : 1 }]}
+            onPress={skipTour}
+            hitSlop={12}
+          >
+            <Text style={[{ fontSize: 13, fontWeight: '500' }, { color: descColor }]}>{t('onboarding_skip_all')}</Text>
+          </Pressable>
         </Animated.View>
       )}
 

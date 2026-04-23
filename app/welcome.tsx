@@ -4,8 +4,10 @@ import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
+import { useTranslation } from "react-i18next";
 
 export default function Welcome() {
+  const { t } = useTranslation();
   const router = useRouter();
 
   // Animaciones
@@ -101,7 +103,7 @@ export default function Welcome() {
         <Text style={styles.appName}>
           Guadalupe<Text style={styles.appNameAccent}>GO</Text>
         </Text>
-        <Text style={styles.tagline}>Tu guía turística de Guadalupe, NL</Text>
+        <Text style={styles.tagline}>{t('app_tagline')}</Text>
       </Animated.View>
 
       {/* ── DOTS de carga ── */}

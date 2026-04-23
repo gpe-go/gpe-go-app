@@ -9,7 +9,6 @@ import {
   Animated,
   FlatList,
   Image,
-  Linking,
   Platform,
   Pressable,
   RefreshControl,
@@ -25,6 +24,7 @@ import { Lugar, useFavoritos } from '../../src/context/FavoritosContext';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useAnimatedPlaceholder } from '../../src/hooks/useAnimatedPlaceholder';
 import { useLugares } from '../../src/hooks/useLugares';
+import { abrirEnMapa } from '../../src/utils/abrirMapa';
 
 const COSTOS_GRATIS = ['Gratis', 'Gratis (entrada)'];
 
@@ -131,6 +131,8 @@ type ExplorarHeaderProps = {
   search: string;
   categoriaActiva: string | null;
   filteredData: Lugar[];
+  horizontalData: Lugar[];
+  todosData: Lugar[];
   region: Region | null;
   mapRef: React.RefObject<MapView | null>;
   onSearch: (text: string) => void;
@@ -139,8 +141,12 @@ type ExplorarHeaderProps = {
   onUbicacion: () => void;
   onOpenMaps: (nombre: string, ubicacion: string) => void;
   onSelectItem: (item: Lugar) => void;
+  onIrAlDetalle: (item: Lugar) => void;
   onExpandMap: () => void;
+  esFavorito: (id: string) => boolean;
+  onToggleFavorito: (item: Lugar) => void;
   isDark: boolean;
+  chipScrollX: React.MutableRefObject<number>;
 };
 
 const ExplorarHeader = React.memo(
@@ -153,6 +159,8 @@ const ExplorarHeader = React.memo(
     search,
     categoriaActiva,
     filteredData,
+    horizontalData,
+    todosData,
     region,
     mapRef,
     onSearch,
@@ -161,13 +169,30 @@ const ExplorarHeader = React.memo(
     onUbicacion,
     onOpenMaps,
     onSelectItem,
+    onIrAlDetalle,
     onExpandMap,
+    esFavorito,
+    onToggleFavorito,
     isDark,
+    chipScrollX,
   }: ExplorarHeaderProps) => {
     const bannerAnim = useRef(new Animated.Value(0)).current;
     const mapAnim = useRef(new Animated.Value(0)).current;
     const catAnim = useRef(new Animated.Value(0)).current;
     const listAnim = useRef(new Animated.Value(0)).current;
+
+    // Ref al ScrollView de chips para restaurar posición tras remount
+    const chipScrollViewRef = useRef<ScrollView>(null);
+
+    useEffect(() => {
+      const savedX = chipScrollX.current;
+      if (savedX > 0) {
+        const id = setTimeout(() => {
+          chipScrollViewRef.current?.scrollTo({ x: savedX, animated: false });
+        }, 30);
+        return () => clearTimeout(id);
+      }
+    }, [chipScrollX]);
 
     // Animated rotating placeholder hints
     const searchHints = useMemo(
@@ -419,72 +444,127 @@ const ExplorarHeader = React.memo(
           </View>
         </Animated.View>
 
+        {/* ── Chips de categoría ─────────────────────────── */}
         <Animated.View style={catAnimatedStyle}>
-          <View style={s.catSection}>
+          <View style={{ paddingHorizontal: 20, marginBottom: 10 }}>
             <View style={s.sectionHeader}>
               <View style={s.sectionDot} />
               <Text style={[s.sectionTitle, { fontSize: fonts.lg }]}>{t('categories')}</Text>
             </View>
-
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={s.categoriesScroll}
-            >
-              {CATEGORIAS.map((cat) => {
-                const activa = categoriaActiva === cat.value;
-
-                return (
-                  <Pressable
-                    key={cat.id}
-                    onPress={() => onCategoria(cat.value)}
-                    style={({ pressed }) => [
-                      s.categoryCard,
-                      activa && {
-                        borderColor: cat.color,
-                        borderWidth: 2,
-                        backgroundColor: cat.color + '12',
-                      },
-                      {
-                        opacity: pressed ? 0.94 : 1,
-                        transform: [{ scale: pressed ? 0.975 : 1 }],
-                      },
-                    ]}
-                  >
-                    <View style={[s.iconCircle, { backgroundColor: cat.color + '20' }]}>
-                      <MaterialCommunityIcons name={cat.icon as any} size={26} color={cat.color} />
-                    </View>
-
-                    <Text
-                      style={[
-                        s.catName,
-                        { fontSize: fonts.sm },
-                        activa && { color: cat.color, fontWeight: '800' },
-                      ]}
-                    >
-                      {t(cat.labelKey)}
-                    </Text>
-
-                    {activa && <View style={[s.catActiveDot, { backgroundColor: cat.color }]} />}
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
           </View>
+          <ScrollView
+            ref={chipScrollViewRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={s.chipScroll}
+            onScroll={(e) => { chipScrollX.current = e.nativeEvent.contentOffset.x; }}
+            scrollEventThrottle={32}
+          >
+            {CATEGORIAS.map((cat) => {
+              const activa = categoriaActiva === cat.value;
+              return (
+                <Pressable
+                  key={cat.id}
+                  onPress={() => onCategoria(cat.value)}
+                  style={({ pressed }) => [
+                    s.chip,
+                    activa && { backgroundColor: cat.color, borderColor: cat.color },
+                    { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
+                  ]}
+                >
+                  <MaterialCommunityIcons
+                    name={cat.icon as any}
+                    size={15}
+                    color={activa ? '#fff' : cat.color}
+                  />
+                  <Text style={[s.chipText, { fontSize: fonts.xs }, activa && s.chipTextActive]}>
+                    {t(cat.labelKey)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
         </Animated.View>
 
+        {/* ── Scroll horizontal de resultados ────────────── */}
         <Animated.View style={listAnimatedStyle}>
-          <View style={s.listLabelRow}>
+          <View style={s.hSection}>
+            <View style={[s.sectionHeader, { paddingHorizontal: 20 }]}>
+              <View style={s.sectionDot} />
+              <Text style={[s.sectionTitle, { fontSize: fonts.lg }]}>
+                {categoriaActiva
+                  ? t(CATEGORIAS.find((c) => c.value === categoriaActiva)?.labelKey ?? '')
+                  : t('tab_explore')}
+              </Text>
+              <View style={s.countBadge}>
+                <Text style={[s.countText, { fontSize: fonts.xs }]}>{horizontalData.length}</Text>
+              </View>
+            </View>
+
+            {horizontalData.length === 0 ? (
+              <Text style={{ paddingHorizontal: 20, color: colors.subtext, fontSize: fonts.sm, marginBottom: 8 }}>
+                {t('no_results')}
+              </Text>
+            ) : (
+              <FlatList
+                horizontal
+                data={horizontalData}
+                keyExtractor={(item) => item.id}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={s.hScroll}
+                renderItem={({ item }) => {
+                  const isFav = esFavorito(item.id);
+                  const catInfo = CATEGORIAS.find((c) => c.value === item.categoria);
+                  return (
+                    <Pressable
+                      onPress={() => onIrAlDetalle(item)}
+                      style={({ pressed }) => [
+                        s.hCard,
+                        { opacity: pressed ? 0.93 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
+                      ]}
+                    >
+                      <Image source={{ uri: item.imagen }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
+                      <LinearGradient
+                        colors={['transparent', 'rgba(0,0,0,0.72)']}
+                        style={StyleSheet.absoluteFillObject}
+                      />
+                      <Pressable
+                        style={({ pressed }) => [s.hCardHeart, { opacity: pressed ? 0.8 : 1 }]}
+                        onPress={() => onToggleFavorito({ ...item, origen: 'detalle' })}
+                      >
+                        <Ionicons
+                          name={isFav ? 'heart' : 'heart-outline'}
+                          size={16}
+                          color={isFav ? '#E11D48' : '#fff'}
+                        />
+                      </Pressable>
+                      <View style={s.hCardInfo}>
+                        {catInfo && (
+                          <View style={[s.hCardTag, { backgroundColor: catInfo.color + 'CC' }]}>
+                            <Text style={s.hCardTagText}>{t(catInfo.labelKey)}</Text>
+                          </View>
+                        )}
+                        <Text style={s.hCardName} numberOfLines={1}>{item.nombre}</Text>
+                        <View style={s.hCardLocRow}>
+                          <Ionicons name="location" size={10} color="rgba(255,255,255,0.85)" />
+                          <Text style={s.hCardLoc} numberOfLines={1}>{item.ubicacion}</Text>
+                        </View>
+                      </View>
+                    </Pressable>
+                  );
+                }}
+              />
+            )}
+          </View>
+
+          {/* ── "Ver más" header ───────────────────────────── */}
+          <View style={s.verMasRow}>
             <View style={s.sectionDot} />
             <Text style={[s.listTitle, { fontSize: fonts.lg }]}>
-              {categoriaActiva
-                ? t(CATEGORIAS.find((c) => c.value === categoriaActiva)?.labelKey ?? '')
-                : t('tab_explore')}
+              {t('ver_mas', { defaultValue: 'Ver más' })}
             </Text>
             <View style={s.countBadge}>
-              <Text style={[s.countText, { fontSize: fonts.xs }]}>
-                {filteredData.length}
-              </Text>
+              <Text style={[s.countText, { fontSize: fonts.xs }]}>{todosData.length}</Text>
             </View>
           </View>
         </Animated.View>
@@ -501,7 +581,6 @@ export default function ExplorarScreen() {
   const s = makeStyles(colors, fonts, isDark);
   const router = useRouter();
   const { toggleFavorito, esFavorito } = useFavoritos();
-  const { data: sitios, refresh: refreshSitios } = useLugares();
   const mapRef = useRef<MapView>(null);
   const flatListRef = useRef<FlatList>(null);
 
@@ -510,23 +589,21 @@ export default function ExplorarScreen() {
   const [region, setRegion] = useState<Region | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const emptyAnim = useRef(new Animated.Value(0)).current;
+  // Guarda la posición X del scroll de chips entre remounts del header
+  const chipScrollX = useRef(0);
 
+  // Radio 15 km · máx 40 lugares. Con búsqueda activa el hook consulta toda la BD.
+  const { data: sitios, refresh: refreshSitios } = useLugares(
+    undefined,
+    search,
+    { radio_km: 15, limite: 40 },
+  );
+
+  // La búsqueda ya la maneja el hook (backend). Aquí solo filtramos por categoría local.
   const filteredData = useMemo(() => {
-    let data = sitios;
-    if (categoriaActiva) {
-      data = data.filter((l) => l.categoria === categoriaActiva);
-    }
-    if (search) {
-      const q = search.toLowerCase();
-      data = data.filter(
-        (l) =>
-          l.nombre.toLowerCase().includes(q) ||
-          l.ubicacion.toLowerCase().includes(q) ||
-          l.categoria.toLowerCase().includes(q)
-      );
-    }
-    return data;
-  }, [sitios, search, categoriaActiva]);
+    if (!categoriaActiva) return sitios;
+    return sitios.filter((l) => l.categoria === categoriaActiva);
+  }, [sitios, categoriaActiva]);
 
   const isEmpty = filteredData.length === 0 && (search.length > 0 || categoriaActiva !== null);
 
@@ -542,26 +619,30 @@ export default function ExplorarScreen() {
   }, [isEmpty, emptyAnim]);
 
   const obtenerUbicacion = useCallback(async () => {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permiso requerido', 'Activa la ubicación');
-      return;
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(t('location_permission_title'), t('location_permission_msg'));
+        return;
+      }
+
+      const loc = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+
+      const r: Region = {
+        latitude: loc.coords.latitude,
+        longitude: loc.coords.longitude,
+        latitudeDelta: 0.02,
+        longitudeDelta: 0.02,
+      };
+
+      setRegion(r);
+      mapRef.current?.animateToRegion(r, 800);
+    } catch {
+      // GPS no disponible temporalmente (p.ej. al volver del navegador en iOS)
     }
-
-    const loc = await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.High,
-    });
-
-    const r: Region = {
-      latitude: loc.coords.latitude,
-      longitude: loc.coords.longitude,
-      latitudeDelta: 0.02,
-      longitudeDelta: 0.02,
-    };
-
-    setRegion(r);
-    mapRef.current?.animateToRegion(r, 800);
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     obtenerUbicacion();
@@ -571,7 +652,6 @@ export default function ExplorarScreen() {
     (cat: string) => {
       setCategoriaActiva(prev => cat === prev ? null : cat);
       setSearch('');
-      flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
     },
     []
   );
@@ -620,55 +700,36 @@ export default function ExplorarScreen() {
   );
 
   const openInMaps = useCallback((nombre: string, ubicacion: string) => {
-    Linking.openURL(
-      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-        `${nombre} ${ubicacion}`
-      )}`
-    );
+    abrirEnMapa(`${nombre} ${ubicacion}`);
   }, []);
 
-  const listHeader = useMemo(
-    () => (
-      <ExplorarHeader
-        s={s}
-        t={t}
-        colors={colors}
-        fonts={fonts}
-        refreshing={refreshing}
-        search={search}
-        categoriaActiva={categoriaActiva}
-        filteredData={filteredData}
-        region={region}
-        mapRef={mapRef}
-        onSearch={handleSearch}
-        onLimpiar={limpiarSearch}
-        onCategoria={filtrarCategoria}
-        onUbicacion={obtenerUbicacion}
-        onOpenMaps={openInMaps}
-        onSelectItem={irAlDetalle}
-        onExpandMap={expandMap}
-        isDark={isDark}
-      />
-    ),
-    [
-      s,
-      t,
-      colors,
-      fonts,
-      refreshing,
-      search,
-      categoriaActiva,
-      filteredData,
-      region,
-      handleSearch,
-      limpiarSearch,
-      filtrarCategoria,
-      obtenerUbicacion,
-      openInMaps,
-      irAlDetalle,
-      expandMap,
-      isDark,
-    ]
+  const explorarHeader = (
+    <ExplorarHeader
+      s={s}
+      t={t}
+      colors={colors}
+      fonts={fonts}
+      refreshing={refreshing}
+      search={search}
+      categoriaActiva={categoriaActiva}
+      filteredData={filteredData}
+      horizontalData={filteredData}
+      todosData={sitios}
+      region={region}
+      mapRef={mapRef}
+      onSearch={handleSearch}
+      onLimpiar={limpiarSearch}
+      onCategoria={filtrarCategoria}
+      onUbicacion={obtenerUbicacion}
+      onOpenMaps={openInMaps}
+      onSelectItem={irAlDetalle}
+      onIrAlDetalle={irAlDetalle}
+      onExpandMap={expandMap}
+      esFavorito={esFavorito}
+      onToggleFavorito={toggleFavorito}
+      isDark={isDark}
+      chipScrollX={chipScrollX}
+    />
   );
 
   const emptyAnimatedStyle = {
@@ -698,11 +759,11 @@ export default function ExplorarScreen() {
 
       <FlatList
         ref={flatListRef}
-        data={filteredData}
+        data={sitios}
         keyExtractor={(item) => item.id}
         numColumns={2}
         keyboardShouldPersistTaps="handled"
-        ListHeaderComponent={listHeader}
+        ListHeaderComponent={explorarHeader}
         ListEmptyComponent={
           <Animated.View style={[s.emptyWrap, emptyAnimatedStyle]}>
             <View style={s.emptyIconWrap}>
@@ -1100,63 +1161,126 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       borderColor: '#fff',
     },
 
-    catSection: {
-      marginBottom: 18,
-    },
-
-    categoriesScroll: {
+    // ── Chips de categoría ──────────────────────────────
+    chipScroll: {
       paddingHorizontal: 20,
       paddingRight: 28,
+      paddingBottom: 6,
+      gap: 8,
+      flexDirection: 'row',
+    },
+
+    chip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: 14,
+      paddingVertical: 9,
+      borderRadius: 50,
+      backgroundColor: c.card,
+      borderWidth: 1.5,
+      borderColor: c.border,
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: isDark ? 0.16 : 0.06,
+      shadowRadius: 3,
+    },
+
+    chipText: {
+      fontWeight: '700',
+      color: c.text,
+    },
+
+    chipTextActive: {
+      color: '#fff',
+    },
+
+    // ── Sección scroll horizontal ────────────────────────
+    hSection: {
+      marginBottom: 6,
+    },
+
+    hScroll: {
+      paddingHorizontal: 20,
+      paddingRight: 28,
+      gap: 12,
       paddingBottom: 4,
     },
 
-    categoryCard: {
-      backgroundColor: c.card,
-      paddingVertical: 16,
-      paddingHorizontal: 14,
+    hCard: {
+      width: 152,
+      height: 212,
       borderRadius: 20,
-      marginRight: 12,
-      alignItems: 'center',
-      justifyContent: 'center',
-      minWidth: 104,
-      minHeight: 124,
-      borderWidth: 2,
-      borderColor: 'transparent',
-      elevation: 2,
+      overflow: 'hidden',
+      elevation: 5,
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: isDark ? 0.16 : 0.06,
-      shadowRadius: 5,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: isDark ? 0.22 : 0.14,
+      shadowRadius: 8,
     },
 
-    iconCircle: {
-      width: 52,
-      height: 52,
-      borderRadius: 26,
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginBottom: 10,
+    hCardHeart: {
+      position: 'absolute',
+      top: 10,
+      right: 10,
+      backgroundColor: 'rgba(0,0,0,0.40)',
+      borderRadius: 12,
+      padding: 6,
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.15)',
     },
 
-    catName: {
+    hCardInfo: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      padding: 12,
+    },
+
+    hCardTag: {
+      alignSelf: 'flex-start',
+      paddingHorizontal: 7,
+      paddingVertical: 2,
+      borderRadius: 6,
+      marginBottom: 5,
+    },
+
+    hCardTagText: {
+      color: '#fff',
+      fontSize: 10,
       fontWeight: '700',
-      color: c.text,
-      textAlign: 'center',
     },
 
-    catActiveDot: {
-      width: 7,
-      height: 7,
-      borderRadius: 999,
-      marginTop: 8,
+    hCardName: {
+      color: '#fff',
+      fontWeight: '800',
+      fontSize: 14,
+      letterSpacing: -0.2,
+      marginBottom: 4,
     },
 
-    listLabelRow: {
+    hCardLocRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+    },
+
+    hCardLoc: {
+      color: 'rgba(255,255,255,0.82)',
+      fontSize: 11,
+      flex: 1,
+    },
+
+    // ── "Ver más" header ─────────────────────────────────
+    verMasRow: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 10,
       paddingHorizontal: 20,
       marginBottom: 14,
+      marginTop: 12,
     },
 
     listTitle: {

@@ -6,7 +6,6 @@ import { useTranslation } from "react-i18next";
 import {
   Animated,
   Image,
-  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -17,6 +16,7 @@ import {
   View,
 } from "react-native";
 import { useTheme } from "../../src/context/ThemeContext";
+import { abrirEnMapa } from "../../src/utils/abrirMapa";
 
 const CAT_KEYS: Record<string, string> = {
   Deporte: "cat_deporte",
@@ -130,12 +130,7 @@ export default function DetalleEvento() {
   };
 
   const abrirMapa = () => {
-    const query = encodeURIComponent(
-      `${evento.titulo || ""} ${evento.lugar || ""}`.trim()
-    );
-    Linking.openURL(
-      `https://www.google.com/maps/search/?api=1&query=${query}`
-    );
+    abrirEnMapa(`${evento.titulo || ""} ${evento.lugar || ""}`);
   };
 
   const compartir = async () => {

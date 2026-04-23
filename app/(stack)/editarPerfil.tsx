@@ -19,7 +19,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { editarPerfil, eliminarCuenta, subirFotoPerfil } from '../../src/api/api';
+import { editarPerfil, eliminarCuenta } from '../../src/api/api';
 import { useAuth } from '../../src/context/AuthContext';
 import { useTheme } from '../../src/context/ThemeContext';
 
@@ -35,7 +35,7 @@ export default function EditarPerfilScreen() {
   const [deleting, setDeleting] = useState(false);
   const [goodbyeModal, setGoodbyeModal] = useState(false);
   const [countdown, setCountdown] = useState(3);
-  const [pendingPhoto, setPendingPhoto] = useState<{ uri: string; base64: string } | null>(null);
+  const [pendingPhoto, setPendingPhoto] = useState<{ uri: string } | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const bannerAnim = useRef(new Animated.Value(0)).current;
@@ -99,14 +99,9 @@ export default function EditarPerfilScreen() {
             allowsEditing: true,
             aspect: [1, 1],
             quality: 0.8,
-            base64: true,
           });
-          if (!result.canceled && result.assets[0].base64) {
-            const asset = result.assets[0];
-            setPendingPhoto({
-              uri: asset.uri,
-              base64: `data:image/jpeg;base64,${asset.base64}`,
-            });
+          if (!result.canceled) {
+            setPendingPhoto({ uri: result.assets[0].uri });
           }
         },
       },
@@ -123,14 +118,9 @@ export default function EditarPerfilScreen() {
             allowsEditing: true,
             aspect: [1, 1],
             quality: 0.8,
-            base64: true,
           });
-          if (!result.canceled && result.assets[0].base64) {
-            const asset = result.assets[0];
-            setPendingPhoto({
-              uri: asset.uri,
-              base64: `data:image/jpeg;base64,${asset.base64}`,
-            });
+          if (!result.canceled) {
+            setPendingPhoto({ uri: result.assets[0].uri });
           }
         },
       },
@@ -171,10 +161,10 @@ export default function EditarPerfilScreen() {
     try {
       const res = await eliminarCuenta();
       if (!res.success) {
-        console.warn('[eliminarCuenta] servidor respondió con error:', res.error?.mensaje);
+        if (__DEV__) console.warn('[eliminarCuenta] servidor respondió con error:', res.error?.mensaje);
       }
     } catch (e) {
-      console.warn('[eliminarCuenta] error de red:', e);
+      if (__DEV__) console.warn('[eliminarCuenta] error de red:', e);
     } finally {
       await actualizarFoto(null);
       await logout();
@@ -191,25 +181,13 @@ export default function EditarPerfilScreen() {
 
     setLoading(true);
     try {
+      // Foto: solo guardado local, sin servidor
       if (pendingPhoto) {
-        try {
-          const fotoRes = await subirFotoPerfil(pendingPhoto.base64);
-          if (fotoRes.success && fotoRes.data?.url) {
-            await actualizarFoto(fotoRes.data.url);
-            await actualizarUsuario({ foto_url: fotoRes.data.url });
-          }
-        } catch (e: any) {
-          const codigo = e?.response?.data?.error?.codigo;
-          if (codigo === 'S3_ERROR' || e?.response?.status === 500) {
-            Alert.alert(
-              'Foto no subida',
-              'No se pudo subir la foto (servidor de imágenes no disponible). El nombre se guardará de todos modos.',
-            );
-          }
-        }
+        await actualizarFoto(pendingPhoto.uri);
         setPendingPhoto(null);
       }
 
+      // Nombre: sí va al backend
       const nombreCambio = nombre.trim() !== (usuario?.nombre ?? '');
       if (nombreCambio) {
         const res = await editarPerfil(nombre.trim());

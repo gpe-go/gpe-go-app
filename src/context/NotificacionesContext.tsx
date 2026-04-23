@@ -8,12 +8,6 @@ import React, {
 } from 'react';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
-
-// Push solo funciona en build nativo (no en Expo Go desde SDK 53+)
-// Se usa require() en lugar de import para evitar side effects en Expo Go
-// (DevicePushTokenAutoRegistration.fx.js se ejecuta al importar expo-notifications)
-const IS_EXPO_GO = Constants.appOwnership === 'expo';
-
 import {
   getNotificaciones,
   contarNoLeidas,
@@ -24,8 +18,14 @@ import {
 } from '../api/api';
 import { useAuth } from './AuthContext';
 
+// Push solo funciona en build nativo (no en Expo Go desde SDK 53+)
+// Se usa require() en lugar de import para evitar side effects en Expo Go
+// (DevicePushTokenAutoRegistration.fx.js se ejecuta al importar expo-notifications)
+const IS_EXPO_GO = Constants.appOwnership === 'expo';
+
 // Configurar comportamiento solo si no es Expo Go (usando require para evitar side effects)
 if (!IS_EXPO_GO) {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const Notifications = require('expo-notifications');
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -79,7 +79,9 @@ export function NotificacionesProvider({ children }: { children: React.ReactNode
     if (!isAuthenticated || IS_EXPO_GO) return;
     try {
       // require() aquí para evitar que el módulo se cargue en Expo Go
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const Device        = require('expo-device');
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const Notifications = require('expo-notifications');
 
       if (!Device.isDevice) return;
@@ -187,6 +189,7 @@ export function NotificacionesProvider({ children }: { children: React.ReactNode
   // ─── Escuchar notificaciones recibidas en foreground (solo build nativo) ──
   useEffect(() => {
     if (IS_EXPO_GO) return;
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const Notifications = require('expo-notifications');
     const sub = Notifications.addNotificationReceivedListener(() => {
       refresh();

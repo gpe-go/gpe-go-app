@@ -51,10 +51,12 @@ export default function Categoria() {
   const { toggleFavorito, esFavorito } = useFavoritos();
 
   const idCategoria = Number(tipo) || undefined;
-  const { data: lugares = [], loading } = useLugares(idCategoria) as {
-    data?: any[];
-    loading: boolean;
-  };
+  // Radio 15 km · máx 40 lugares por categoría
+  const { data: lugares = [], loading } = useLugares(
+    idCategoria,
+    undefined,
+    { radio_km: 15, limite: 40 },
+  ) as { data?: any[]; loading: boolean };
 
   const rawNombre = nombre || tipo || '';
   const categoriaKey = CATEGORIA_KEYS[rawNombre];

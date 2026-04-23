@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, Image, ScrollView,
-  Pressable, StatusBar, Platform, ActivityIndicator, Linking, Share,
+  Pressable, StatusBar, Platform, ActivityIndicator, Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useLugar } from '../../src/hooks/useLugar';
 import { useFavoritos } from '../../src/context/FavoritosContext';
-import { useAuth } from '../../src/context/AuthContext';
+import { abrirEnMapa } from '../../src/utils/abrirMapa';
 import Reseñas from '../../components/Reseñas';
 
 const CATEGORIA_KEYS: Record<string, string> = {
@@ -47,7 +47,6 @@ export default function LugarDetalle() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { toggleFavorito, esFavorito } = useFavoritos();
-  const { isAuthenticated } = useAuth();
 
   const { data: lugar, loading } = useLugar(id as string);
   const [activeTab, setActiveTab] = useState<'info' | 'reseñas'>('info');
@@ -93,8 +92,7 @@ export default function LugarDetalle() {
     CATEGORIA_KEYS[categoria] ? t(CATEGORIA_KEYS[categoria]) : categoria;
 
   const abrirMapa = () => {
-    const query = encodeURIComponent(`${lugar.nombre} ${lugar.ubicacion}`);
-    Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${query}`);
+    abrirEnMapa(`${lugar.nombre} ${lugar.ubicacion}`);
   };
 
   const compartir = async () => {

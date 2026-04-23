@@ -1,16 +1,27 @@
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
+import { PRODUCTION_API_URL, DEV_API_URL, API_PATH } from "../config/env";
 
-/* ================= CONFIGURACIÓN API ================= */
+// ============================================================
+//  Para cambiar el servidor: edita src/config/env.ts
+// ============================================================
 
-const getBaseURL = () => {
-  const debuggerHost = Constants.expoConfig?.hostUri ?? Constants.manifest?.debuggerHost;
-  if (debuggerHost) {
+const getBaseURL = (): string => {
+  // En desarrollo, Expo expone la IP del debugger automáticamente.
+  // Así la app siempre apunta al XAMPP local sin cambiar la IP manualmente.
+  const debuggerHost =
+    Constants.expoConfig?.hostUri ?? (Constants as any).manifest?.debuggerHost;
+
+  if (__DEV__ && debuggerHost) {
     const ip = debuggerHost.split(":")[0];
-    return `http://${ip}/gpe_go_api/inputs.php`;
+    return `http://${ip}/${API_PATH}`;
   }
-  return "http://192.168.100.157/gpe_go_api/inputs.php";
+
+  // En producción (build firmado para tiendas) usa el servidor real.
+  // ← Cuando llegue la URL del municipio, actualiza PRODUCTION_API_URL
+  //   en src/config/env.ts  — no toques nada más.
+  return __DEV__ ? DEV_API_URL : PRODUCTION_API_URL;
 };
 
 const API = axios.create({
@@ -57,9 +68,12 @@ export const getLugares = async (params?: {
   busqueda?: string;
   pagina?: number;
   por_pagina?: number;
+  lat?: number;
+  lng?: number;
+  radio_km?: number;
 }) => {
   const response = await API.get("", {
-    params: { modulo: "lugares", action: "listar", por_pagina: 100, ...params },
+    params: { modulo: "lugares", action: "listar", por_pagina: 40, ...params },
   });
   return response.data;
 };
@@ -78,9 +92,12 @@ export const getEventos = async (params?: {
   busqueda?: string;
   pagina?: number;
   por_pagina?: number;
+  lat?: number;
+  lng?: number;
+  radio_km?: number;
 }) => {
   const response = await API.get("", {
-    params: { modulo: "eventos", action: "listar", por_pagina: 100, ...params },
+    params: { modulo: "eventos", action: "listar", por_pagina: 40, ...params },
   });
   return response.data;
 };

@@ -22,6 +22,31 @@ import { useTheme } from '../../src/context/ThemeContext';
 
 type Categoria = { id: number; nombre: string };
 
+const CAT_KEY_MAP: Record<string, string> = {
+  'Restaurantes':    'cat_restaurantes',
+  'Hoteles':         'cat_hoteles',
+  'Entretenimiento': 'cat_entretenimiento',
+  'Tiendas':         'cat_tiendas',
+  'Servicios':       'cat_servicios',
+  'Plazas':          'cat_plazas',
+  'Hospitales':      'cat_hospitales',
+  'Farmacias':       'cat_farmacias',
+  'Supermercados':   'cat_supermercados',
+  'Gasolineras':     'cat_gasolineras',
+  'Parques':         'cat_parques',
+  'Museos':          'cat_museos',
+  'Cerros':          'cat_cerros',
+  'Deporte':         'cat_deporte',
+  'Cultural':        'cat_cultural',
+  'Gastronomía':       'cat_gastronomia',
+  'Sociales':          'cat_sociales',
+  'Salón de Belleza':    'cat_salon_belleza',
+  'Salones de belleza':  'cat_salon_belleza',
+  'Sitios Turísticos':   'cat_sitios_turisticos',
+  'Sitios turísticos':   'cat_sitios_turisticos',
+  'Pueblos Mágicos':   'cat_pueblos_magicos',
+};
+
 export default function RegistrarNegocioScreen() {
   const { colors, fonts, isDark } = useTheme();
   const { t } = useTranslation();
@@ -222,7 +247,7 @@ export default function RegistrarNegocioScreen() {
                     onPress={() => setCategoriaId(cat.id)}
                   >
                     <Text style={[s.catChipText, { color: categoriaId === cat.id ? '#fff' : colors.text, fontSize: fonts.xs }]}>
-                      {cat.nombre}
+                      {t(CAT_KEY_MAP[cat.nombre] ?? cat.nombre)}
                     </Text>
                   </Pressable>
                 ))}

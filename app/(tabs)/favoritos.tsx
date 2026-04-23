@@ -54,8 +54,8 @@ function SwipeableCard({
 
   const confirmarEliminar = () => {
     Alert.alert(
-      t('review_delete'),
-      `¿Quieres eliminar "${item.nombre}" de favoritos?`,
+      t('fav_delete_title'),
+      t('fav_delete_msg', { nombre: item.nombre }),
       [
         {
           text: t('profile_cancel'),
@@ -206,6 +206,7 @@ function LoginModal({
   fonts: any;
   isDark: boolean;
 }) {
+  const { t } = useTranslation();
   const modalAnim = useRef(new Animated.Value(0)).current;
   const s = makeStyles(colors, fonts);
 
@@ -248,11 +249,11 @@ function LoginModal({
           </LinearGradient>
 
           <Text style={[s.modalTitle, { fontSize: fonts.xl }]}>
-            ¡Guarda tus favoritos!
+            {t('favorites_login_title')}
           </Text>
 
           <Text style={[s.modalBody, { fontSize: fonts.sm }]}>
-            Inicia sesión para guardar tus lugares y comercios favoritos en GuadalupeGO.
+            {t('favorites_login_sub')}
           </Text>
 
           <Pressable
@@ -273,7 +274,7 @@ function LoginModal({
             >
               <Ionicons name="person-outline" size={18} color="#fff" />
               <Text style={[s.modalPrimaryBtnText, { fontSize: fonts.base }]}>
-                Iniciar sesión
+                {t('login_title')}
               </Text>
             </LinearGradient>
           </Pressable>
@@ -286,7 +287,7 @@ function LoginModal({
             onPress={onClose}
           >
             <Text style={[s.modalCancelBtnText, { fontSize: fonts.sm }]}>
-              Cancelar
+              {t('cancel')}
             </Text>
           </Pressable>
         </Animated.View>
@@ -436,7 +437,7 @@ export default function FavoritosScreen() {
       title={t('tab_favorites')}
       subtitle={
         favoritos.length === 0
-          ? 'Tus lugares y comercios guardados'
+          ? t('fav_banner_subtitle')
           : `${favoritos.length} ${
               favoritos.length === 1 ? t('place_saved_one') : t('place_saved_many')
             }`
@@ -475,18 +476,18 @@ export default function FavoritosScreen() {
                 <View style={s.sectionLabelRow}>
                   <View style={s.sectionAccent} />
                   <Text style={[s.sectionLabel, { fontSize: fonts.base }]}>
-                    Acceso requerido
+                    {t('fav_access_required')}
                   </Text>
                 </View>
 
                 <EmptyStateCard
                   icon="heart-outline"
-                  title="Guarda tus favoritos"
-                  subtitle="Inicia sesión para guardar los lugares y comercios que más te gustan."
-                  primaryText="Iniciar sesión"
+                  title={t('favorites_login_title')}
+                  subtitle={t('favorites_login_sub')}
+                  primaryText={t('login_title')}
                   primaryIcon="person-outline"
                   onPrimaryPress={() => setLoginModal(true)}
-                  secondaryText="Explorar sin cuenta"
+                  secondaryText={t('fav_explore_no_account')}
                   onSecondaryPress={irAlInicio}
                   colors={colors}
                   fonts={fonts}
@@ -517,7 +518,7 @@ export default function FavoritosScreen() {
                 <View style={s.sectionLabelRow}>
                   <View style={s.sectionAccent} />
                   <Text style={[s.sectionLabel, { fontSize: fonts.base }]}>
-                    Empieza a guardar
+                    {t('fav_start_saving')}
                   </Text>
                 </View>
 

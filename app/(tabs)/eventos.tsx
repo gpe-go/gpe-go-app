@@ -1,7 +1,6 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { VideoView, useVideoPlayer } from 'expo-video';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -15,7 +14,6 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableWithoutFeedback,
   View,
 } from 'react-native';
 import { useTheme } from '../../src/context/ThemeContext';
@@ -211,12 +209,17 @@ export default function EventosScreen() {
   const { colors, fonts, isDark } = useTheme();
   const s = makeStyles(colors, fonts, isDark);
   const router = useRouter();
-  const { data: eventos, refresh: refreshEventos } = useEventos();
 
   const [search, setSearch] = useState('');
   const [activeCat, setActiveCat] = useState('Todas');
-  const [playVideo, setPlayVideo] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Radio 10 km · máx 40 eventos. Con búsqueda activa el hook consulta toda la BD.
+  const { data: eventos, refresh: refreshEventos } = useEventos(
+    undefined,
+    search,
+    { radio_km: 10, limite: 40 },
+  );
 
   // Animated rotating placeholder hints
   const searchHints = useMemo(
@@ -269,30 +272,13 @@ export default function EventosScreen() {
     }).start();
   }, [activeCat, search, emptyAnim]);
 
-  const eventoPrincipal = useMemo(
-    () => eventos.find((e: any) => e.especial),
-    [eventos]
-  );
-
+  // La búsqueda ya la maneja el hook (backend). Aquí solo filtramos por categoría.
   const filteredEvents = useMemo(() => {
     return eventos.filter((event: any) => {
       if (event.especial) return false;
-
-      const titulo = String(event.titulo || '').toLowerCase();
-      const lugar = String(event.lugar || '').toLowerCase();
-      const sub = String(event.sub || '').toLowerCase();
-      const searchValue = search.toLowerCase();
-
-      const matchesSearch =
-        titulo.includes(searchValue) ||
-        lugar.includes(searchValue) ||
-        sub.includes(searchValue);
-
-      const matchesCat = activeCat === 'Todas' || event.categoria === activeCat;
-
-      return matchesSearch && matchesCat;
+      return activeCat === 'Todas' || event.categoria === activeCat;
     });
-  }, [eventos, search, activeCat]);
+  }, [eventos, activeCat]);
 
   const searchSuggestions = useMemo(() => {
     if (!search.trim()) return [];
@@ -303,24 +289,6 @@ export default function EventosScreen() {
       )
       .slice(0, 5);
   }, [eventos, search]);
-
-  const player = useVideoPlayer(eventoPrincipal?.videoSource, (p) => {
-    p.loop = false;
-  });
-
-  const startVideo = () => {
-    if (!eventoPrincipal?.videoSource) return;
-    setPlayVideo(true);
-    player.currentTime = 0;
-    player.play();
-  };
-
-  const stopVideo = () => {
-    if (!eventoPrincipal?.videoSource) return;
-    player.pause();
-    player.currentTime = 0;
-    setPlayVideo(false);
-  };
 
   const limpiarSearch = () => setSearch('');
 
@@ -418,7 +386,7 @@ export default function EventosScreen() {
       />
 
       <FlatList
-        data={filteredEvents}
+        data={eventos.filter((e: any) => !e.especial)}
         keyExtractor={(item: any) => item.id}
         renderItem={({ item }) => (
           <EventCard
@@ -582,194 +550,138 @@ export default function EventosScreen() {
               </LinearGradient>
             </Animated.View>
 
+            {/* ── Chips de categoría ─────────────────────── */}
             <Animated.View style={categoryAnimatedStyle}>
-              <View style={s.catSection}>
+              <View style={{ paddingHorizontal: 20, marginBottom: 10 }}>
                 <View style={s.sectionHeader}>
                   <View style={s.sectionDot} />
                   <Text style={[s.sectionTitle, { fontSize: fonts.lg }]}>
                     {t('categories')}
                   </Text>
                 </View>
-
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={s.categoriesScroll}
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={s.chipScroll}
+              >
+                <Pressable
+                  style={({ pressed }) => [
+                    s.chip,
+                    activeCat === 'Todas' && { backgroundColor: '#E96928', borderColor: '#E96928' },
+                    { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
+                  ]}
+                  onPress={() => setActiveCat('Todas')}
                 >
-                  <Pressable
-                    style={({ pressed }) => [
-                      s.catItem,
-                      activeCat === 'Todas' && {
-                        backgroundColor: '#E96928',
-                        borderColor: '#E96928',
-                      },
-                      {
-                        opacity: pressed ? 0.92 : 1,
-                        transform: [{ scale: pressed ? 0.97 : 1 }],
-                      },
-                    ]}
-                    onPress={() => setActiveCat('Todas')}
-                  >
-                    <Ionicons
-                      name="apps-outline"
-                      size={16}
-                      color={activeCat === 'Todas' ? '#fff' : colors.subtext}
-                    />
-                    <Text
-                      style={[
-                        s.catText,
-                        { fontSize: fonts.sm },
-                        activeCat === 'Todas' && s.catTextActive,
+                  <Ionicons
+                    name="apps-outline"
+                    size={15}
+                    color={activeCat === 'Todas' ? '#fff' : colors.subtext}
+                  />
+                  <Text style={[s.chipText, { fontSize: fonts.xs }, activeCat === 'Todas' && s.chipTextActive]}>
+                    {t('all')}
+                  </Text>
+                </Pressable>
+
+                {CATEGORIAS.map((cat) => {
+                  const activa = activeCat === cat.value;
+                  return (
+                    <Pressable
+                      key={cat.id}
+                      style={({ pressed }) => [
+                        s.chip,
+                        activa && { backgroundColor: cat.color, borderColor: cat.color },
+                        { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
                       ]}
+                      onPress={() => setActiveCat(cat.value)}
                     >
-                      {t('all')}
+                      <MaterialCommunityIcons
+                        name={cat.icon as any}
+                        size={15}
+                        color={activa ? '#fff' : colors.subtext}
+                      />
+                      <Text style={[s.chipText, { fontSize: fonts.xs }, activa && s.chipTextActive]}>
+                        {t(cat.labelKey)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </Animated.View>
+
+            {/* ── Scroll horizontal de eventos ─────────────── */}
+            <Animated.View style={featuredAnimatedStyle}>
+              <View style={s.hSection}>
+                <View style={[s.sectionHeader, { paddingHorizontal: 20 }]}>
+                  <View style={s.sectionDot} />
+                  <Text style={[s.sectionTitle, { fontSize: fonts.lg }]}>
+                    {activeCat === 'Todas'
+                      ? t('tab_events')
+                      : t(CATEGORIAS.find((c) => c.value === activeCat)?.labelKey ?? '')}
+                  </Text>
+                  <View style={s.countBadge}>
+                    <Text style={[s.countText, { fontSize: fonts.xs }]}>
+                      {filteredEvents.filter((e: any) => !e.especial).length}
                     </Text>
-                  </Pressable>
+                  </View>
+                </View>
 
-                  {CATEGORIAS.map((cat) => {
-                    const activa = activeCat === cat.value;
-
-                    return (
-                      <Pressable
-                        key={cat.id}
-                        style={({ pressed }) => [
-                          s.catItem,
-                          activa && {
-                            backgroundColor: cat.color,
-                            borderColor: cat.color,
-                          },
-                          {
-                            opacity: pressed ? 0.92 : 1,
-                            transform: [{ scale: pressed ? 0.97 : 1 }],
-                          },
-                        ]}
-                        onPress={() => setActiveCat(cat.value)}
-                      >
-                        <MaterialCommunityIcons
-                          name={cat.icon as any}
-                          size={16}
-                          color={activa ? '#fff' : colors.subtext}
-                        />
-                        <Text
-                          style={[
-                            s.catText,
-                            { fontSize: fonts.sm },
-                            activa && s.catTextActive,
+                {filteredEvents.filter((e: any) => !e.especial).length === 0 ? (
+                  <Text style={{ paddingHorizontal: 20, color: colors.subtext, fontSize: fonts.sm, marginBottom: 8 }}>
+                    {t('no_results')}
+                  </Text>
+                ) : (
+                  <FlatList
+                    horizontal
+                    data={filteredEvents.filter((e: any) => !e.especial)}
+                    keyExtractor={(item: any) => item.id}
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={s.hScroll}
+                    renderItem={({ item }: any) => {
+                      const catInfo = CATEGORIAS.find((c) => c.value === item.categoria);
+                      return (
+                        <Pressable
+                          onPress={() => irAlDetalle(item)}
+                          style={({ pressed }) => [
+                            s.hCard,
+                            { opacity: pressed ? 0.93 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
                           ]}
                         >
-                          {t(cat.labelKey)}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </ScrollView>
+                          <Image source={{ uri: item.imagen }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
+                          <LinearGradient
+                            colors={['transparent', 'rgba(0,0,0,0.75)']}
+                            style={StyleSheet.absoluteFillObject}
+                          />
+                          <View style={s.hCardInfo}>
+                            {catInfo && (
+                              <View style={[s.hCardTag, { backgroundColor: catInfo.color + 'CC' }]}>
+                                <Text style={s.hCardTagText}>{t(catInfo.labelKey)}</Text>
+                              </View>
+                            )}
+                            <Text style={s.hCardName} numberOfLines={2}>{item.titulo}</Text>
+                            <View style={s.hCardLocRow}>
+                              <Ionicons name="calendar-outline" size={10} color="rgba(255,255,255,0.85)" />
+                              <Text style={s.hCardLoc} numberOfLines={1}>{item.fecha}</Text>
+                            </View>
+                          </View>
+                        </Pressable>
+                      );
+                    }}
+                  />
+                )}
               </View>
             </Animated.View>
 
-            {eventoPrincipal && (
-              <Animated.View style={featuredAnimatedStyle}>
-                <View style={s.featuredSection}>
-                  <View style={s.sectionHeader}>
-                    <View style={s.sectionDot} />
-                    <Text style={[s.sectionTitle, { fontSize: fonts.lg }]}>
-                      {t('events_featured')}
-                    </Text>
-                  </View>
-
-                  <TouchableWithoutFeedback
-                    onPressIn={startVideo}
-                    onPressOut={stopVideo}
-                    onPress={() => irAlDetalle(eventoPrincipal)}
-                  >
-                    <View style={s.mainEventCard}>
-                      {!playVideo || !eventoPrincipal?.videoSource ? (
-                        <Image
-                          source={{ uri: eventoPrincipal.imagen }}
-                          style={s.mainEventImage}
-                        />
-                      ) : (
-                        <VideoView
-                          style={s.mainEventImage}
-                          player={player}
-                          allowsPictureInPicture={false}
-                          nativeControls={false}
-                        />
-                      )}
-
-                      <LinearGradient
-                        colors={['transparent', 'rgba(0,0,0,0.84)']}
-                        style={StyleSheet.absoluteFillObject}
-                      />
-
-                      <View style={s.worldBadge}>
-                        <Ionicons name="sparkles-outline" size={12} color="#fff" />
-                        <Text style={[s.worldBadgeText, { fontSize: fonts.xs }]}>
-                          {SUB_KEYS[eventoPrincipal.sub]
-                            ? t(SUB_KEYS[eventoPrincipal.sub])
-                            : eventoPrincipal.sub}
-                        </Text>
-                      </View>
-
-                      {eventoPrincipal?.videoSource && (
-                        <View style={s.holdHint}>
-                          <Ionicons
-                            name="play-circle-outline"
-                            size={14}
-                            color="rgba(255,255,255,0.82)"
-                          />
-                          <Text style={[s.holdHintText, { fontSize: fonts.xs }]}>
-                            {t('events_hold_video')}
-                          </Text>
-                        </View>
-                      )}
-
-                      <View style={s.mainEventOverlay}>
-                        <Text
-                          style={[s.mainEventTitle, { fontSize: fonts.xl }]}
-                          numberOfLines={2}
-                        >
-                          {eventoPrincipal.titulo}
-                        </Text>
-
-                        <View style={s.mainEventMeta}>
-                          <View style={s.mainEventMetaItem}>
-                            <Ionicons
-                              name="calendar-outline"
-                              size={14}
-                              color="rgba(255,255,255,0.82)"
-                            />
-                            <Text style={[s.mainEventSub, { fontSize: fonts.sm }]}>
-                              {eventoPrincipal.fecha}
-                            </Text>
-                          </View>
-
-                          <View style={s.mainEventMetaItem}>
-                            <Ionicons
-                              name="location-outline"
-                              size={14}
-                              color="rgba(255,255,255,0.82)"
-                            />
-                            <Text
-                              style={[s.mainEventSub, { fontSize: fonts.sm }]}
-                              numberOfLines={1}
-                            >
-                              {eventoPrincipal.lugar}
-                            </Text>
-                          </View>
-                        </View>
-                      </View>
-                    </View>
-                  </TouchableWithoutFeedback>
-                </View>
-              </Animated.View>
-            )}
-
+            {/* ── "Ver más" header ─────────────────────────── */}
             <Animated.View style={listTitleAnimatedStyle}>
-              <View style={s.listSection}>
-                <View style={s.sectionHeader}>
-                  <View style={s.sectionDot} />
-                  <Text style={[s.sectionTitle, { fontSize: fonts.lg }]}>
-                    {t('see_more')}
+              <View style={s.verMasRow}>
+                <View style={s.sectionDot} />
+                <Text style={[s.sectionTitle, { fontSize: fonts.lg }]}>
+                  {t('ver_mas', { defaultValue: 'Ver más' })}
+                </Text>
+                <View style={s.countBadge}>
+                  <Text style={[s.countText, { fontSize: fonts.xs }]}>
+                    {eventos.filter((e: any) => !e.especial).length}
                   </Text>
                 </View>
               </View>
@@ -929,14 +841,133 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       fontWeight: '600',
     },
 
-    catSection: {
-      marginTop: 16,
-      marginBottom: 8,
-    },
-
-    categoriesScroll: {
+    // ── Chips de categoría ──────────────────────────────
+    chipScroll: {
       paddingHorizontal: 20,
       paddingRight: 28,
+      paddingBottom: 6,
+      gap: 8,
+      flexDirection: 'row',
+    },
+
+    chip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: 14,
+      paddingVertical: 9,
+      borderRadius: 50,
+      backgroundColor: c.card,
+      borderWidth: 1.5,
+      borderColor: c.border,
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: isDark ? 0.16 : 0.06,
+      shadowRadius: 3,
+    },
+
+    chipText: {
+      fontWeight: '700',
+      color: c.text,
+    },
+
+    chipTextActive: {
+      color: '#fff',
+    },
+
+    // ── Sección scroll horizontal ────────────────────────
+    hSection: {
+      marginBottom: 6,
+      marginTop: 6,
+    },
+
+    hScroll: {
+      paddingHorizontal: 20,
+      paddingRight: 28,
+      gap: 12,
+      paddingBottom: 4,
+    },
+
+    hCard: {
+      width: 152,
+      height: 212,
+      borderRadius: 20,
+      overflow: 'hidden',
+      elevation: 5,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: isDark ? 0.22 : 0.14,
+      shadowRadius: 8,
+    },
+
+    hCardInfo: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      padding: 12,
+    },
+
+    hCardTag: {
+      alignSelf: 'flex-start',
+      paddingHorizontal: 7,
+      paddingVertical: 2,
+      borderRadius: 6,
+      marginBottom: 5,
+    },
+
+    hCardTagText: {
+      color: '#fff',
+      fontSize: 10,
+      fontWeight: '700',
+    },
+
+    hCardName: {
+      color: '#fff',
+      fontWeight: '800',
+      fontSize: 13,
+      letterSpacing: -0.2,
+      marginBottom: 4,
+    },
+
+    hCardLocRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+    },
+
+    hCardLoc: {
+      color: 'rgba(255,255,255,0.82)',
+      fontSize: 11,
+      flex: 1,
+    },
+
+    // ── "Ver más" header ─────────────────────────────────
+    verMasRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      paddingHorizontal: 20,
+      marginBottom: 14,
+      marginTop: 12,
+    },
+
+    countBadge: {
+      minWidth: 34,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: c.border,
+      backgroundColor: c.card,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
+    countText: {
+      color: c.subtext,
+      fontWeight: '700',
     },
 
     sectionHeader: {
@@ -958,34 +989,6 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       fontWeight: '800',
       color: c.text,
       letterSpacing: -0.2,
-    },
-
-    catItem: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 7,
-      backgroundColor: c.card,
-      paddingHorizontal: 16,
-      height: 42,
-      borderRadius: 22,
-      marginRight: 10,
-      borderWidth: 1.5,
-      borderColor: c.border,
-      elevation: 2,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: isDark ? 0.16 : 0.05,
-      shadowRadius: 4,
-    },
-
-    catText: {
-      fontWeight: '700',
-      color: c.subtext,
-    },
-
-    catTextActive: {
-      color: '#fff',
-      fontWeight: '800',
     },
 
     featuredSection: {
@@ -1080,10 +1083,6 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       fontWeight: '500',
     },
 
-    listSection: {
-      marginTop: 10,
-      marginBottom: 2,
-    },
 
     card: {
       backgroundColor: c.card,

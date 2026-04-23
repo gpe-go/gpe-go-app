@@ -25,16 +25,16 @@ const MENU_ITEMS = [
   { name: 'contacto',   icon: 'mail-outline',           labelKey: 'drawer_nav_contact'   },
 ] as const;
 
-function getClimaInfo(code: number): { desc: string; icon: string } {
-  if (code === 0)               return { desc: 'Despejado',       icon: 'sunny-outline'        };
-  if (code <= 2)                return { desc: 'Parcial nublado', icon: 'partly-sunny-outline' };
-  if (code === 3)               return { desc: 'Nublado',         icon: 'cloud-outline'        };
-  if (code >= 45 && code <= 48) return { desc: 'Niebla',          icon: 'cloud-outline'        };
-  if (code >= 51 && code <= 67) return { desc: 'Llovizna',        icon: 'rainy-outline'        };
-  if (code >= 71 && code <= 77) return { desc: 'Nieve',           icon: 'snow-outline'         };
-  if (code >= 80 && code <= 82) return { desc: 'Lluvia',          icon: 'rainy-outline'        };
-  if (code >= 95 && code <= 99) return { desc: 'Tormenta',        icon: 'thunderstorm-outline' };
-  return                               { desc: 'Variable',        icon: 'cloudy-outline'       };
+function getClimaInfo(code: number): { descKey: string; icon: string } {
+  if (code === 0)               return { descKey: 'weather_clear',         icon: 'sunny-outline'        };
+  if (code <= 2)                return { descKey: 'weather_partly_cloudy', icon: 'partly-sunny-outline' };
+  if (code === 3)               return { descKey: 'weather_cloudy',        icon: 'cloud-outline'        };
+  if (code >= 45 && code <= 48) return { descKey: 'weather_fog',           icon: 'cloud-outline'        };
+  if (code >= 51 && code <= 67) return { descKey: 'weather_drizzle',       icon: 'rainy-outline'        };
+  if (code >= 71 && code <= 77) return { descKey: 'weather_snow',          icon: 'snow-outline'         };
+  if (code >= 80 && code <= 82) return { descKey: 'weather_rain',          icon: 'rainy-outline'        };
+  if (code >= 95 && code <= 99) return { descKey: 'weather_storm',         icon: 'thunderstorm-outline' };
+  return                               { descKey: 'weather_variable',      icon: 'cloudy-outline'       };
 }
 
 function getSaludoIcon(): string {
@@ -54,11 +54,11 @@ function getSaludoKey(): string {
 type Clima = {
   temp: number; sensacion: number;
   humedad: number; viento: number;
-  desc: string; icon: string; ciudad: string;
+  descKey: string; icon: string; ciudad: string;
 };
 
 export default function CustomDrawer(props: DrawerContentComponentProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { fonts, isDark } = useTheme();
   const router  = useRouter();
   const insets  = useSafeAreaInsets();
@@ -67,6 +67,9 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
   const [saludoKey,  setSaludoKey]  = useState(getSaludoKey());
   const [clima,        setClima]        = useState<Clima | null>(null);
   const [loadingClima, setLoadingClima] = useState(true);
+
+  // Fahrenheit solo para inglés americano (en)
+  const useFahrenheit = i18n.language === 'en';
 
   const activeRoute = props.state.routes[props.state.index]?.name ?? 'index';
 
@@ -107,7 +110,8 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
         `https://api.open-meteo.com/v1/forecast` +
         `?latitude=${lat}&longitude=${lon}` +
         `&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code` +
-        `&timezone=America%2FMonterrey`;
+        `&timezone=America%2FMonterrey` +
+        (useFahrenheit ? `&temperature_unit=fahrenheit` : ``);
 
       const res  = await fetch(url);
       const data = await res.json();
@@ -119,7 +123,7 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
         sensacion: Math.round(c.apparent_temperature),
         humedad:   c.relative_humidity_2m,
         viento:    Math.round(c.wind_speed_10m),
-        desc:      info.desc,
+        descKey:   info.descKey,
         icon:      info.icon,
         ciudad,
       });
@@ -128,7 +132,7 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
     } finally {
       setLoadingClima(false);
     }
-  }, [t]);
+  }, [t, useFahrenheit]);
 
   useEffect(() => {
     fetchClima();
@@ -195,10 +199,10 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
               </View>
               <View style={styles.climaTempBlock}>
                 <Text style={[styles.climaTemp, { fontSize: fonts['2xl'] ?? 28 }]}>
-                  {clima.temp}°C
+                  {clima.temp}°{useFahrenheit ? 'F' : 'C'}
                 </Text>
                 <Text style={[styles.climaDesc, { fontSize: fonts.xs }]}>
-                  {clima.desc}
+                  {t(clima.descKey)}
                 </Text>
               </View>
             </View>
@@ -206,7 +210,7 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
               <View style={styles.climaDetailItem}>
                 <Ionicons name="thermometer-outline" size={13} color="rgba(255,255,255,0.7)" />
                 <Text style={[styles.climaDetailText, { fontSize: fonts.xs }]}>
-                  Sens. {clima.sensacion}°
+                  {t('weather_feels_like')} {clima.sensacion}°{useFahrenheit ? 'F' : 'C'}
                 </Text>
               </View>
               <View style={styles.climaDetailDot} />

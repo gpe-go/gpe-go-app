@@ -111,7 +111,7 @@ export const cambiarIdioma = async (lang: AppLanguage): Promise<void> => {
     await instance.changeLanguage(lang);
     await AsyncStorage.setItem(LANG_KEY, lang);
   } catch (e) {
-    console.warn('[i18n] Error cambiando idioma:', e);
+    if (__DEV__) console.warn('[i18n] Error cambiando idioma:', e);
   }
 };
 

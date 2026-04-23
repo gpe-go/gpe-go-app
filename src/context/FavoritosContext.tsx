@@ -1,6 +1,9 @@
-import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+import React, { createContext, useState, useContext, useEffect, useRef, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Alert } from 'react-native';
 import { Lugar } from '../types/lugar';
+import { useAuth } from './AuthContext';
+import i18n from '../i18n/i18n';
 
 export type { Lugar };
 
@@ -13,41 +16,65 @@ interface FavoritosContextType {
 
 const FavoritosContext = createContext<FavoritosContextType | undefined>(undefined);
 
-const STORAGE_KEY = '@guadalupego:favoritos';
+// Clave de favoritos por usuario para no mezclar datos entre cuentas
+const storageKey = (userId?: string | number | null) =>
+  userId != null ? `@guadalupego:favoritos_${userId}` : '@guadalupego:favoritos_guest';
 
 export const FavoritosProvider = ({ children }: { children: ReactNode }) => {
+  const { isAuthenticated, usuario } = useAuth();
   const [favoritos, setFavoritos] = useState<Lugar[]>([]);
 
-  // Carga favoritos desde AsyncStorage al iniciar
+  // Ref para evitar re-renders innecesarios en guardar
+  const usuarioIdRef = useRef(usuario?.id);
+  usuarioIdRef.current = usuario?.id;
+
+  // Recargar favoritos cuando cambia el usuario (login/logout)
   useEffect(() => {
     const cargar = async () => {
       try {
-        const data = await AsyncStorage.getItem(STORAGE_KEY);
-        if (data) setFavoritos(JSON.parse(data));
+        if (!isAuthenticated) {
+          setFavoritos([]);
+          return;
+        }
+        const data = await AsyncStorage.getItem(storageKey(usuario?.id));
+        setFavoritos(data ? JSON.parse(data) : []);
       } catch (e) {
-        console.warn('[FavoritosContext] Error cargando favoritos:', e);
+        if (__DEV__) console.warn('[FavoritosContext] Error cargando favoritos:', e);
       }
     };
     cargar();
-  }, []);
+  }, [isAuthenticated, usuario?.id]);
 
   const guardar = async (lista: Lugar[]) => {
     setFavoritos(lista);
     try {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(lista));
+      await AsyncStorage.setItem(
+        storageKey(usuarioIdRef.current),
+        JSON.stringify(lista),
+      );
     } catch (e) {
-      console.warn('[FavoritosContext] Error guardando favoritos:', e);
+      if (__DEV__) console.warn('[FavoritosContext] Error guardando favoritos:', e);
     }
   };
 
   const toggleFavorito = (lugar: Lugar) => {
+    if (!isAuthenticated) {
+      Alert.alert(
+        i18n.t('fav_login_title'),
+        i18n.t('fav_login_msg'),
+        [{ text: 'OK' }],
+      );
+      return;
+    }
     const lista = favoritos.some(f => f.id === lugar.id)
       ? favoritos.filter(f => f.id !== lugar.id)
       : [...favoritos, lugar];
     guardar(lista);
   };
 
-  const esFavorito = (id: string) => favoritos.some(f => f.id === id);
+  // Si no está autenticado, ningún lugar es favorito
+  const esFavorito = (id: string) =>
+    isAuthenticated ? favoritos.some(f => f.id === id) : false;
 
   const limpiarFavoritos = () => {
     guardar([]);

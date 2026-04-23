@@ -284,9 +284,9 @@ export default function ContactoScreen() {
       });
     }
 
-    Alert.alert('Abrir en Mapas', 'Elige tu aplicación de mapas', [
+    Alert.alert(t('open_in_maps'), t('choose_maps_app'), [
       ...opciones,
-      { text: 'Cancelar', style: 'cancel' },
+      { text: t('cancel'), style: 'cancel' },
     ]);
   };
 
