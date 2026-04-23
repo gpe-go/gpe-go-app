@@ -8,6 +8,7 @@ export const mapLugar = (raw: any, imagenOverride?: string): Lugar => ({
   ubicacion: raw.direccion ?? "",
   imagen: imagenOverride ?? PLACEHOLDER_IMG,
   categoria: raw.categoria_nombre ?? "",
+  subcategoria: raw.subcategoria ?? undefined,
   costo: "Consultar",
   rating: 0,
 });

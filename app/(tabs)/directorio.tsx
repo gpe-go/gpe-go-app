@@ -716,7 +716,7 @@ export default function DirectorioScreen() {
       }
     }
     if (subcategoriaActiva) {
-      data = data.filter((l) => l.categoria === subcategoriaActiva);
+      data = data.filter((l) => l.subcategoria === subcategoriaActiva);
     }
     return data;
   }, [lugares, categoriaActiva, subcategoriaActiva]);
