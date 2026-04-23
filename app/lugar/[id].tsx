@@ -82,10 +82,10 @@ export default function LugarDetalle() {
 
   const isFav = esFavorito(lugar.id);
 
-  const getCostoTexto = (costo: string) =>
+  const getCostoTexto = (costo?: string) =>
     !costo || COSTOS_GRATIS.includes(costo) ? t('detail_free') : costo;
 
-  const getHorarioTexto = (horario: string) =>
+  const getHorarioTexto = (horario?: string) =>
     !horario || HORARIOS_ABIERTO.includes(horario) ? t('detail_open_year') : horario;
 
   const getCategoriaTexto = (categoria: string) =>
