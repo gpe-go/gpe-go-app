@@ -449,5 +449,8 @@
   "settings_reset_tutorial": "Ver tutorial de nuevo",
   "settings_reset_tutorial_desc": "Repite el recorrido de la app",
   "fav_login_title": "Inicia sesión",
-  "fav_login_msg": "Necesitas iniciar sesión para guardar lugares en favoritos."
+  "fav_login_msg": "Necesitas iniciar sesión para guardar lugares en favoritos.",
+  "sub_agua": "Agua y Drenaje",
+  "sub_luz": "Energía Eléctrica",
+  "sub_gas": "Gas"
 }

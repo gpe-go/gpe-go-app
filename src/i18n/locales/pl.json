@@ -465,5 +465,8 @@
   "settings_reset_tutorial": "Obejrzyj samouczek ponownie",
   "settings_reset_tutorial_desc": "Powtórz przewodnik po app",
   "fav_login_title": "Wymagane logowanie",
-  "fav_login_msg": "Musisz się zalogować, aby zapisywać miejsca w ulubionych."
+  "fav_login_msg": "Musisz się zalogować, aby zapisywać miejsca w ulubionych.",
+  "sub_agua": "Woda i Kanalizacja",
+  "sub_luz": "Energia Elektryczna",
+  "sub_gas": "Gaz"
 }

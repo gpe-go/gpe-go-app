@@ -465,5 +465,8 @@
   "settings_reset_tutorial": "Shikoni tutorialin sërish",
   "settings_reset_tutorial_desc": "Rishiko turneun e app-it",
   "fav_login_title": "Kërkohet hyrja",
-  "fav_login_msg": "Duhet të hyni për të ruajtur vendet në të preferuarat tuaja."
+  "fav_login_msg": "Duhet të hyni për të ruajtur vendet në të preferuarat tuaja.",
+  "sub_agua": "Uji & Kanalizimi",
+  "sub_luz": "Energjia Elektrike",
+  "sub_gas": "Gazi"
 }

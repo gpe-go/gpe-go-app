@@ -465,5 +465,8 @@
   "settings_reset_tutorial": "Se handledning igen",
   "settings_reset_tutorial_desc": "Visa appguiden igen",
   "fav_login_title": "Inloggning krävs",
-  "fav_login_msg": "Du måste logga in för att spara platser i dina favoriter."
+  "fav_login_msg": "Du måste logga in för att spara platser i dina favoriter.",
+  "sub_agua": "Vatten & Avlopp",
+  "sub_luz": "El",
+  "sub_gas": "Gas"
 }

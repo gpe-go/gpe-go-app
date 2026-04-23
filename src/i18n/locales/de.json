@@ -465,5 +465,8 @@
   "settings_reset_tutorial": "Tutorial erneut ansehen",
   "settings_reset_tutorial_desc": "App-Führung wiederholen",
   "fav_login_title": "Anmeldung erforderlich",
-  "fav_login_msg": "Sie müssen sich anmelden, um Orte zu Ihren Favoriten hinzuzufügen."
+  "fav_login_msg": "Sie müssen sich anmelden, um Orte zu Ihren Favoriten hinzuzufügen.",
+  "sub_agua": "Wasser & Abwasser",
+  "sub_luz": "Strom",
+  "sub_gas": "Gas"
 }

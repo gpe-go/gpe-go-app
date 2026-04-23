@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFavoritos } from '../../src/context/FavoritosContext';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useLugares } from '../../src/hooks/useLugares';
+import { LUGARES } from '../../src/data/lugares';
 
 const CATEGORIA_KEYS: Record<string, string> = {
   'Naturaleza & Aventura': 'cat_nature',
@@ -51,16 +52,28 @@ export default function Categoria() {
   const { toggleFavorito, esFavorito } = useFavoritos();
 
   const idCategoria = Number(tipo) || undefined;
-  // Radio 15 km · máx 40 lugares por categoría
-  const { data: lugares = [], loading } = useLugares(
-    idCategoria,
+  const rawNombre = nombre || tipo || '';
+  const categoriaKey = CATEGORIA_KEYS[rawNombre];
+  const titulo = categoriaKey ? t(categoriaKey) : rawNombre;
+
+  // Categorías de descubrimiento (gantt cards) → datos estáticos curados por categoría
+  // Categorías del directorio (IDs numéricos) → API con radio de 15 km
+  const isStaticCategory = !idCategoria;
+  const staticLugares = useMemo(
+    () => isStaticCategory
+      ? LUGARES.filter(l => l.categoria === rawNombre).slice(0, 40)
+      : [],
+    [isStaticCategory, rawNombre]
+  );
+
+  const { data: apiLugares = [], loading: apiLoading } = useLugares(
+    isStaticCategory ? undefined : idCategoria,
     undefined,
     { radio_km: 15, limite: 40 },
   ) as { data?: any[]; loading: boolean };
 
-  const rawNombre = nombre || tipo || '';
-  const categoriaKey = CATEGORIA_KEYS[rawNombre];
-  const titulo = categoriaKey ? t(categoriaKey) : rawNombre;
+  const lugares = isStaticCategory ? staticLugares : apiLugares;
+  const loading  = isStaticCategory ? false : apiLoading;
 
   const s = makeStyles(colors, fonts, isDark);
 

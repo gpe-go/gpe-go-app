@@ -465,5 +465,8 @@
   "settings_reset_tutorial": "チュートリアルを再表示",
   "settings_reset_tutorial_desc": "アプリツアーを再表示",
   "fav_login_title": "ログインが必要です",
-  "fav_login_msg": "お気に入りに場所を保存するにはログインしてください。"
+  "fav_login_msg": "お気に入りに場所を保存するにはログインしてください。",
+  "sub_agua": "水道・排水",
+  "sub_luz": "電力",
+  "sub_gas": "ガス"
 }

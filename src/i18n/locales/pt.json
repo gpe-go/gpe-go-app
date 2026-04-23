@@ -465,5 +465,8 @@
   "settings_reset_tutorial": "Ver tutorial novamente",
   "settings_reset_tutorial_desc": "Rever o tour do app",
   "fav_login_title": "Login necessário",
-  "fav_login_msg": "Você precisa fazer login para salvar lugares nos favoritos."
+  "fav_login_msg": "Você precisa fazer login para salvar lugares nos favoritos.",
+  "sub_agua": "Água e Esgoto",
+  "sub_luz": "Energia Elétrica",
+  "sub_gas": "Gás"
 }

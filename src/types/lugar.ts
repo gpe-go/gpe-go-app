@@ -1,10 +1,12 @@
 export type Lugar = {
   id: string;
   nombre: string;
-  ubicacion: string;
+  ubicacion?: string;
   imagen: string;
   categoria: string;
-  costo: string;
+  subcategoria?: string;
+  costo?: string;
   rating?: number;
+  descripcion?: string;
   origen?: string;
 };

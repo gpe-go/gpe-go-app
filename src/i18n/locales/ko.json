@@ -465,5 +465,8 @@
   "settings_reset_tutorial": "튜토리얼 다시 보기",
   "settings_reset_tutorial_desc": "앱 투어 다시 보기",
   "fav_login_title": "로그인 필요",
-  "fav_login_msg": "즐겨찾기에 장소를 저장하려면 로그인하세요."
+  "fav_login_msg": "즐겨찾기에 장소를 저장하려면 로그인하세요.",
+  "sub_agua": "수도 및 하수",
+  "sub_luz": "전기",
+  "sub_gas": "가스"
 }

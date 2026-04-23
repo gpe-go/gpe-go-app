@@ -40,15 +40,21 @@ const CATEGORIAS = [
 
 // Mapa: categoría padre → valores exactos que agrupa (para el filtro)
 const CATEGORIA_GRUPOS: Record<string, string[]> = {
-  Hoteles: ['Hoteles', 'Moteles'],
+  Hoteles:   ['Hoteles', 'Moteles'],
+  Servicios: ['Agua y Drenaje', 'Energía Eléctrica', 'Gas'],
 };
 
 // Subcategorías visuales por categoría padre
 type Subcat = { value: string; labelKey: string; icon: string };
 const SUBCATEGORIAS: Record<string, Subcat[]> = {
   Hoteles: [
-    { value: 'Hoteles', labelKey: 'sub_hoteles', icon: 'office-building' },
-    { value: 'Moteles', labelKey: 'sub_moteles', icon: 'bed' },
+    { value: 'Hoteles',  labelKey: 'sub_hoteles', icon: 'office-building' },
+    { value: 'Moteles',  labelKey: 'sub_moteles', icon: 'bed' },
+  ],
+  Servicios: [
+    { value: 'Agua y Drenaje',      labelKey: 'sub_agua', icon: 'water'          },
+    { value: 'Energía Eléctrica',   labelKey: 'sub_luz',  icon: 'lightning-bolt' },
+    { value: 'Gas',                 labelKey: 'sub_gas',  icon: 'fire'           },
   ],
 };
 

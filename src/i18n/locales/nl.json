@@ -465,5 +465,8 @@
   "settings_reset_tutorial": "Tutorial opnieuw bekijken",
   "settings_reset_tutorial_desc": "App-rondleiding opnieuw",
   "fav_login_title": "Inloggen vereist",
-  "fav_login_msg": "Je moet inloggen om plaatsen op te slaan in je favorieten."
+  "fav_login_msg": "Je moet inloggen om plaatsen op te slaan in je favorieten.",
+  "sub_agua": "Water & Riolering",
+  "sub_luz": "Elektriciteit",
+  "sub_gas": "Gas"
 }

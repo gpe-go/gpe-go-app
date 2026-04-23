@@ -449,5 +449,8 @@
   "settings_reset_tutorial": "Watch tutorial again",
   "settings_reset_tutorial_desc": "Replay the app walkthrough",
   "fav_login_title": "Sign In Required",
-  "fav_login_msg": "You need to sign in to save places to your favorites."
+  "fav_login_msg": "You need to sign in to save places to your favorites.",
+  "sub_agua": "Water & Drainage",
+  "sub_luz": "Electric Power",
+  "sub_gas": "Gas"
 }

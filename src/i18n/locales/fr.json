@@ -465,5 +465,8 @@
   "settings_reset_tutorial": "Revoir le tutoriel",
   "settings_reset_tutorial_desc": "Revoir le guide de l'appli",
   "fav_login_title": "Connexion requise",
-  "fav_login_msg": "Vous devez vous connecter pour enregistrer des lieux dans vos favoris."
+  "fav_login_msg": "Vous devez vous connecter pour enregistrer des lieux dans vos favoris.",
+  "sub_agua": "Eau et drainage",
+  "sub_luz": "Électricité",
+  "sub_gas": "Gaz"
 }

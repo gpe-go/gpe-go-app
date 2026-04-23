@@ -465,5 +465,8 @@
   "settings_reset_tutorial": "Tutoriaal weer sien",
   "settings_reset_tutorial_desc": "Herspeel die app-toer",
   "fav_login_title": "Aanmelding benodig",
-  "fav_login_msg": "Jy moet aanmeld om plekke by jou gunsteling te voeg."
+  "fav_login_msg": "Jy moet aanmeld om plekke by jou gunsteling te voeg.",
+  "sub_agua": "Water & Dreinering",
+  "sub_luz": "Elektrisiteit",
+  "sub_gas": "Gas"
 }
