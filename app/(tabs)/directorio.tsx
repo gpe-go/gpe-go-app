@@ -716,7 +716,11 @@ export default function DirectorioScreen() {
       }
     }
     if (subcategoriaActiva) {
-      data = data.filter((l) => l.subcategoria === subcategoriaActiva);
+      // Compara contra subcategoria (campo nuevo) y también contra categoria
+      // como fallback para lugares que aún no tienen subcategoria en la BD.
+      data = data.filter(
+        (l) => l.subcategoria === subcategoriaActiva || l.categoria === subcategoriaActiva,
+      );
     }
     return data;
   }, [lugares, categoriaActiva, subcategoriaActiva]);

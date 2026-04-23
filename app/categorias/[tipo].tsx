@@ -55,13 +55,26 @@ export default function Categoria() {
   const categoriaKey = CATEGORIA_KEYS[rawNombre];
   const titulo = categoriaKey ? t(categoriaKey) : rawNombre;
 
+  // Límites por Gantt card — cuando la BD esté poblada se respetará este tope.
+  const GANTT_LIMITS: Record<string, number> = {
+    'explorar':              20,
+    'Fin de semana':         20,
+    'Naturaleza & Aventura': 20,
+    'pueblos Magicos':       20,
+    'tours':                 20,
+    'cultura':               20,
+    'compras':               40,
+    'servicios':             40,
+  };
+  const limite = idCategoria ? 40 : (GANTT_LIMITS[rawNombre] ?? 20);
+
   // Todos los datos vienen de la API (gpe-go-api).
-  // - Categorías del directorio (ID numérico): filtra por id_categoria.
-  // - Categorías de descubrimiento (nombre string): usa radio de 15 km sin filtro de categoría.
+  // - Categorías del directorio (ID numérico): filtra por id_categoria + radio 15 km.
+  // - Categorías Gantt (nombre string): trae los `limite` lugares más cercanos sin filtro de cat.
   const { data: lugares = [], loading } = useLugares(
     idCategoria,
     undefined,
-    { radio_km: 15, limite: 40 },
+    { radio_km: 15, limite },
   ) as { data?: any[]; loading: boolean };
 
   const s = makeStyles(colors, fonts, isDark);
