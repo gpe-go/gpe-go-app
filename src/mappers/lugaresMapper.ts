@@ -11,6 +11,8 @@ export const mapLugar = (raw: any, imagenOverride?: string): Lugar => ({
   subcategoria: raw.subcategoria ?? undefined,
   costo: "Consultar",
   rating: 0,
+  lat: raw.latitud != null ? parseFloat(raw.latitud) : undefined,
+  lng: raw.longitud != null ? parseFloat(raw.longitud) : undefined,
 });
 
 export const mapLugares = (rawList: any[]): Lugar[] =>

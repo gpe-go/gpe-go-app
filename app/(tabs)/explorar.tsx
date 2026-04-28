@@ -416,6 +416,21 @@ const ExplorarHeader = React.memo(
                     </View>
                   </Marker>
                 )}
+
+                {filteredData.map((place) =>
+                  (place as any).lat != null && (place as any).lng != null ? (
+                    <Marker
+                      key={`exp-${place.id}`}
+                      coordinate={{ latitude: (place as any).lat, longitude: (place as any).lng }}
+                      title={place.nombre}
+                      description={place.categoria}
+                    >
+                      <View style={s.placeMarkerOuter}>
+                        <View style={s.placeMarker} />
+                      </View>
+                    </Marker>
+                  ) : null
+                )}
               </MapView>
 
               <Pressable
@@ -648,6 +663,22 @@ export default function ExplorarScreen() {
     obtenerUbicacion();
   }, [obtenerUbicacion]);
 
+  // Auto-fit mapa al activar/cambiar categoría o datos
+  useEffect(() => {
+    if (!categoriaActiva) return;
+    const coords = filteredData
+      .filter((p) => (p as any).lat != null && (p as any).lng != null)
+      .map((p) => ({ latitude: (p as any).lat as number, longitude: (p as any).lng as number }));
+    if (coords.length === 0) return;
+    const timer = setTimeout(() => {
+      mapRef.current?.fitToCoordinates(coords, {
+        edgePadding: { top: 24, right: 24, bottom: 24, left: 24 },
+        animated: true,
+      });
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [categoriaActiva, filteredData]);
+
   const filtrarCategoria = useCallback(
     (cat: string) => {
       setCategoriaActiva(prev => cat === prev ? null : cat);
@@ -683,10 +714,15 @@ export default function ExplorarScreen() {
     router.push({
       pathname: '/(stack)/mapaCompleto',
       params: region
-        ? { latitude: String(region.latitude), longitude: String(region.longitude), from: 'explorar' }
-        : { from: 'explorar' },
+        ? {
+            latitude: String(region.latitude),
+            longitude: String(region.longitude),
+            from: 'explorar',
+            categoriaInicial: categoriaActiva ?? '',
+          }
+        : { from: 'explorar', categoriaInicial: categoriaActiva ?? '' },
     });
-  }, [router, region]);
+  }, [router, region, categoriaActiva]);
 
   const irAlDetalle = useCallback(
     (item: Lugar) => {
@@ -1158,6 +1194,24 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       backgroundColor: '#E96928',
       borderRadius: 7,
       borderWidth: 3,
+      borderColor: '#fff',
+    },
+
+    placeMarkerOuter: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      backgroundColor: 'rgba(74,144,226,0.22)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+
+    placeMarker: {
+      width: 11,
+      height: 11,
+      backgroundColor: '#4A90E2',
+      borderRadius: 6,
+      borderWidth: 2,
       borderColor: '#fff',
     },
 

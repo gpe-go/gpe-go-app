@@ -9,4 +9,7 @@ export type Lugar = {
   rating?: number;
   descripcion?: string;
   origen?: string;
+  /** Coordenadas GPS del lugar (vienen de tb_lugares.latitud / .longitud) */
+  lat?: number;
+  lng?: number;
 };
