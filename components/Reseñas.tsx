@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router';
 import {
   getResenas, crearResena, editarResena, eliminarResena, subirFotoResena, crearReporte,
 } from '../src/api/api';
+import { tienePalabrasProhibidas } from '../src/utils/filtrarPalabras';
 
 type Props = { lugarId: string };
 
@@ -91,11 +92,12 @@ export default function Reseñas({ lugarId }: Props) {
   const [promedio,   setPromedio]   = useState<number | null>(null);
 
   // ── Formulario nuevo ──
-  const [texto,     setTexto]     = useState('');
-  const [estrellas, setEstrellas] = useState(0);
-  const [fotos,     setFotos]     = useState<FotoLocal[]>([]);
-  const [enviando,  setEnviando]  = useState(false);
+  const [texto,      setTexto]      = useState('');
+  const [estrellas,  setEstrellas]  = useState(0);
+  const [fotos,      setFotos]      = useState<FotoLocal[]>([]);
+  const [enviando,   setEnviando]   = useState(false);
   const [loginModal, setLoginModal] = useState(false);
+  const [errorTexto, setErrorTexto] = useState<string | null>(null);
 
   // ── Edición ──
   const [editandoId,       setEditandoId]       = useState<number | null>(null);
@@ -103,6 +105,7 @@ export default function Reseñas({ lugarId }: Props) {
   const [editEstrellas,    setEditEstrellas]    = useState(0);
   const [editFotos,        setEditFotos]        = useState<FotoLocal[]>([]);
   const [guardandoEdicion, setGuardandoEdicion] = useState(false);
+  const [errorEdicion,     setErrorEdicion]     = useState<string | null>(null);
 
   // ── Reporte ──
   const [reporteModal,    setReporteModal]    = useState(false);
@@ -172,6 +175,11 @@ export default function Reseñas({ lugarId }: Props) {
     if (!isAuthenticated) { setLoginModal(true); return; }
     if (!texto.trim())   { Alert.alert(t('review_write'));  return; }
     if (estrellas === 0) { Alert.alert(t('review_rating')); return; }
+    if (tienePalabrasProhibidas(texto)) {
+      setErrorTexto('Tu reseña contiene palabras no permitidas. Por favor, exprésate con respeto hacia este lugar.');
+      return;
+    }
+    setErrorTexto(null);
     setEnviando(true);
     try {
       const res = await crearResena({
@@ -215,16 +223,23 @@ export default function Reseñas({ lugarId }: Props) {
     setEditTexto(r.comentario ?? '');
     setEditEstrellas(r.calificacion);
     setEditFotos([]);
+    setErrorEdicion(null);
   };
 
   const cancelarEdicion = () => {
     setEditandoId(null);
     setEditTexto(''); setEditEstrellas(0); setEditFotos([]);
+    setErrorEdicion(null);
   };
 
   const guardarEdicion = async () => {
     if (!editTexto.trim())   { Alert.alert(t('review_write'));  return; }
     if (editEstrellas === 0) { Alert.alert(t('review_rating')); return; }
+    if (tienePalabrasProhibidas(editTexto)) {
+      setErrorEdicion('Tu reseña contiene palabras no permitidas. Por favor, exprésate con respeto.');
+      return;
+    }
+    setErrorEdicion(null);
     setGuardandoEdicion(true);
     try {
       const res = await editarResena(editandoId!, {
@@ -389,14 +404,20 @@ export default function Reseñas({ lugarId }: Props) {
           </View>
 
           <TextInput
-            style={s.textArea}
+            style={[s.textArea, errorTexto ? s.textAreaError : null]}
             placeholder={t('review_experience')}
             placeholderTextColor={colors.subtext}
             value={texto}
-            onChangeText={setTexto}
+            onChangeText={(v) => { setTexto(v); if (errorTexto) setErrorTexto(null); }}
             multiline
             numberOfLines={4}
           />
+          {errorTexto ? (
+            <View style={s.errorRow}>
+              <Ionicons name="warning-outline" size={14} color="#E11D48" />
+              <Text style={s.errorText}>{errorTexto}</Text>
+            </View>
+          ) : null}
 
           <FotosRow fotosActuales={fotos} setFn={setFotos} />
 
@@ -442,14 +463,20 @@ export default function Reseñas({ lugarId }: Props) {
                 </View>
 
                 <TextInput
-                  style={s.textArea}
+                  style={[s.textArea, errorEdicion ? s.textAreaError : null]}
                   placeholder={t('review_experience')}
                   placeholderTextColor={colors.subtext}
                   value={editTexto}
-                  onChangeText={setEditTexto}
+                  onChangeText={(v) => { setEditTexto(v); if (errorEdicion) setErrorEdicion(null); }}
                   multiline
                   numberOfLines={4}
                 />
+                {errorEdicion ? (
+                  <View style={s.errorRow}>
+                    <Ionicons name="warning-outline" size={14} color="#E11D48" />
+                    <Text style={s.errorText}>{errorEdicion}</Text>
+                  </View>
+                ) : null}
 
                 <FotosRow fotosActuales={editFotos} setFn={setEditFotos} />
 
@@ -541,7 +568,10 @@ const makeStyles = (c: any, f: any) => StyleSheet.create({
   loginPromptSub:   { color: c.subtext, fontSize: f.xs, marginTop: 2 },
   starsRow:   { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
   starsLabel: { fontSize: f.sm, color: c.text, fontWeight: '600' },
-  textArea:   { backgroundColor: c.inputBackground, borderRadius: 12, padding: 14, fontSize: f.base, color: c.text, borderWidth: 1, borderColor: c.border, minHeight: 100, textAlignVertical: 'top', marginBottom: 12 },
+  textArea:      { backgroundColor: c.inputBackground, borderRadius: 12, padding: 14, fontSize: f.base, color: c.text, borderWidth: 1, borderColor: c.border, minHeight: 100, textAlignVertical: 'top', marginBottom: 4 },
+  textAreaError: { borderColor: '#E11D48', borderWidth: 1.5 },
+  errorRow:      { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginBottom: 10, paddingHorizontal: 2 },
+  errorText:     { color: '#E11D48', fontSize: f.xs, fontWeight: '600', flex: 1, lineHeight: f.xs * 1.5 },
   fotosRow:    { flexDirection: 'row', gap: 10, marginBottom: 14, flexWrap: 'wrap' },
   fotoWrapper: { position: 'relative' },
   fotoPreview: { width: 80, height: 80, borderRadius: 10 },
