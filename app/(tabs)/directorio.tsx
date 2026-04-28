@@ -225,15 +225,34 @@ const DirectorioHeader = React.memo(
     const subcats = categoriaActiva ? (SUBCATEGORIAS[categoriaActiva] ?? []) : [];
     const catInfo = categoriaActiva ? CATEGORIAS.find((c) => c.value === categoriaActiva) : null;
 
-    // Animated rotating placeholder hints
-    const searchHints = useMemo(
-      () => [
+    // Lugares aleatorios de directorio para el placeholder animado (se eligen una vez al cargar)
+    const [randomDirPlaces, setRandomDirPlaces] = useState<string[]>([]);
+    useEffect(() => {
+      if (randomDirPlaces.length > 0 || todosData.length === 0) return;
+      const biz = todosData.filter(p =>
+        ['Restaurantes', 'Hoteles', 'Tiendas', 'Servicios', 'Plazas',
+         'Hospitales', 'Farmacias', 'Supermercados', 'Gasolineras'].includes(p.categoria)
+      );
+      const pool = biz.length > 0 ? biz : todosData;
+      const shuffled = [...pool].sort(() => Math.random() - 0.5);
+      setRandomDirPlaces(shuffled.slice(0, 3).map(p => p.nombre));
+    }, [todosData, randomDirPlaces.length]);
+
+    // Animated rotating placeholder hints (3 lugares + 3 categorías intercalados)
+    const searchHints = useMemo(() => {
+      const catHints = [
         `${t('search')} ${t('cat_restaurantes')}...`,
         `${t('search')} ${t('cat_hoteles')}...`,
         `${t('search')} ${t('cat_tiendas')}...`,
-      ],
-      [t]
-    );
+      ];
+      const placeHints = randomDirPlaces.map(n => `${t('search')} ${n}...`);
+      const hints: string[] = [];
+      for (let i = 0; i < 3; i++) {
+        if (placeHints[i]) hints.push(placeHints[i]);
+        hints.push(catHints[i]);
+      }
+      return hints;
+    }, [t, randomDirPlaces]);
     const { index: hintIdx, opacity: hintOpacity } = useAnimatedPlaceholder(searchHints.length);
 
     useEffect(() => {

@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
+  Animated,
   FlatList,
   Image,
   Linking,
@@ -20,6 +21,7 @@ import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Lugar } from '../../src/context/FavoritosContext';
 import { useTheme } from '../../src/context/ThemeContext';
+import { useAnimatedPlaceholder } from '../../src/hooks/useAnimatedPlaceholder';
 import { useLugares } from '../../src/hooks/useLugares';
 
 // ── Categorías por scope ───────────────────────────────────────────────────────
@@ -177,14 +179,31 @@ export default function MapaCompletoScreen() {
     }
   }, [userLocation, t]);
 
-  // ── Placeholder según scope ─────────────────────────────────────────────────
-  const placeholderText = useMemo(() => {
-    if (fromParam === 'explorar')
-      return 'Cerros, Parques, Museos...';
-    if (fromParam === 'directorio')
-      return 'Restaurantes, Hoteles, Tiendas...';
-    return 'Buscar lugares o categorías...';
-  }, [fromParam]);
+  // ── Placeholder animado: 3 lugares aleatorios + 3 categorías del scope ──────
+  const [pickedPlaceNames, setPickedPlaceNames] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (pickedPlaceNames.length > 0) return;
+    const pool = scopeCats
+      ? allPlaces.filter(p => scopeCats.includes(p.categoria))
+      : allPlaces;
+    if (pool.length === 0) return;
+    const shuffled = [...pool].sort(() => Math.random() - 0.5);
+    setPickedPlaceNames(shuffled.slice(0, 3).map(p => p.nombre));
+  }, [allPlaces, scopeCats, pickedPlaceNames.length]);
+
+  const searchHints = useMemo(() => {
+    const cats = scopeCats ?? TODAS_CATS;
+    const catHints = cats.slice(0, 3);
+    const hints: string[] = [];
+    for (let i = 0; i < 3; i++) {
+      if (pickedPlaceNames[i]) hints.push(pickedPlaceNames[i]);
+      if (catHints[i])          hints.push(catHints[i]);
+    }
+    return hints.length > 0 ? hints : ['Buscar lugares o categorías'];
+  }, [pickedPlaceNames, scopeCats]);
+
+  const { index: hintIdx, opacity: hintOpacity } = useAnimatedPlaceholder(searchHints.length);
 
   const cardBg  = isDark ? '#1e1e1e' : '#fff';
   const textCol = isDark ? '#e5e5e5' : '#222';
@@ -264,8 +283,8 @@ export default function MapaCompletoScreen() {
       ]}>
         <Ionicons name="search" size={18} color="#E96928" />
         <TextInput
-          placeholder={placeholderText}
-          placeholderTextColor={subCol}
+          placeholder=""
+          placeholderTextColor="transparent"
           value={mapSearch}
           onChangeText={setMapSearch}
           style={[ms.searchInput, { color: textCol, fontSize: fonts.base }]}
@@ -279,6 +298,28 @@ export default function MapaCompletoScreen() {
           >
             <Ionicons name="close-circle" size={18} color={subCol} />
           </Pressable>
+        )}
+        {/* Placeholder animado rotativo */}
+        {mapSearch.length === 0 && (
+          <Animated.View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              left: 44,
+              right: 16,
+              top: 0,
+              bottom: 0,
+              justifyContent: 'center',
+              opacity: hintOpacity,
+            }}
+          >
+            <Text
+              style={{ color: subCol, fontSize: fonts.base, fontWeight: '500' }}
+              numberOfLines={1}
+            >
+              {searchHints[hintIdx]}
+            </Text>
+          </Animated.View>
         )}
       </View>
 

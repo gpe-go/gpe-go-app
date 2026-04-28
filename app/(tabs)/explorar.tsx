@@ -194,15 +194,33 @@ const ExplorarHeader = React.memo(
       }
     }, [chipScrollX]);
 
-    // Animated rotating placeholder hints
-    const searchHints = useMemo(
-      () => [
+    // Lugares aleatorios de turismo para el placeholder animado (se eligen una vez al cargar)
+    const [randomTourismPlaces, setRandomTourismPlaces] = useState<string[]>([]);
+    useEffect(() => {
+      if (randomTourismPlaces.length > 0 || todosData.length === 0) return;
+      const tourism = todosData.filter(p =>
+        ['Cerros', 'Parques', 'Pueblos Mágicos', 'Museos'].includes(p.categoria)
+      );
+      const pool = tourism.length > 0 ? tourism : todosData;
+      const shuffled = [...pool].sort(() => Math.random() - 0.5);
+      setRandomTourismPlaces(shuffled.slice(0, 3).map(p => p.nombre));
+    }, [todosData, randomTourismPlaces.length]);
+
+    // Animated rotating placeholder hints (3 lugares + 3 categorías intercalados)
+    const searchHints = useMemo(() => {
+      const catHints = [
         `${t('search')} ${t('cat_pueblos_magicos')}...`,
         `${t('search')} ${t('cat_museos')}...`,
         `${t('search')} ${t('cat_parques')}...`,
-      ],
-      [t]
-    );
+      ];
+      const placeHints = randomTourismPlaces.map(n => `${t('search')} ${n}...`);
+      const hints: string[] = [];
+      for (let i = 0; i < 3; i++) {
+        if (placeHints[i]) hints.push(placeHints[i]);
+        hints.push(catHints[i]);
+      }
+      return hints;
+    }, [t, randomTourismPlaces]);
     const { index: hintIdx, opacity: hintOpacity } = useAnimatedPlaceholder(searchHints.length);
 
     useEffect(() => {
