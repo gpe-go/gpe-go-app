@@ -170,7 +170,7 @@ export const ESTADIO_BBVA = {
   inaugurado: 2015,
   equipo: 'CF Monterrey (Rayados)',
   latitud: 25.6694,
-  longitud: -100.2407,
+  longitud: -100.2469,
   imagenUrl:
     'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Estadio_BBVA_Bancomer_3.jpg/1200px-Estadio_BBVA_Bancomer_3.jpg',
 };

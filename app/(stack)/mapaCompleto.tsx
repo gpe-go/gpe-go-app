@@ -444,14 +444,27 @@ export default function MapaCompletoScreen() {
           <Pressable
             style={({ pressed }) => [ms.pinCardBtn, { opacity: pressed ? 0.8 : 1 }]}
             onPress={() => {
-              mapRef.current?.animateToRegion(
-                { latitude: pinLat, longitude: pinLng, latitudeDelta: 0.008, longitudeDelta: 0.008 },
-                600,
-              );
+              if (Platform.OS === 'ios') {
+                Linking.openURL(
+                  `maps://?daddr=${pinLat},${pinLng}&dirflg=d`
+                ).catch(() =>
+                  Linking.openURL(
+                    `https://www.google.com/maps/dir/?api=1&destination=${pinLat},${pinLng}`
+                  )
+                );
+              } else {
+                Linking.openURL(
+                  `google.navigation:q=${pinLat},${pinLng}`
+                ).catch(() =>
+                  Linking.openURL(
+                    `https://www.google.com/maps/dir/?api=1&destination=${pinLat},${pinLng}`
+                  )
+                );
+              }
             }}
           >
-            <Ionicons name="locate" size={16} color="#fff" />
-            <Text style={ms.pinCardBtnText}>Centrar</Text>
+            <Ionicons name="navigate" size={16} color="#fff" />
+            <Text style={ms.pinCardBtnText}>Cómo llegar</Text>
           </Pressable>
         </View>
       )}
