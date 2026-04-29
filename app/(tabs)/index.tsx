@@ -22,6 +22,7 @@ import { useAnimatedPlaceholder } from "../../src/hooks/useAnimatedPlaceholder";
 import { useLugares } from "../../src/hooks/useLugares";
 import i18n, { AppLanguage, cambiarIdioma } from "../../src/i18n/i18n";
 import LanguageSheet from "../../components/LanguageSheet";
+import MundialWidget from "../../components/MundialWidget";
 
 // ── Hook: fecha y hora en vivo (reactivo al idioma) ──────
 function useDateTime() {
@@ -917,6 +918,10 @@ export default function HomeScreen() {
             </LinearGradient>
           </Pressable>
         </Animated.View>
+
+        {/* ── Mundial 2026 ─────────────────────────────────────────────── */}
+        <MundialWidget />
+
       </Animated.ScrollView>
 
       {searchResults.length > 0 && dropdownTop > 0 && (
