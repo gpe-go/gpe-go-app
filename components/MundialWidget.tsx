@@ -73,11 +73,10 @@ function calcCountdown(target: Date): Countdown {
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
 
-function getEstadoBadge(p: Partido): { label: string; bg: string; text: string } {
+function getEstadoBadge(p: Partido, isNext: boolean): { label: string; bg: string; text: string } {
   if (p.estado === 'en_vivo')    return { label: '🔴 EN VIVO', bg: F.red,   text: '#fff' };
   if (p.estado === 'finalizado') return { label: 'FINALIZADO', bg: '#1F2937', text: F.textMid };
-  const next = getProximoPartido();
-  if (next?.id === p.id)         return { label: '⚡ PRÓXIMO',  bg: F.gold,  text: '#000' };
+  if (isNext)                    return { label: '⚡ PRÓXIMO',  bg: F.gold,  text: '#000' };
   return { label: 'PROGRAMADO', bg: F.cardLight, text: F.textSub };
 }
 
@@ -113,7 +112,7 @@ const cu = StyleSheet.create({
 
 // ── Sub-componente: Tarjeta de partido ────────────────────────────────────────
 const MatchCard = React.memo(({ partido, isNext }: { partido: Partido; isNext: boolean }) => {
-  const badge  = getEstadoBadge(partido);
+  const badge  = getEstadoBadge(partido, isNext);
   const fColor = getFaseColor(partido.fase);
   const hasResult = partido.resultado !== null;
 
