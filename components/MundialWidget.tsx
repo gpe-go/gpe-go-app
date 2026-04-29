@@ -10,10 +10,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Animated,
-  AppState,
-  AppStateStatus,
   FlatList,
   Linking,
   Platform,
@@ -34,7 +31,6 @@ import {
   toMatchDate,
   toTorneoStartDate,
 } from '../src/data/mundial2026';
-import { getBBVAPartidos } from '../src/services/mundialService';
 
 // ── FIFA 2026 Design Tokens ───────────────────────────────────────────────────
 const F = {
@@ -73,13 +69,6 @@ function calcCountdown(target: Date): Countdown {
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
 
-function getEstadoBadge(p: Partido, isNext: boolean): { label: string; bg: string; text: string } {
-  if (p.estado === 'en_vivo')    return { label: '🔴 EN VIVO', bg: F.red,   text: '#fff' };
-  if (p.estado === 'finalizado') return { label: 'FINALIZADO', bg: '#1F2937', text: F.textMid };
-  if (isNext)                    return { label: '⚡ PRÓXIMO',  bg: F.gold,  text: '#000' };
-  return { label: 'PROGRAMADO', bg: F.cardLight, text: F.textSub };
-}
-
 function getFaseColor(fase: Partido['fase']): string {
   if (fase === 'Ronda de 32')        return '#7C3AED';
   if (fase === 'Cuartos de Final')   return '#2563EB';
@@ -110,72 +99,90 @@ const cu = StyleSheet.create({
   label: { color: F.textSub, fontSize: 9, fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' },
 });
 
-// ── Sub-componente: Tarjeta de partido ────────────────────────────────────────
-const MatchCard = React.memo(({ partido, isNext }: { partido: Partido; isNext: boolean }) => {
-  const badge  = getEstadoBadge(partido, isNext);
-  const fColor = getFaseColor(partido.fase);
+// ── Sub-componente: Tarjeta de partido (nuevo diseño estilo FIFA) ─────────────
+const MatchCard = React.memo(({ partido }: { partido: Partido }) => {
+  const fColor   = getFaseColor(partido.fase);
   const hasResult = partido.resultado !== null;
+  const isLive    = partido.estado === 'en_vivo';
 
   return (
-    <View style={[mc.card, isNext && mc.cardNext]}>
-      {/* Borde dorado para el próximo */}
-      {isNext && <View style={mc.nextGlow} />}
+    <View style={mc.card}>
+      {/* ── Banner superior con flags y VS ─────────────────────────────────── */}
+      <LinearGradient
+        colors={['#071428', '#0C2A18', '#071428']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={mc.banner}
+      >
+        {/* Decoración de fondo */}
+        <View style={mc.bannerCircle1} />
+        <View style={mc.bannerCircle2} />
 
-      {/* Fase + badge */}
-      <View style={mc.topRow}>
-        <View style={[mc.faseBadge, { backgroundColor: fColor + '22', borderColor: fColor + '55' }]}>
-          <View style={[mc.faseDot, { backgroundColor: fColor }]} />
-          <Text style={[mc.faseText, { color: fColor }]}>
-            {partido.grupo
-              ? `${partido.grupo} · J${partido.jornada}`
-              : partido.fase}
-          </Text>
-        </View>
-        <View style={[mc.estadoBadge, { backgroundColor: badge.bg }]}>
-          <Text style={[mc.estadoText, { color: badge.text }]}>{badge.label}</Text>
-        </View>
-      </View>
-
-      {/* Equipos */}
-      <View style={mc.teamsRow}>
-        {/* Equipo 1 */}
-        <View style={mc.teamCol}>
-          <Text style={mc.teamFlag}>{partido.equipo1.bandera}</Text>
-          <Text style={mc.teamAbrev}>{partido.equipo1.abrev}</Text>
-          <Text style={mc.teamNombre} numberOfLines={1}>{partido.equipo1.nombreCorto}</Text>
+        {/* Equipo izquierdo */}
+        <View style={mc.bannerTeam}>
+          <Text style={mc.bannerFlag}>{partido.equipo1.bandera}</Text>
+          <Text style={mc.bannerAbrev}>{partido.equipo1.abrev}</Text>
         </View>
 
-        {/* Score / VS */}
-        <View style={mc.vsCol}>
+        {/* Centro: VS / score + live */}
+        <View style={mc.bannerCenter}>
+          {isLive && (
+            <View style={mc.livePill}>
+              <View style={mc.liveDot} />
+              <Text style={mc.liveText}>EN VIVO</Text>
+            </View>
+          )}
           {hasResult ? (
-            <View style={mc.scoreWrap}>
+            <View style={mc.scoreRow}>
               <Text style={mc.scoreNum}>{partido.resultado!.g1}</Text>
-              <Text style={mc.scoreSep}> - </Text>
+              <Text style={mc.scoreSep}>-</Text>
               <Text style={mc.scoreNum}>{partido.resultado!.g2}</Text>
             </View>
           ) : (
-            <View style={mc.vsWrap}>
-              <Text style={mc.vsText}>VS</Text>
-            </View>
+            <Text style={mc.vsText}>VS</Text>
           )}
-          <Text style={mc.matchNum}>#{partido.matchNum}</Text>
+          <Text style={mc.bannerMatchNum}>#{partido.matchNum}</Text>
         </View>
 
-        {/* Equipo 2 */}
-        <View style={mc.teamCol}>
-          <Text style={mc.teamFlag}>{partido.equipo2.bandera}</Text>
-          <Text style={mc.teamAbrev}>{partido.equipo2.abrev}</Text>
-          <Text style={mc.teamNombre} numberOfLines={1}>{partido.equipo2.nombreCorto}</Text>
+        {/* Equipo derecho */}
+        <View style={mc.bannerTeam}>
+          <Text style={mc.bannerFlag}>{partido.equipo2.bandera}</Text>
+          <Text style={mc.bannerAbrev}>{partido.equipo2.abrev}</Text>
         </View>
-      </View>
 
-      {/* Footer: fecha + hora */}
-      <View style={mc.footer}>
-        <Ionicons name="calendar-outline" size={11} color={F.textSub} />
-        <Text style={mc.footerText}>{formatFechaCorta(partido.fecha)}</Text>
-        <View style={mc.footerDivider} />
-        <Ionicons name="time-outline" size={11} color={F.textSub} />
-        <Text style={mc.footerText}>{formatHora(partido.hora)}</Text>
+        {/* Branding FIFA en la parte baja del banner */}
+        <View style={mc.bannerBranding}>
+          <Text style={mc.bannerBrandingText}>⚽  FIFA WORLD CUP 2026™  ·  MONTERREY</Text>
+        </View>
+      </LinearGradient>
+
+      {/* ── Info inferior ──────────────────────────────────────────────────── */}
+      <View style={mc.info}>
+        {/* Badge de grupo — centrado, sin estado */}
+        <View style={mc.groupRow}>
+          <View style={[mc.groupBadge, { backgroundColor: fColor + '20', borderColor: fColor + '50' }]}>
+            <View style={[mc.groupDot, { backgroundColor: fColor }]} />
+            <Text style={[mc.groupText, { color: fColor }]}>
+              {partido.grupo
+                ? `${partido.grupo} · J${partido.jornada}`
+                : partido.fase}
+            </Text>
+          </View>
+        </View>
+
+        {/* Nombres completos */}
+        <Text style={mc.matchTitle} numberOfLines={1}>
+          {partido.equipo1.nombreCorto} vs {partido.equipo2.nombreCorto}
+        </Text>
+
+        {/* Fecha y hora */}
+        <View style={mc.dateRow}>
+          <Ionicons name="calendar-outline" size={11} color={F.textSub} />
+          <Text style={mc.dateText}>{formatFechaCorta(partido.fecha)}</Text>
+          <View style={mc.dateDot} />
+          <Ionicons name="time-outline" size={11} color={F.textSub} />
+          <Text style={mc.dateText}>{formatHora(partido.hora)}</Text>
+        </View>
       </View>
     </View>
   );
@@ -184,104 +191,154 @@ MatchCard.displayName = 'MatchCard';
 
 const mc = StyleSheet.create({
   card: {
-    width: 204,
+    width: 236,
     backgroundColor: F.card,
-    borderRadius: 22,
-    padding: 14,
-    marginRight: 12,
+    borderRadius: 20,
+    marginRight: 14,
     borderWidth: 1,
     borderColor: F.border,
     overflow: 'hidden',
-    gap: 10,
   },
-  cardNext: {
-    borderColor: F.goldBorder,
-    backgroundColor: F.cardMid,
-  },
-  nextGlow: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 22,
-    backgroundColor: F.goldGlow,
-  },
-  topRow: {
+
+  // ── Banner
+  banner: {
+    height: 132,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 6,
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 22,   // espacio para el branding
+    position: 'relative',
+    overflow: 'hidden',
   },
-  faseBadge: {
+  bannerCircle1: {
+    position: 'absolute',
+    width: 130, height: 130, borderRadius: 65,
+    backgroundColor: 'rgba(0,165,81,0.08)',
+    top: -40, left: -30,
+  },
+  bannerCircle2: {
+    position: 'absolute',
+    width: 100, height: 100, borderRadius: 50,
+    backgroundColor: 'rgba(240,180,41,0.06)',
+    bottom: -30, right: -20,
+  },
+  bannerTeam: {
+    alignItems: 'center',
+    gap: 4,
+    zIndex: 1,
+  },
+  bannerFlag: {
+    fontSize: 40,
+    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 6,
+  },
+  bannerAbrev: {
+    color: F.white,
+    fontWeight: '900',
+    fontSize: 11,
+    letterSpacing: 1,
+  },
+  bannerCenter: {
+    alignItems: 'center',
+    gap: 4,
+    zIndex: 1,
+  },
+  livePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: F.red,
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginBottom: 2,
+  },
+  liveDot: {
+    width: 6, height: 6, borderRadius: 3, backgroundColor: '#fff',
+  },
+  liveText: {
+    color: '#fff', fontWeight: '900', fontSize: 8, letterSpacing: 1,
+  },
+  vsText: {
+    color: F.gold,
+    fontWeight: '900',
+    fontSize: 20,
+    letterSpacing: 2,
+    textShadowColor: 'rgba(240,180,41,0.4)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
+  },
+  scoreRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+  },
+  scoreNum: {
+    color: F.gold, fontWeight: '900', fontSize: 26,
+  },
+  scoreSep: {
+    color: F.textSub, fontWeight: '700', fontSize: 18,
+  },
+  bannerMatchNum: {
+    color: F.textSub, fontSize: 9, fontWeight: '600',
+  },
+  bannerBranding: {
+    position: 'absolute',
+    bottom: 0, left: 0, right: 0,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    paddingVertical: 4,
+    alignItems: 'center',
+  },
+  bannerBrandingText: {
+    color: 'rgba(255,255,255,0.55)',
+    fontSize: 8,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+  },
+
+  // ── Info
+  info: {
+    padding: 12,
+    gap: 7,
+  },
+  groupRow: {
+    alignItems: 'center',
+  },
+  groupBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
     borderWidth: 1,
-    flexShrink: 1,
   },
-  faseDot: {
+  groupDot: {
     width: 5, height: 5, borderRadius: 3,
   },
-  faseText: {
-    fontSize: 9, fontWeight: '800', letterSpacing: 0.3,
+  groupText: {
+    fontSize: 10, fontWeight: '800', letterSpacing: 0.5,
   },
-  estadoBadge: {
-    paddingHorizontal: 7, paddingVertical: 3, borderRadius: 8,
+  matchTitle: {
+    color: F.white,
+    fontWeight: '800',
+    fontSize: 13,
+    textAlign: 'center',
+    letterSpacing: -0.2,
   },
-  estadoText: {
-    fontSize: 9, fontWeight: '800', letterSpacing: 0.5,
-  },
-  teamsRow: {
+  dateRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  teamCol: {
-    flex: 1,
-    alignItems: 'center',
+    justifyContent: 'center',
     gap: 4,
   },
-  teamFlag: { fontSize: 32 },
-  teamAbrev: {
-    color: F.white, fontWeight: '900', fontSize: 13, letterSpacing: 0.5,
+  dateText: {
+    color: F.textSub, fontSize: 10, fontWeight: '600',
   },
-  teamNombre: {
-    color: F.textMid, fontSize: 9, fontWeight: '600', textAlign: 'center',
-  },
-  vsCol: {
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 6,
-  },
-  vsWrap: {
-    width: 38, height: 38, borderRadius: 10,
-    backgroundColor: F.cardLight,
-    justifyContent: 'center', alignItems: 'center',
-    borderWidth: 1, borderColor: F.goldBorder,
-  },
-  vsText: {
-    color: F.gold, fontWeight: '900', fontSize: 13, letterSpacing: 1,
-  },
-  scoreWrap: {
-    flexDirection: 'row', alignItems: 'center',
-  },
-  scoreNum: {
-    color: F.gold, fontWeight: '900', fontSize: 22,
-  },
-  scoreSep: {
-    color: F.textSub, fontWeight: '700', fontSize: 16, marginHorizontal: 2,
-  },
-  matchNum: {
-    color: F.textSub, fontSize: 9, fontWeight: '600',
-  },
-  footer: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingTop: 8,
-    borderTopWidth: 1, borderTopColor: F.border,
-  },
-  footerText: { color: F.textSub, fontSize: 10, fontWeight: '600' },
-  footerDivider: {
-    width: 1, height: 10, backgroundColor: F.border, marginHorizontal: 4,
+  dateDot: {
+    width: 3, height: 3, borderRadius: 2,
+    backgroundColor: F.textSub,
+    marginHorizontal: 2,
   },
 });
 
@@ -289,45 +346,15 @@ const mc = StyleSheet.create({
 export default function MundialWidget() {
   const router = useRouter();
 
-  // ── Datos en vivo (API) ────────────────────────────────────────────────────
-  const [partidos, setPartidos] = useState<Partido[]>(PARTIDOS_BBVA);
-  const [loading, setLoading] = useState(true);
-  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
-  const [apiError, setApiError] = useState(false);
-
-  const cargarDatos = useCallback(async (force = false) => {
-    try {
-      const res = await getBBVAPartidos(force);
-      setPartidos(res.partidos);
-      setLastUpdated(res.lastUpdated);
-      setApiError(false);
-    } catch {
-      setApiError(true);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Carga inicial
-  useEffect(() => { cargarDatos(); }, [cargarDatos]);
-
-  // Refresca cuando la app vuelve al primer plano
-  useEffect(() => {
-    const sub = AppState.addEventListener('change', (next: AppStateStatus) => {
-      if (next === 'active') cargarDatos();
-    });
-    return () => sub.remove();
-  }, [cargarDatos]);
-
-  // ── Próximo partido (calculado de los datos dinámicos) ─────────────────────
+  // ── Próximo partido ────────────────────────────────────────────────────────
   const proximoPartido = useMemo(() => {
     const ahora = Date.now();
-    return partidos.find(
+    return PARTIDOS_BBVA.find(
       (p) =>
         p.estado !== 'finalizado' &&
         toMatchDate(p.fecha, p.hora).getTime() >= ahora - 2 * 3_600_000,
     ) ?? null;
-  }, [partidos]);
+  }, []);
 
   // ── Countdown ──────────────────────────────────────────────────────────────
   const targetDate = useMemo(
@@ -390,20 +417,15 @@ export default function MundialWidget() {
     Linking.openURL(TORNEO.fifaUrl).catch(() => {});
   }, []);
 
-  // ── Datos del carrusel ─────────────────────────────────────────────────────
-  const partidosConNextFlag = useMemo(
-    () => partidos.map(p => ({ ...p, isNext: proximoPartido?.id === p.id })),
-    [partidos, proximoPartido],
-  );
+  // ── Abrir Estadio BBVA oficial ─────────────────────────────────────────────
+  const abrirBBVA = useCallback(() => {
+    Linking.openURL('https://estadio-bbva.mx/').catch(() => {});
+  }, []);
 
-  // ── Formato "última actualización" ─────────────────────────────────────────
-  const lastUpdatedText = useMemo(() => {
-    if (!lastUpdated) return null;
-    const d = new Date(lastUpdated);
-    const h = String(d.getHours()).padStart(2, '0');
-    const m = String(d.getMinutes()).padStart(2, '0');
-    return `${h}:${m}`;
-  }, [lastUpdated]);
+  // ── Abrir noticia clasificatorio ───────────────────────────────────────────
+  const abrirNoticia = useCallback(() => {
+    Linking.openURL('https://estadio-bbva.mx/noticias/estadio-monterreyl-primer-partido-clasificatorio').catch(() => {});
+  }, []);
 
   return (
     <Animated.View style={[s.root, enterStyle]}>
@@ -461,7 +483,7 @@ export default function MundialWidget() {
           </View>
           <View style={s.statDivider} />
           <View style={s.statChip}>
-            <Text style={s.statNum}>{partidos.length}</Text>
+            <Text style={s.statNum}>{PARTIDOS_BBVA.length}</Text>
             <Text style={s.statLbl}>EN BBVA</Text>
           </View>
           <View style={s.statDivider} />
@@ -566,24 +588,13 @@ export default function MundialWidget() {
       <View style={s.sectionHeader}>
         <View style={s.sectionAccent} />
         <Text style={s.sectionTitle}>Calendario Estadio BBVA</Text>
-        <View style={s.calendarHeaderRight}>
-          {loading ? (
-            <ActivityIndicator size="small" color={F.gold} />
-          ) : (
-            <Pressable
-              onPress={() => { setLoading(true); cargarDatos(true); }}
-              hitSlop={10}
-              style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-            >
-              <Ionicons name="refresh-outline" size={18} color={apiError ? F.red : F.gold} />
-            </Pressable>
-          )}
-          {lastUpdatedText && !loading && (
-            <Text style={s.lastUpdatedText}>
-              {apiError ? '⚠ sin red' : `↻ ${lastUpdatedText}`}
-            </Text>
-          )}
-        </View>
+        <Pressable
+          onPress={abrirBBVA}
+          style={({ pressed }) => [s.bbvaLinkBtn, { opacity: pressed ? 0.7 : 1 }]}
+        >
+          <Text style={s.bbvaLinkText}>estadio-bbva.mx</Text>
+          <Ionicons name="open-outline" size={11} color={F.gold} />
+        </Pressable>
       </View>
 
       {/* ════════════════════════════════════════════════════════════════════
@@ -591,12 +602,12 @@ export default function MundialWidget() {
       ════════════════════════════════════════════════════════════════════ */}
       <FlatList
         horizontal
-        data={partidosConNextFlag}
+        data={PARTIDOS_BBVA}
         keyExtractor={item => item.id}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={s.carousel}
         renderItem={({ item }) => (
-          <MatchCard partido={item} isNext={item.isNext} />
+          <MatchCard partido={item} />
         )}
       />
 
@@ -675,6 +686,58 @@ export default function MundialWidget() {
           <Text style={s.mapBtnText}>Ver ubicación en mapa</Text>
         </Pressable>
       </LinearGradient>
+
+      {/* ════════════════════════════════════════════════════════════════════
+          NOTICIA: PRIMER PARTIDO CLASIFICATORIO
+      ════════════════════════════════════════════════════════════════════ */}
+      <View style={s.sectionHeader}>
+        <View style={s.sectionAccent} />
+        <Text style={s.sectionTitle}>Noticias BBVA</Text>
+      </View>
+
+      <Pressable
+        style={({ pressed }) => [s.noticiaCard, { opacity: pressed ? 0.9 : 1 }]}
+        onPress={abrirNoticia}
+      >
+        <LinearGradient
+          colors={['#0E1F3A', '#071428']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={s.noticiaGradient}
+        >
+          {/* Acento izquierdo */}
+          <View style={s.noticiaAccent} />
+
+          {/* Badge */}
+          <View style={s.noticiaBadge}>
+            <Text style={s.noticiaBadgeText}>⚽ CLASIFICATORIO</Text>
+          </View>
+
+          {/* Título */}
+          <Text style={s.noticiaTitle}>
+            ¡Estadio Monterrey fue sede del primer partido clasificatorio al Mundial 2026!
+          </Text>
+
+          {/* Resumen */}
+          <Text style={s.noticiaDesc} numberOfLines={3}>
+            Bolivia vs Surinam se enfrentaron en el Play-Off Intercontinental para
+            definir el último boleto al FIFA World Cup 2026. Un adelanto mundialista
+            en el Estadio BBVA.
+          </Text>
+
+          {/* Footer */}
+          <View style={s.noticiaFooter}>
+            <View style={s.noticiaSource}>
+              <Ionicons name="globe-outline" size={12} color={F.textSub} />
+              <Text style={s.noticiaSourceText}>estadio-bbva.mx</Text>
+            </View>
+            <View style={s.noticiaReadMore}>
+              <Text style={s.noticiaReadMoreText}>Leer más</Text>
+              <Ionicons name="arrow-forward" size={12} color={F.gold} />
+            </View>
+          </View>
+        </LinearGradient>
+      </Pressable>
 
       {/* ════════════════════════════════════════════════════════════════════
           NOTA + LINK OFICIAL FIFA
@@ -1031,11 +1094,85 @@ const s = StyleSheet.create({
     color: F.textSub, fontSize: 11, fontWeight: '700', letterSpacing: 0.8,
   },
 
-  // ── Live data status ────────────────────────────────────────────────────────
-  calendarHeaderRight: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
+  // ── Header link BBVA ────────────────────────────────────────────────────────
+  bbvaLinkBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: F.goldDim,
+    borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4,
+    borderWidth: 1, borderColor: F.goldBorder,
   },
-  lastUpdatedText: {
-    color: F.textSub, fontSize: 9, fontWeight: '600',
+  bbvaLinkText: {
+    color: F.gold, fontSize: 9, fontWeight: '700',
+  },
+
+  // ── Noticia card ─────────────────────────────────────────────────────────────
+  noticiaCard: {
+    marginHorizontal: 20,
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  noticiaGradient: {
+    padding: 16,
+    gap: 10,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  noticiaAccent: {
+    position: 'absolute',
+    left: 0, top: 0, bottom: 0,
+    width: 3,
+    backgroundColor: F.gold,
+  },
+  noticiaBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(240,180,41,0.15)',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderWidth: 1,
+    borderColor: F.goldBorder,
+    marginLeft: 8,
+  },
+  noticiaBadgeText: {
+    color: F.gold, fontSize: 9, fontWeight: '800', letterSpacing: 1,
+  },
+  noticiaTitle: {
+    color: F.white,
+    fontWeight: '800',
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: -0.2,
+    paddingLeft: 8,
+  },
+  noticiaDesc: {
+    color: F.textMid,
+    fontSize: 12,
+    lineHeight: 18,
+    fontWeight: '400',
+    paddingLeft: 8,
+  },
+  noticiaFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingLeft: 8,
+    marginTop: 2,
+  },
+  noticiaSource: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+  },
+  noticiaSourceText: {
+    color: F.textSub, fontSize: 10, fontWeight: '500',
+  },
+  noticiaReadMore: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: F.goldDim,
+    borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5,
+    borderWidth: 1, borderColor: F.goldBorder,
+  },
+  noticiaReadMoreText: {
+    color: F.gold, fontSize: 11, fontWeight: '700',
   },
 });
