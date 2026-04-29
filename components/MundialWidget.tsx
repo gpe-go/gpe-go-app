@@ -30,6 +30,7 @@ import {
   formatHora,
   getProximoPartido,
   toMatchDate,
+  toTorneoStartDate,
 } from '../src/data/mundial2026';
 
 // ── FIFA 2026 Design Tokens ───────────────────────────────────────────────────
@@ -292,15 +293,22 @@ export default function MundialWidget() {
     () => (proximoPartido ? toMatchDate(proximoPartido.fecha, proximoPartido.hora) : null),
     [proximoPartido],
   );
+  const torneoStartDate = useMemo(() => toTorneoStartDate(), []);
+
   const [countdown, setCountdown] = useState<Countdown>(
     targetDate ? calcCountdown(targetDate) : { dias: 0, horas: 0, mins: 0, segs: 0 },
   );
+  const [countdownTorneo, setCountdownTorneo] = useState<Countdown>(
+    calcCountdown(torneoStartDate),
+  );
 
   useEffect(() => {
-    if (!targetDate) return;
-    const id = setInterval(() => setCountdown(calcCountdown(targetDate)), 1000);
+    const id = setInterval(() => {
+      if (targetDate) setCountdown(calcCountdown(targetDate));
+      setCountdownTorneo(calcCountdown(torneoStartDate));
+    }, 1000);
     return () => clearInterval(id);
-  }, [targetDate]);
+  }, [targetDate, torneoStartDate]);
 
   // ── Animaciones ────────────────────────────────────────────────────────────
   // Breathing glow en elementos dorados
@@ -415,7 +423,34 @@ export default function MundialWidget() {
       </LinearGradient>
 
       {/* ════════════════════════════════════════════════════════════════════
-          COUNTDOWN — solo si hay próximo partido
+          COUNTDOWN TORNEO — siempre visible hasta que empiece el mundial
+      ════════════════════════════════════════════════════════════════════ */}
+      {Date.now() < torneoStartDate.getTime() && (
+        <View style={s.countSectionTorneo}>
+          <View style={s.countHeader}>
+            <View style={s.countHeaderLeft}>
+              <Text style={s.countTorneoIcon}>🌍</Text>
+              <Text style={s.countTitleTorneo}>EL MUNDIAL EMPIEZA EN</Text>
+            </View>
+            <View style={[s.liveDot, { backgroundColor: F.green }]} />
+          </View>
+          <Text style={s.countTorneoSub}>
+            11 Jun · México vs Sudáfrica · Estadio Azteca
+          </Text>
+          <View style={s.countUnits}>
+            <CountUnit value={countdownTorneo.dias}  label="DÍAS"  />
+            <Text style={s.countColon}>:</Text>
+            <CountUnit value={countdownTorneo.horas} label="HORAS" />
+            <Text style={s.countColon}>:</Text>
+            <CountUnit value={countdownTorneo.mins}  label="MIN"   />
+            <Text style={s.countColon}>:</Text>
+            <CountUnit value={countdownTorneo.segs}  label="SEG"   />
+          </View>
+        </View>
+      )}
+
+      {/* ════════════════════════════════════════════════════════════════════
+          COUNTDOWN BBVA — próximo partido en el estadio local
       ════════════════════════════════════════════════════════════════════ */}
       {proximoPartido ? (
         <View style={s.countSection}>
@@ -453,13 +488,13 @@ export default function MundialWidget() {
           {/* Dígitos */}
           {proximoPartido.estado !== 'en_vivo' ? (
             <View style={s.countUnits}>
-              <CountUnit value={countdown.dias}  label="DÍAS"      />
+              <CountUnit value={countdown.dias}  label="DÍAS"  />
               <Text style={s.countColon}>:</Text>
-              <CountUnit value={countdown.horas} label="HORAS"     />
+              <CountUnit value={countdown.horas} label="HORAS" />
               <Text style={s.countColon}>:</Text>
-              <CountUnit value={countdown.mins}  label="MIN"        />
+              <CountUnit value={countdown.mins}  label="MIN"   />
               <Text style={s.countColon}>:</Text>
-              <CountUnit value={countdown.segs}  label="SEG"        />
+              <CountUnit value={countdown.segs}  label="SEG"   />
             </View>
           ) : (
             <View style={s.enVivoWrap}>
@@ -582,7 +617,7 @@ export default function MundialWidget() {
         <View style={s.notaWrap}>
           <Ionicons name="information-circle-outline" size={14} color={F.textSub} />
           <Text style={s.notaText}>
-            Calendario basado en el sorteo oficial FIFA (dic. 2024). Horarios en CDT.
+            Calendario basado en el sorteo oficial FIFA (dic. 2025). Horarios en CST (UTC-6).
             El calendario y resultados pueden actualizarse.
           </Text>
         </View>
@@ -717,9 +752,34 @@ const s = StyleSheet.create({
   statDivider: { width: 1, height: 28, backgroundColor: F.border },
 
   // ── Countdown ───────────────────────────────────────────────────────────────
-  countSection: {
+  countSectionTorneo: {
     marginHorizontal: 20,
     marginTop: 20,
+    backgroundColor: '#0A1F14',
+    borderRadius: 24,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(0,165,81,0.35)',
+    gap: 10,
+  },
+  countTorneoIcon: {
+    fontSize: 15,
+  },
+  countTitleTorneo: {
+    color: F.green,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+  },
+  countTorneoSub: {
+    color: F.textSub,
+    fontSize: 11,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  countSection: {
+    marginHorizontal: 20,
+    marginTop: 14,
     backgroundColor: F.cardMid,
     borderRadius: 24,
     padding: 18,

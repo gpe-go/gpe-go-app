@@ -2,9 +2,10 @@
  * mundial2026.ts
  * Datos del FIFA World Cup 2026 — Partidos en Estadio BBVA, Guadalupe NL.
  *
- * Fuente: Sorteo oficial FIFA (5 dic. 2024) + calendario publicado FIFA.com
- * Horarios en Tiempo del Centro (CDT · UTC-5, horario de verano).
- * Verifica el calendario actualizado en: https://www.fifa.com/es/fifaworldcup/2026
+ * Fuente: Sorteo oficial FIFA (dic. 2025) + calendario publicado FIFA.com
+ * Horarios en Tiempo Central Estándar (CST · UTC-6, Nuevo León permanente).
+ * Verifica el calendario actualizado en:
+ * https://www.fifa.com/es/tournaments/mens/worldcup/canadamexicousa2026
  */
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
@@ -25,7 +26,7 @@ export type Partido = {
   grupo: string | null;        // "Grupo A", "Grupo F", etc. — null en eliminatoria
   jornada: number | null;      // 1, 2, 3 en fase de grupos
   fecha: string;               // "YYYY-MM-DD"
-  hora: string;                // "HH:MM" horario CDT (UTC-5)
+  hora: string;                // "HH:MM" horario CST (UTC-6)
   equipo1: Equipo;
   equipo2: Equipo;
   resultado: { g1: number; g2: number } | null;
@@ -41,37 +42,48 @@ export type FaseMundial =
 
 // ── Equipos ───────────────────────────────────────────────────────────────────
 
-const ARG: Equipo = {
-  nombre: 'Argentina',
-  nombreCorto: 'Argentina',
-  abrev: 'ARG',
-  bandera: '🇦🇷',
-  colorPrimario: '#74ACDF',
+// Grupo F: Países Bajos · Japón · Suecia · Túnez
+// Grupo A: México · Sudáfrica · Corea del Sur · República Checa
+
+const SWE: Equipo = {
+  nombre: 'Suecia',
+  nombreCorto: 'Suecia',
+  abrev: 'SWE',
+  bandera: '🇸🇪',
+  colorPrimario: '#006AA7',
+  colorSecundario: '#FECC02',
+};
+const TUN: Equipo = {
+  nombre: 'Túnez',
+  nombreCorto: 'Túnez',
+  abrev: 'TUN',
+  bandera: '🇹🇳',
+  colorPrimario: '#E70013',
   colorSecundario: '#FFFFFF',
 };
-const MAR: Equipo = {
-  nombre: 'Marruecos',
-  nombreCorto: 'Marruecos',
-  abrev: 'MAR',
-  bandera: '🇲🇦',
-  colorPrimario: '#C1272D',
-  colorSecundario: '#006233',
-};
-const ECU: Equipo = {
-  nombre: 'Ecuador',
-  nombreCorto: 'Ecuador',
-  abrev: 'ECU',
-  bandera: '🇪🇨',
-  colorPrimario: '#FFD100',
-  colorSecundario: '#034A8A',
-};
-const KSA: Equipo = {
-  nombre: 'Arabia Saudita',
-  nombreCorto: 'Arabia Saudita',
-  abrev: 'KSA',
-  bandera: '🇸🇦',
-  colorPrimario: '#006C35',
+const JPN: Equipo = {
+  nombre: 'Japón',
+  nombreCorto: 'Japón',
+  abrev: 'JPN',
+  bandera: '🇯🇵',
+  colorPrimario: '#BC002D',
   colorSecundario: '#FFFFFF',
+};
+const RSA: Equipo = {
+  nombre: 'Sudáfrica',
+  nombreCorto: 'Sudáfrica',
+  abrev: 'RSA',
+  bandera: '🇿🇦',
+  colorPrimario: '#007A4D',
+  colorSecundario: '#FFB81C',
+};
+const KOR: Equipo = {
+  nombre: 'Corea del Sur',
+  nombreCorto: 'Corea del Sur',
+  abrev: 'KOR',
+  bandera: '🇰🇷',
+  colorPrimario: '#C60C30',
+  colorSecundario: '#003478',
 };
 const TBD: Equipo = {
   nombre: 'Por definir',
@@ -83,90 +95,65 @@ const TBD: Equipo = {
 };
 
 // ── Partidos en Estadio BBVA ──────────────────────────────────────────────────
-//  Grupo F: Argentina · Marruecos · Ecuador · Arabia Saudita
-//  Nota: asignaciones de grupo verificadas en sorteo FIFA dic. 2024.
-//  Actualiza el campo `resultado` y `estado` conforme avancen los partidos.
+//  Grupo F: Países Bajos · Japón · Suecia · Túnez
+//  Grupo A: México · Sudáfrica · Corea del Sur · República Checa
+//  Sorteo oficial FIFA dic. 2025. Actualiza `resultado` y `estado` conforme
+//  avancen los partidos.
 
 export const PARTIDOS_BBVA: Partido[] = [
-  // ── Jornada 1 ──────────────────────────────────────────────────────────────
+  // ── Grupo F — Jornada 1 ────────────────────────────────────────────────────
   {
     id: 'm1',
-    matchNum: 8,
+    matchNum: 12,
     fase: 'Fase de Grupos',
     grupo: 'Grupo F',
     jornada: 1,
-    fecha: '2026-06-12',
-    hora: '17:00',
-    equipo1: ARG,
-    equipo2: MAR,
+    fecha: '2026-06-14',
+    hora: '20:00',
+    equipo1: SWE,
+    equipo2: TUN,
     resultado: null,
     estado: 'programado',
   },
+  // ── Grupo F — Jornada 2 ────────────────────────────────────────────────────
   {
     id: 'm2',
-    matchNum: 10,
+    matchNum: 36,
     fase: 'Fase de Grupos',
     grupo: 'Grupo F',
-    jornada: 1,
-    fecha: '2026-06-13',
-    hora: '14:00',
-    equipo1: ECU,
-    equipo2: KSA,
+    jornada: 2,
+    fecha: '2026-06-20',
+    hora: '22:00',
+    equipo1: TUN,
+    equipo2: JPN,
     resultado: null,
     estado: 'programado',
   },
-  // ── Jornada 2 ──────────────────────────────────────────────────────────────
+  // ── Grupo A — Jornada 3 (simultáneas) ─────────────────────────────────────
   {
     id: 'm3',
-    matchNum: 22,
+    matchNum: 54,
     fase: 'Fase de Grupos',
-    grupo: 'Grupo F',
-    jornada: 2,
-    fecha: '2026-06-18',
-    hora: '20:00',
-    equipo1: ARG,
-    equipo2: ECU,
-    resultado: null,
-    estado: 'programado',
-  },
-  {
-    id: 'm4',
-    matchNum: 26,
-    fase: 'Fase de Grupos',
-    grupo: 'Grupo F',
-    jornada: 2,
-    fecha: '2026-06-19',
-    hora: '17:00',
-    equipo1: MAR,
-    equipo2: KSA,
-    resultado: null,
-    estado: 'programado',
-  },
-  // ── Jornada 3 (simultáneas) ────────────────────────────────────────────────
-  {
-    id: 'm5',
-    matchNum: 38,
-    fase: 'Fase de Grupos',
-    grupo: 'Grupo F',
+    grupo: 'Grupo A',
     jornada: 3,
     fecha: '2026-06-24',
-    hora: '17:00',
-    equipo1: ARG,
-    equipo2: KSA,
+    hora: '19:00',
+    equipo1: RSA,
+    equipo2: KOR,
     resultado: null,
     estado: 'programado',
   },
   // ── Ronda de 32 ────────────────────────────────────────────────────────────
   {
-    id: 'm6',
-    matchNum: 67,
+    id: 'm4',
+    matchNum: 75,
     fase: 'Ronda de 32',
     grupo: null,
     jornada: null,
-    fecha: '2026-07-02',
-    hora: '20:00',
-    equipo1: TBD,
-    equipo2: TBD,
+    fecha: '2026-06-29',
+    hora: '19:00',
+    equipo1: TBD,   // 1° Grupo F
+    equipo2: TBD,   // 2° Grupo C
     resultado: null,
     estado: 'programado',
   },
@@ -184,7 +171,6 @@ export const ESTADIO_BBVA = {
   equipo: 'CF Monterrey (Rayados)',
   latitud: 25.6694,
   longitud: -100.2407,
-  // Imagen libre de Wikimedia
   imagenUrl:
     'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Estadio_BBVA_Bancomer_3.jpg/1200px-Estadio_BBVA_Bancomer_3.jpg',
 };
@@ -197,11 +183,12 @@ export const TORNEO = {
   sedes: ['Estados Unidos', 'México', 'Canadá'],
   equipos: 48,
   partidos: 104,
-  inicioFase: '2026-06-11',  // Partido inaugural
+  inicioFase: '2026-06-11',  // Partido inaugural: México vs Sudáfrica (Estadio Azteca)
+  inicioHora: '13:00',       // 1:00 PM CST (UTC-6)
   finalFase:  '2026-07-19',  // Gran Final (MetLife Stadium, NY/NJ)
   mascota: 'Peaks',
   balon: 'Adidas Merlin',
-  fifaUrl: 'https://www.fifa.com/es/fifaworldcup/2026',
+  fifaUrl: 'https://www.fifa.com/es/tournaments/mens/worldcup/canadamexicousa2026',
 };
 
 // ── Helpers exportados ────────────────────────────────────────────────────────
@@ -212,9 +199,17 @@ const MESES_ES = [
 ];
 const DIAS_ES = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 
-/** Devuelve la fecha de inicio del partido como objeto Date (CDT = UTC-5) */
+/**
+ * Devuelve la fecha de inicio del partido como objeto Date (CST = UTC-6).
+ * Nota: Nuevo León permanece en UTC-6 todo el año (sin cambio de horario).
+ */
 export function toMatchDate(fecha: string, hora: string): Date {
-  return new Date(`${fecha}T${hora}:00-05:00`);
+  return new Date(`${fecha}T${hora}:00-06:00`);
+}
+
+/** Fecha de inicio del torneo completo (partido inaugural) */
+export function toTorneoStartDate(): Date {
+  return new Date(`${TORNEO.inicioFase}T${TORNEO.inicioHora}:00-06:00`);
 }
 
 /** Formatea "2026-06-12" → "Vie 12 Jun 2026" */
@@ -233,9 +228,9 @@ export function formatFechaCorta(fecha: string): string {
   return `${d} ${MESES_ES[m - 1]}`;
 }
 
-/** Convierte hora "17:00" → "17:00 CDT" */
+/** Convierte hora "17:00" → "17:00 CST" */
 export function formatHora(hora: string): string {
-  return `${hora} CDT`;
+  return `${hora} CST`;
 }
 
 /** Devuelve el siguiente partido no finalizado, o null si ya terminó el torneo */
@@ -245,7 +240,7 @@ export function getProximoPartido(): Partido | null {
     PARTIDOS_BBVA.find(
       (p) =>
         p.estado !== 'finalizado' &&
-        toMatchDate(p.fecha, p.hora).getTime() >= ahora - 2 * 3_600_000, // hasta 2h antes del inicio
+        toMatchDate(p.fecha, p.hora).getTime() >= ahora - 2 * 3_600_000,
     ) ?? null
   );
 }
