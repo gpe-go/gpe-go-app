@@ -287,21 +287,67 @@ const BBVA_TEAM_MATCHES: Array<[string, string]> = [
   ['South Africa', 'South Korea'],
 ];
 
+// ── Buscar league ID correcto para WC 2026 ────────────────────────────────────
+
+async function findWCLeagueId(): Promise<number> {
+  try {
+    const { data } = await axios.get(`${BASE_URL}/leagues`, {
+      headers: { 'x-apisports-key': API_KEY },
+      params:  { type: 'Cup', season: SEASON },
+      timeout: 10_000,
+    });
+    if (!Array.isArray(data?.response)) return LEAGUE_ID;
+
+    // Buscar "World Cup" en el nombre
+    const wc = (data.response as any[]).find((l: any) => {
+      const name = (l.league?.name ?? '').toLowerCase();
+      return name.includes('world cup') || name.includes('mundial');
+    });
+    if (wc) {
+      console.log(`[MundialService] WC 2026 league encontrada: id=${wc.league.id} name="${wc.league.name}"`);
+      return wc.league.id as number;
+    }
+
+    // Log primeras 10 ligas para diagnóstico
+    const names = (data.response as any[]).slice(0, 10).map((l: any) =>
+      `id=${l.league?.id} "${l.league?.name}"`
+    );
+    console.warn('[MundialService] Ligas Copa 2026 disponibles:\n' + names.join('\n'));
+  } catch (e) {
+    console.warn('[MundialService] No se pudo buscar league ID:', e);
+  }
+  return LEAGUE_ID;
+}
+
 // ── Llamada a la API ──────────────────────────────────────────────────────────
 
 async function fetchFromAPI(): Promise<Partido[]> {
+  // Primer intento con league ID configurado
+  const leagueId = await findWCLeagueId();
+
   const { data } = await axios.get(`${BASE_URL}/fixtures`, {
     headers: { 'x-apisports-key': API_KEY },
-    params:  { league: LEAGUE_ID, season: SEASON },
+    params:  { league: leagueId, season: SEASON },
     timeout: 12_000,
   });
+
+  // Log de errores de la API si los hay
+  if (data?.errors && Object.keys(data.errors).length > 0) {
+    console.warn('[MundialService] Errores de API:', JSON.stringify(data.errors));
+  }
 
   if (!Array.isArray(data?.response)) {
     throw new Error(`Respuesta inesperada de la API. Errors: ${JSON.stringify(data?.errors)}`);
   }
 
   const all = data.response as any[];
-  console.log(`[MundialService] Total fixtures WC2026: ${all.length}`);
+  console.log(`[MundialService] Total fixtures WC2026 (league=${leagueId}): ${all.length}`);
+
+  // ── Fallback inmediato si la API no tiene datos ────────────────────────────
+  if (all.length === 0) {
+    console.warn('[MundialService] API sin fixtures para WC2026. Usando datos estáticos.');
+    return PARTIDOS_BBVA;
+  }
 
   // ── Intento 1: filtrar por nombre/ciudad del estadio ─────────────────────
   let bbvaFixtures = all.filter((f) => {
@@ -317,28 +363,25 @@ async function fetchFromAPI(): Promise<Partido[]> {
     );
   });
 
-  // ── Diagnóstico: mostrar venues únicos si no se encontró nada ─────────────
-  if (bbvaFixtures.length === 0 && all.length > 0) {
+  // ── Si no encontró por venue: log + intento 2 por equipos ─────────────────
+  if (bbvaFixtures.length === 0) {
     const uniqueVenues = [...new Set(
       all.map((f) => `"${f.fixture?.venue?.name ?? '?'}" — ${f.fixture?.venue?.city ?? '?'}`)
     )].slice(0, 30);
     console.warn('[MundialService] Venues en la API:\n' + uniqueVenues.join('\n'));
 
-    // ── Intento 2: filtrar por combinaciones de equipos conocidos ──────────
     bbvaFixtures = all.filter((f) => {
       const h = f.teams?.home?.name ?? '';
       const a = f.teams?.away?.name ?? '';
       return BBVA_TEAM_MATCHES.some(
-        ([t1, t2]) =>
-          (h === t1 && a === t2) ||
-          (h === t2 && a === t1),
+        ([t1, t2]) => (h === t1 && a === t2) || (h === t2 && a === t1),
       );
     });
 
     if (bbvaFixtures.length > 0) {
-      console.log(`[MundialService] Encontrados ${bbvaFixtures.length} partidos por equipos (fallback de venue).`);
+      console.log(`[MundialService] ${bbvaFixtures.length} partidos encontrados por equipos.`);
     } else {
-      console.warn('[MundialService] No se encontraron partidos BBVA por venue ni por equipos. Usando datos estáticos.');
+      console.warn('[MundialService] Sin partidos BBVA por venue ni equipos. Usando datos estáticos.');
       return PARTIDOS_BBVA;
     }
   }
