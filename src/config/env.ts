@@ -26,7 +26,7 @@ export const PRODUCTION_API_URL =
 //  Si cambias de red WiFi, actualiza esta IP.
 //
 export const DEV_API_URL =
-  "http://192.168.100.157/gpe_go_api/inputs.php";
+  "http://192.168.100.7/gpe_go_api/inputs.php";
 
 // ── Ruta del backend dentro del servidor ────────────────────
 //
