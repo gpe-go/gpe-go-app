@@ -280,6 +280,13 @@ async function setCache(partidos: Partido[]): Promise<void> {
   }
 }
 
+// Equipos que juegan en el BBVA (para filtro alternativo si falla por venue)
+const BBVA_TEAM_MATCHES: Array<[string, string]> = [
+  ['Sweden',       'Tunisia'],
+  ['Tunisia',      'Japan'],
+  ['South Africa', 'South Korea'],
+];
+
 // ── Llamada a la API ──────────────────────────────────────────────────────────
 
 async function fetchFromAPI(): Promise<Partido[]> {
@@ -290,23 +297,50 @@ async function fetchFromAPI(): Promise<Partido[]> {
   });
 
   if (!Array.isArray(data?.response)) {
-    throw new Error('Respuesta inesperada de la API');
+    throw new Error(`Respuesta inesperada de la API. Errors: ${JSON.stringify(data?.errors)}`);
   }
 
-  // Filtrar por Estadio BBVA / Guadalupe
-  const bbvaFixtures = (data.response as any[]).filter((f) => {
+  const all = data.response as any[];
+  console.log(`[MundialService] Total fixtures WC2026: ${all.length}`);
+
+  // ── Intento 1: filtrar por nombre/ciudad del estadio ─────────────────────
+  let bbvaFixtures = all.filter((f) => {
     const venue = (f.fixture?.venue?.name ?? '').toLowerCase();
     const city  = (f.fixture?.venue?.city ?? '').toLowerCase();
     return (
       venue.includes('bbva') ||
+      venue.includes('bancomer') ||
       city.includes('guadalupe') ||
-      city.includes('monterrey')
+      city.includes('monterrey') ||
+      city.includes('nuevo leon') ||
+      city.includes('nuevo león')
     );
   });
 
-  if (bbvaFixtures.length === 0) {
-    console.warn('[MundialService] No se encontraron partidos en BBVA. Usando fallback.');
-    return PARTIDOS_BBVA;
+  // ── Diagnóstico: mostrar venues únicos si no se encontró nada ─────────────
+  if (bbvaFixtures.length === 0 && all.length > 0) {
+    const uniqueVenues = [...new Set(
+      all.map((f) => `"${f.fixture?.venue?.name ?? '?'}" — ${f.fixture?.venue?.city ?? '?'}`)
+    )].slice(0, 30);
+    console.warn('[MundialService] Venues en la API:\n' + uniqueVenues.join('\n'));
+
+    // ── Intento 2: filtrar por combinaciones de equipos conocidos ──────────
+    bbvaFixtures = all.filter((f) => {
+      const h = f.teams?.home?.name ?? '';
+      const a = f.teams?.away?.name ?? '';
+      return BBVA_TEAM_MATCHES.some(
+        ([t1, t2]) =>
+          (h === t1 && a === t2) ||
+          (h === t2 && a === t1),
+      );
+    });
+
+    if (bbvaFixtures.length > 0) {
+      console.log(`[MundialService] Encontrados ${bbvaFixtures.length} partidos por equipos (fallback de venue).`);
+    } else {
+      console.warn('[MundialService] No se encontraron partidos BBVA por venue ni por equipos. Usando datos estáticos.');
+      return PARTIDOS_BBVA;
+    }
   }
 
   // Ordenar por fecha
