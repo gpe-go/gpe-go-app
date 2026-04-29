@@ -10,7 +10,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Animated,
+  AppState,
+  AppStateStatus,
   FlatList,
   Linking,
   Platform,
@@ -28,10 +31,10 @@ import {
   formatFechaCorta,
   formatFechaLarga,
   formatHora,
-  getProximoPartido,
   toMatchDate,
   toTorneoStartDate,
 } from '../src/data/mundial2026';
+import { getBBVAPartidos } from '../src/services/mundialService';
 
 // ── FIFA 2026 Design Tokens ───────────────────────────────────────────────────
 const F = {
@@ -287,8 +290,47 @@ const mc = StyleSheet.create({
 export default function MundialWidget() {
   const router = useRouter();
 
+  // ── Datos en vivo (API) ────────────────────────────────────────────────────
+  const [partidos, setPartidos] = useState<Partido[]>(PARTIDOS_BBVA);
+  const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
+  const [apiError, setApiError] = useState(false);
+
+  const cargarDatos = useCallback(async (force = false) => {
+    try {
+      const res = await getBBVAPartidos(force);
+      setPartidos(res.partidos);
+      setLastUpdated(res.lastUpdated);
+      setApiError(false);
+    } catch {
+      setApiError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Carga inicial
+  useEffect(() => { cargarDatos(); }, [cargarDatos]);
+
+  // Refresca cuando la app vuelve al primer plano
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next: AppStateStatus) => {
+      if (next === 'active') cargarDatos();
+    });
+    return () => sub.remove();
+  }, [cargarDatos]);
+
+  // ── Próximo partido (calculado de los datos dinámicos) ─────────────────────
+  const proximoPartido = useMemo(() => {
+    const ahora = Date.now();
+    return partidos.find(
+      (p) =>
+        p.estado !== 'finalizado' &&
+        toMatchDate(p.fecha, p.hora).getTime() >= ahora - 2 * 3_600_000,
+    ) ?? null;
+  }, [partidos]);
+
   // ── Countdown ──────────────────────────────────────────────────────────────
-  const proximoPartido = useMemo(() => getProximoPartido(), []);
   const targetDate = useMemo(
     () => (proximoPartido ? toMatchDate(proximoPartido.fecha, proximoPartido.hora) : null),
     [proximoPartido],
@@ -351,9 +393,18 @@ export default function MundialWidget() {
 
   // ── Datos del carrusel ─────────────────────────────────────────────────────
   const partidosConNextFlag = useMemo(
-    () => PARTIDOS_BBVA.map(p => ({ ...p, isNext: proximoPartido?.id === p.id })),
-    [proximoPartido],
+    () => partidos.map(p => ({ ...p, isNext: proximoPartido?.id === p.id })),
+    [partidos, proximoPartido],
   );
+
+  // ── Formato "última actualización" ─────────────────────────────────────────
+  const lastUpdatedText = useMemo(() => {
+    if (!lastUpdated) return null;
+    const d = new Date(lastUpdated);
+    const h = String(d.getHours()).padStart(2, '0');
+    const m = String(d.getMinutes()).padStart(2, '0');
+    return `${h}:${m}`;
+  }, [lastUpdated]);
 
   return (
     <Animated.View style={[s.root, enterStyle]}>
@@ -411,7 +462,7 @@ export default function MundialWidget() {
           </View>
           <View style={s.statDivider} />
           <View style={s.statChip}>
-            <Text style={s.statNum}>{PARTIDOS_BBVA.length}</Text>
+            <Text style={s.statNum}>{partidos.length}</Text>
             <Text style={s.statLbl}>EN BBVA</Text>
           </View>
           <View style={s.statDivider} />
@@ -516,7 +567,24 @@ export default function MundialWidget() {
       <View style={s.sectionHeader}>
         <View style={s.sectionAccent} />
         <Text style={s.sectionTitle}>Calendario Estadio BBVA</Text>
-        <Text style={s.sectionCount}>{PARTIDOS_BBVA.length} partidos</Text>
+        <View style={s.calendarHeaderRight}>
+          {loading ? (
+            <ActivityIndicator size="small" color={F.gold} />
+          ) : (
+            <Pressable
+              onPress={() => { setLoading(true); cargarDatos(true); }}
+              hitSlop={10}
+              style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+            >
+              <Ionicons name="refresh-outline" size={18} color={apiError ? F.red : F.gold} />
+            </Pressable>
+          )}
+          {lastUpdatedText && !loading && (
+            <Text style={s.lastUpdatedText}>
+              {apiError ? '⚠ sin red' : `↻ ${lastUpdatedText}`}
+            </Text>
+          )}
+        </View>
       </View>
 
       {/* ════════════════════════════════════════════════════════════════════
@@ -962,5 +1030,13 @@ const s = StyleSheet.create({
   },
   brandingText: {
     color: F.textSub, fontSize: 11, fontWeight: '700', letterSpacing: 0.8,
+  },
+
+  // ── Live data status ────────────────────────────────────────────────────────
+  calendarHeaderRight: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+  },
+  lastUpdatedText: {
+    color: F.textSub, fontSize: 9, fontWeight: '600',
   },
 });
