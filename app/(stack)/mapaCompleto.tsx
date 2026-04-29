@@ -51,12 +51,22 @@ export default function MapaCompletoScreen() {
     longitude?:        string;
     from?:             string;
     categoriaInicial?: string;
+    pinLat?:           string;
+    pinLng?:           string;
+    pinLabel?:         string;
+    pinSub?:           string;
   }>();
 
   const initialLat  = params.latitude  ? parseFloat(params.latitude)  : null;
   const initialLng  = params.longitude ? parseFloat(params.longitude) : null;
   const fromParam   = params.from ?? '';
   const catInicial  = params.categoriaInicial ?? '';
+
+  // Pin dedicado (ej. Estadio BBVA desde el widget del Mundial)
+  const pinLat   = params.pinLat   ? parseFloat(params.pinLat)   : null;
+  const pinLng   = params.pinLng   ? parseFloat(params.pinLng)   : null;
+  const pinLabel = params.pinLabel ?? null;
+  const pinSub   = params.pinSub   ?? null;
 
   // ── Región y ubicación del usuario ─────────────────────────────────────────
   const [region, setRegion] = useState(
@@ -233,6 +243,21 @@ export default function MapaCompletoScreen() {
           </Marker>
         )}
 
+        {/* ── Pin dedicado (Estadio BBVA u otro lugar fijo) ── */}
+        {pinLat && pinLng && (
+          <Marker
+            coordinate={{ latitude: pinLat, longitude: pinLng }}
+            title={pinLabel ?? undefined}
+            description={pinSub ?? undefined}
+            zIndex={600}
+          >
+            <View style={ms.pinMarkerWrap}>
+              <Text style={ms.pinMarkerEmoji}>🏟️</Text>
+              <View style={ms.pinMarkerTail} />
+            </View>
+          </Marker>
+        )}
+
         {/* Marcadores de lugares buscados */}
         {searchResults.map(place =>
           place.lat && place.lng ? (
@@ -404,6 +429,33 @@ export default function MapaCompletoScreen() {
         </View>
       )}
 
+      {/* ── TARJETA DE PIN (Estadio BBVA u otro lugar fijo) ─ */}
+      {pinLat && pinLng && pinLabel && (
+        <View style={[ms.pinCard, { bottom: insets.bottom + 80 }]}>
+          <View style={ms.pinCardLeft}>
+            <Text style={ms.pinCardEmoji}>🏟️</Text>
+          </View>
+          <View style={ms.pinCardBody}>
+            <Text style={ms.pinCardLabel} numberOfLines={1}>{pinLabel}</Text>
+            {pinSub ? (
+              <Text style={ms.pinCardSub} numberOfLines={1}>{pinSub}</Text>
+            ) : null}
+          </View>
+          <Pressable
+            style={({ pressed }) => [ms.pinCardBtn, { opacity: pressed ? 0.8 : 1 }]}
+            onPress={() => {
+              mapRef.current?.animateToRegion(
+                { latitude: pinLat, longitude: pinLng, latitudeDelta: 0.008, longitudeDelta: 0.008 },
+                600,
+              );
+            }}
+          >
+            <Ionicons name="locate" size={16} color="#fff" />
+            <Text style={ms.pinCardBtnText}>Centrar</Text>
+          </Pressable>
+        </View>
+      )}
+
       {/* ── BOTONES INFERIORES ────────────────────────────── */}
       <View style={[ms.bottomBar, { paddingBottom: insets.bottom + 16 }]}>
         <Pressable
@@ -557,5 +609,65 @@ const ms = StyleSheet.create({
   },
   placeMarkerSelected: {
     transform: [{ scale: 1.2 }],
+  },
+
+  // ── Pin dedicado (Estadio BBVA) ──────────────────────────
+  pinMarkerWrap: {
+    alignItems: 'center',
+  },
+  pinMarkerEmoji: {
+    fontSize: 36,
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 6,
+  },
+  pinMarkerTail: {
+    width: 3, height: 8,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 2,
+    marginTop: -2,
+  },
+
+  // ── Tarjeta info del pin ─────────────────────────────────
+  pinCard: {
+    position: 'absolute',
+    left: 16, right: 16,
+    backgroundColor: '#1C1C1E',
+    borderRadius: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    gap: 12,
+    zIndex: 25,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(240,180,41,0.3)',
+  },
+  pinCardLeft: {
+    width: 48, height: 48,
+    backgroundColor: 'rgba(240,180,41,0.12)',
+    borderRadius: 14,
+    justifyContent: 'center', alignItems: 'center',
+    borderWidth: 1, borderColor: 'rgba(240,180,41,0.25)',
+  },
+  pinCardEmoji: { fontSize: 26 },
+  pinCardBody: { flex: 1, gap: 2 },
+  pinCardLabel: {
+    color: '#fff', fontWeight: '800', fontSize: 15, letterSpacing: -0.2,
+  },
+  pinCardSub: {
+    color: 'rgba(255,255,255,0.55)', fontSize: 11, fontWeight: '500',
+  },
+  pinCardBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    backgroundColor: '#E96928',
+    borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8,
+  },
+  pinCardBtnText: {
+    color: '#fff', fontWeight: '700', fontSize: 12,
   },
 });

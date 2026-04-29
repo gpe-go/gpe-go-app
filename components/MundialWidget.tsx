@@ -678,6 +678,10 @@ export default function MundialWidget() {
               params: {
                 latitude:  String(ESTADIO_BBVA.latitud),
                 longitude: String(ESTADIO_BBVA.longitud),
+                pinLat:    String(ESTADIO_BBVA.latitud),
+                pinLng:    String(ESTADIO_BBVA.longitud),
+                pinLabel:  ESTADIO_BBVA.nombre,
+                pinSub:    `${ESTADIO_BBVA.ciudad} · FIFA World Cup 2026`,
               },
             })
           }
