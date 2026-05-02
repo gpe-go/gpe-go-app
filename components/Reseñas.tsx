@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TextInput, Pressable,
   Image, Alert, ScrollView, Modal, ActivityIndicator,
+  Animated, Easing,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as Haptics from 'expo-haptics';
 import { useTheme } from '../src/context/ThemeContext';
 import { useAuth } from '../src/context/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -29,13 +31,213 @@ type ReseñaAPI = {
   fotos: string[]; // URLs S3
 };
 
-function Estrellas({ valor, onSelect }: { valor: number; onSelect?: (n: number) => void }) {
+// ─── Estrella individual con animación ───────────────────────────────────────
+function EstrellaAnimada({
+  index,
+  active,
+  size,
+  isInteractive,
+  onPress,
+  // contador que aumenta cada vez que el usuario selecciona; se usa para
+  // que la cascada (1, 2, 3…) reanime cuando vuelve a tocar otra estrella
+  triggerKey,
+  selectedValue,
+}: {
+  index: number;
+  active: boolean;
+  size: number;
+  isInteractive: boolean;
+  onPress?: () => void;
+  triggerKey: number;
+  selectedValue: number;
+}) {
+  // Escala de la estrella (efecto pop al activarse)
+  const scale     = useRef(new Animated.Value(1)).current;
+  // Rotación leve al activarse (giro pequeño)
+  const rotate    = useRef(new Animated.Value(0)).current;
+  // Anillo de "burst" (círculo expansivo cuando se toca)
+  const burstScale   = useRef(new Animated.Value(0)).current;
+  const burstOpacity = useRef(new Animated.Value(0)).current;
+
+  // Cuando esta estrella se activa por primera vez en una nueva selección,
+  // hace un pop con cascada (delay según índice)
+  const wasActiveRef = useRef(active);
+  useEffect(() => {
+    const justActivated = active && !wasActiveRef.current;
+    const justDeactivated = !active && wasActiveRef.current;
+    wasActiveRef.current = active;
+
+    if (justActivated) {
+      // Cascada: cada estrella anima un poco después de la anterior
+      const cascadeDelay = (index - 1) * 55;
+
+      // POP con spring (sale grande y vuelve)
+      Animated.sequence([
+        Animated.delay(cascadeDelay),
+        Animated.parallel([
+          Animated.spring(scale, {
+            toValue: 1.45,
+            tension: 120,
+            friction: 4,
+            useNativeDriver: true,
+          }),
+          Animated.timing(rotate, {
+            toValue: 1,
+            duration: 220,
+            easing: Easing.out(Easing.back(2)),
+            useNativeDriver: true,
+          }),
+          // Burst (anillo expansivo)
+          Animated.timing(burstOpacity, {
+            toValue: 0.5,
+            duration: 0,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.parallel([
+          Animated.spring(scale, {
+            toValue: 1,
+            tension: 100,
+            friction: 6,
+            useNativeDriver: true,
+          }),
+          Animated.timing(rotate, {
+            toValue: 0,
+            duration: 320,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
+          Animated.timing(burstScale, {
+            toValue: 2.4,
+            duration: 480,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
+          Animated.timing(burstOpacity, {
+            toValue: 0,
+            duration: 480,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.timing(burstScale, {
+          toValue: 0,
+          duration: 0,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else if (justDeactivated) {
+      // Encogimiento sutil al desactivarse
+      Animated.spring(scale, {
+        toValue: 0.9,
+        tension: 120,
+        friction: 6,
+        useNativeDriver: true,
+      }).start(() => {
+        Animated.spring(scale, {
+          toValue: 1,
+          tension: 100,
+          friction: 7,
+          useNativeDriver: true,
+        }).start();
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, triggerKey]);
+
+  const rotateInterpolate = rotate.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '18deg'],
+  });
+
+  const StarInner = (
+    <View style={{ width: size + 8, height: size + 8, justifyContent: 'center', alignItems: 'center' }}>
+      {/* Burst expansivo (anillo) */}
+      <Animated.View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          borderWidth: 2,
+          borderColor: '#FFD700',
+          opacity: burstOpacity,
+          transform: [{ scale: burstScale }],
+        }}
+      />
+      <Animated.View
+        style={{
+          transform: [
+            { scale },
+            { rotate: rotateInterpolate },
+          ],
+        }}
+      >
+        <Ionicons
+          name={active ? 'star' : 'star-outline'}
+          size={size}
+          color={active ? '#FFD700' : (isInteractive ? '#D1D5DB' : '#FFD700')}
+        />
+      </Animated.View>
+    </View>
+  );
+
+  if (!isInteractive) return StarInner;
+
   return (
-    <View style={{ flexDirection: 'row', gap: 4 }}>
+    <Pressable
+      onPress={onPress}
+      hitSlop={6}
+      style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+    >
+      {StarInner}
+    </Pressable>
+  );
+}
+
+function Estrellas({ valor, onSelect }: { valor: number; onSelect?: (n: number) => void }) {
+  const [triggerKey, setTriggerKey] = useState(0);
+  const isInteractive = !!onSelect;
+  const size = isInteractive ? 32 : 16;
+
+  const handlePress = (n: number) => {
+    if (!onSelect) return;
+    // Vibración táctil — varía la intensidad según el rating
+    const styleMap = {
+      1: Haptics.ImpactFeedbackStyle.Light,
+      2: Haptics.ImpactFeedbackStyle.Light,
+      3: Haptics.ImpactFeedbackStyle.Medium,
+      4: Haptics.ImpactFeedbackStyle.Medium,
+      5: Haptics.ImpactFeedbackStyle.Heavy,
+    } as const;
+    Haptics.impactAsync(styleMap[n as 1 | 2 | 3 | 4 | 5]).catch(() => {});
+
+    // Notificación de éxito al llegar a 5 estrellas (vibración doble)
+    if (n === 5) {
+      setTimeout(() => {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      }, 280);
+    }
+
+    onSelect(n);
+    // Forzamos re-trigger para que las estrellas ya activas también puedan reanimarse
+    setTriggerKey(k => k + 1);
+  };
+
+  return (
+    <View style={{ flexDirection: 'row', gap: isInteractive ? 6 : 2 }}>
       {[1, 2, 3, 4, 5].map(n => (
-        <Pressable key={n} onPress={() => onSelect?.(n)} disabled={!onSelect}>
-          <Ionicons name={n <= valor ? 'star' : 'star-outline'} size={onSelect ? 28 : 16} color="#FFD700" />
-        </Pressable>
+        <EstrellaAnimada
+          key={n}
+          index={n}
+          active={n <= valor}
+          size={size}
+          isInteractive={isInteractive}
+          onPress={() => handlePress(n)}
+          triggerKey={triggerKey}
+          selectedValue={valor}
+        />
       ))}
     </View>
   );
@@ -176,7 +378,7 @@ export default function Reseñas({ lugarId }: Props) {
     if (!texto.trim())   { Alert.alert(t('review_write'));  return; }
     if (estrellas === 0) { Alert.alert(t('review_rating')); return; }
     if (tienePalabrasProhibidas(texto)) {
-      setErrorTexto('Tu reseña contiene palabras no permitidas. Por favor, exprésate con respeto hacia este lugar.');
+      setErrorTexto(t('review_profanity_warning'));
       return;
     }
     setErrorTexto(null);
@@ -236,7 +438,7 @@ export default function Reseñas({ lugarId }: Props) {
     if (!editTexto.trim())   { Alert.alert(t('review_write'));  return; }
     if (editEstrellas === 0) { Alert.alert(t('review_rating')); return; }
     if (tienePalabrasProhibidas(editTexto)) {
-      setErrorEdicion('Tu reseña contiene palabras no permitidas. Por favor, exprésate con respeto.');
+      setErrorEdicion(t('review_profanity_warning'));
       return;
     }
     setErrorEdicion(null);

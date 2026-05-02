@@ -8,6 +8,8 @@
  * https://www.fifa.com/es/tournaments/mens/worldcup/canadamexicousa2026
  */
 
+import i18n from '../i18n/i18n';
+
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 
 export type Equipo = {
@@ -163,16 +165,14 @@ export const PARTIDOS_BBVA: Partido[] = [
 
 export const ESTADIO_BBVA = {
   nombre: 'Estadio BBVA',
-  alias: 'La Pandilla',
+  alias: 'Gigante de Acero',
   ciudad: 'Guadalupe, Nuevo León',
   pais: 'México',
   capacidadMundial: 53_500,
   inaugurado: 2015,
   equipo: 'CF Monterrey (Rayados)',
-  latitud: 25.6694,
-  longitud: -100.2469,
-  imagenUrl:
-    'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Estadio_BBVA_Bancomer_3.jpg/1200px-Estadio_BBVA_Bancomer_3.jpg',
+  latitud: 25.6692,
+  longitud: -100.2444,
 };
 
 // ── Datos del torneo ──────────────────────────────────────────────────────────
@@ -193,11 +193,26 @@ export const TORNEO = {
 
 // ── Helpers exportados ────────────────────────────────────────────────────────
 
-const MESES_ES = [
-  'Ene','Feb','Mar','Abr','May',
-  'Jun','Jul','Ago','Sep','Oct','Nov','Dic',
-];
-const DIAS_ES = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+/**
+ * Mapa de idioma corto → código BCP-47 que usa Intl.DateTimeFormat.
+ * Si el idioma no está en el mapa, cae a 'es-MX' por defecto.
+ */
+const LOCALE_MAP: Record<string, string> = {
+  es: 'es-MX', en: 'en-US', fr: 'fr-FR', pt: 'pt-BR', de: 'de-DE',
+  ja: 'ja-JP', ar: 'ar-EG', af: 'af-ZA', ko: 'ko-KR', nl: 'nl-NL',
+  uk: 'uk-UA', sv: 'sv-SE', pl: 'pl-PL', sq: 'sq-AL',
+};
+
+/** Devuelve el locale actual para Intl, basado en el idioma activo de i18n */
+function getCurrentLocale(): string {
+  const lang = (i18n.language || 'es').slice(0, 2).toLowerCase();
+  return LOCALE_MAP[lang] || 'es-MX';
+}
+
+/** Capitaliza la primera letra (algunos locales devuelven en minúsculas) */
+function cap(s: string): string {
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+}
 
 /**
  * Devuelve la fecha de inicio del partido como objeto Date (CST = UTC-6).
@@ -212,23 +227,44 @@ export function toTorneoStartDate(): Date {
   return new Date(`${TORNEO.inicioFase}T${TORNEO.inicioHora}:00-06:00`);
 }
 
-/** Formatea "2026-06-12" → "Vie 12 Jun 2026" */
+/**
+ * Formatea "2026-06-14" → "Dom 14 Jun 2026" (es) / "Sun 14 Jun 2026" (en) / etc.
+ * El idioma se toma automáticamente del idioma activo de i18n.
+ */
 export function formatFechaLarga(fecha: string): string {
   const d = new Date(`${fecha}T12:00:00`);
-  const dia  = DIAS_ES[d.getDay()];
-  const num  = d.getDate();
-  const mes  = MESES_ES[d.getMonth()];
-  const year = d.getFullYear();
-  return `${dia} ${num} ${mes} ${year}`;
+  const locale = getCurrentLocale();
+  try {
+    const dia = cap(new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(d));
+    const num = d.getDate();
+    const mes = cap(new Intl.DateTimeFormat(locale, { month: 'short' }).format(d).replace('.', ''));
+    const year = d.getFullYear();
+    return `${dia} ${num} ${mes} ${year}`;
+  } catch {
+    return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+  }
 }
 
-/** Formatea "2026-06-12" → "12 Jun" */
+/**
+ * Formatea "2026-06-14" → "14 Jun" (es) / "Jun 14" (en, según locale).
+ * Usa solo día + mes corto, en el formato natural del idioma.
+ */
 export function formatFechaCorta(fecha: string): string {
-  const [, m, d] = fecha.split('-').map(Number);
-  return `${d} ${MESES_ES[m - 1]}`;
+  const [y, m, d] = fecha.split('-').map(Number);
+  const date = new Date(y, m - 1, d, 12);
+  const locale = getCurrentLocale();
+  try {
+    return cap(
+      new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' })
+        .format(date)
+        .replace('.', ''),
+    );
+  } catch {
+    return `${d}/${m}`;
+  }
 }
 
-/** Convierte hora "17:00" → "17:00 CST" */
+/** Convierte hora "17:00" → "17:00 CST" (CST es estándar internacional) */
 export function formatHora(hora: string): string {
   return `${hora} CST`;
 }

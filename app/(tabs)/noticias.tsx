@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -8,6 +8,7 @@ import {
   Animated,
   FlatList,
   Image,
+  Platform,
   Pressable,
   RefreshControl,
   StatusBar,
@@ -262,6 +263,17 @@ export default function NoticiasScreen() {
   const contentAnim = useRef(new Animated.Value(0)).current;
   const emptyAnim = useRef(new Animated.Value(0)).current;
 
+  // StatusBar — el header del drawer (GuadalupeGO) es el que vive arriba con
+  // fondo de tema, no el banner naranja. Iconos del tema para que se vean bien.
+  useFocusEffect(
+    useCallback(() => {
+      StatusBar.setBarStyle(isDark ? 'light-content' : 'dark-content', true);
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor(colors.card);
+      }
+    }, [isDark, colors.card])
+  );
+
   const cargarNoticias = useCallback(async () => {
     try {
       const [guadalupeItems, ...rssResultados] = await Promise.all([
@@ -404,7 +416,6 @@ export default function NoticiasScreen() {
   if (loading) {
     return (
       <View style={[s.container, s.loadingScreen]}>
-        <StatusBar barStyle="light-content" backgroundColor="#E96928" />
         <LinearGradient
           colors={['#E96928', '#c4511a']}
           start={{ x: 0, y: 0 }}
@@ -434,8 +445,6 @@ export default function NoticiasScreen() {
 
   return (
     <View style={s.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#E96928" />
-
       <FlatList
         data={visible}
         keyExtractor={(item, index) => item.link || item.title || String(index)}

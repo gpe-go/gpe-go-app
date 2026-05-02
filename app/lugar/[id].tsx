@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View, Text, StyleSheet, Image, ScrollView,
   Pressable, StatusBar, Platform, ActivityIndicator, Share,
@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useLugar } from '../../src/hooks/useLugar';
@@ -52,6 +52,24 @@ export default function LugarDetalle() {
   const [activeTab, setActiveTab] = useState<'info' | 'reseñas'>('info');
 
   const s = makeStyles(colors, fonts, isDark);
+
+  // StatusBar — light-content translucent mientras está activa, restaura al salir
+  useFocusEffect(
+    useCallback(() => {
+      StatusBar.setBarStyle('light-content', true);
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor('transparent');
+        StatusBar.setTranslucent(true);
+      }
+      return () => {
+        StatusBar.setBarStyle(isDark ? 'light-content' : 'dark-content', true);
+        if (Platform.OS === 'android') {
+          StatusBar.setBackgroundColor(colors.background);
+          StatusBar.setTranslucent(false);
+        }
+      };
+    }, [isDark, colors.background])
+  );
 
   if (loading) {
     return (
@@ -106,7 +124,6 @@ export default function LugarDetalle() {
 
   return (
     <View style={s.container}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
       <ScrollView showsVerticalScrollIndicator={false}>
 

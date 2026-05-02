@@ -9,6 +9,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Animated,
   FlatList,
@@ -101,6 +102,7 @@ const cu = StyleSheet.create({
 
 // ── Sub-componente: Tarjeta de partido (nuevo diseño estilo FIFA) ─────────────
 const MatchCard = React.memo(({ partido }: { partido: Partido }) => {
+  const { t } = useTranslation();
   const fColor   = getFaseColor(partido.fase);
   const hasResult = partido.resultado !== null;
   const isLive    = partido.estado === 'en_vivo';
@@ -129,7 +131,7 @@ const MatchCard = React.memo(({ partido }: { partido: Partido }) => {
           {isLive && (
             <View style={mc.livePill}>
               <View style={mc.liveDot} />
-              <Text style={mc.liveText}>EN VIVO</Text>
+              <Text style={mc.liveText}>{t('mundial_live')}</Text>
             </View>
           )}
           {hasResult ? (
@@ -345,6 +347,7 @@ const mc = StyleSheet.create({
 // ── Componente principal ──────────────────────────────────────────────────────
 export default function MundialWidget() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   // ── Próximo partido ────────────────────────────────────────────────────────
   const proximoPartido = useMemo(() => {
@@ -451,7 +454,7 @@ export default function MundialWidget() {
             <Text style={s.sedeFlag}>🇲🇽</Text>
           </View>
           <View style={s.sedeLabelWrap}>
-            <Text style={s.sedeLabel}>3 PAÍSES · 16 SEDES</Text>
+            <Text style={s.sedeLabel}>{t('mundial_3_paises_sedes')}</Text>
           </View>
         </View>
 
@@ -466,7 +469,7 @@ export default function MundialWidget() {
             <Animated.Text style={[s.heroYear, { opacity: goldOpacity }]}>
               2026
             </Animated.Text>
-            <Text style={s.heroSub}>Estadio BBVA · Guadalupe, NL</Text>
+            <Text style={s.heroSub}>{t('mundial_hero_sub')}</Text>
           </View>
         </View>
 
@@ -474,22 +477,22 @@ export default function MundialWidget() {
         <View style={s.heroStats}>
           <View style={s.statChip}>
             <Text style={s.statNum}>{TORNEO.equipos}</Text>
-            <Text style={s.statLbl}>EQUIPOS</Text>
+            <Text style={s.statLbl}>{t('mundial_stat_teams')}</Text>
           </View>
           <View style={s.statDivider} />
           <View style={s.statChip}>
             <Text style={s.statNum}>{TORNEO.partidos}</Text>
-            <Text style={s.statLbl}>PARTIDOS</Text>
+            <Text style={s.statLbl}>{t('mundial_stat_matches')}</Text>
           </View>
           <View style={s.statDivider} />
           <View style={s.statChip}>
             <Text style={s.statNum}>{PARTIDOS_BBVA.length}</Text>
-            <Text style={s.statLbl}>EN BBVA</Text>
+            <Text style={s.statLbl}>{t('mundial_stat_at_bbva')}</Text>
           </View>
           <View style={s.statDivider} />
           <View style={s.statChip}>
             <Text style={s.statNum}>{ESTADIO_BBVA.capacidadMundial.toLocaleString('es')}</Text>
-            <Text style={s.statLbl}>AFORO</Text>
+            <Text style={s.statLbl}>{t('mundial_stat_capacity')}</Text>
           </View>
         </View>
       </LinearGradient>
@@ -502,21 +505,21 @@ export default function MundialWidget() {
           <View style={s.countHeader}>
             <View style={s.countHeaderLeft}>
               <Text style={s.countTorneoIcon}>🌍</Text>
-              <Text style={s.countTitleTorneo}>EL MUNDIAL EMPIEZA EN</Text>
+              <Text style={s.countTitleTorneo}>{t('mundial_starts_in')}</Text>
             </View>
             <View style={[s.liveDot, { backgroundColor: F.green }]} />
           </View>
           <Text style={s.countTorneoSub}>
-            11 Jun · México vs Sudáfrica · Estadio Azteca
+            {t('mundial_opener_match')}
           </Text>
           <View style={s.countUnits}>
-            <CountUnit value={countdownTorneo.dias}  label="DÍAS"  />
+            <CountUnit value={countdownTorneo.dias}  label={t('mundial_days')}  />
             <Text style={s.countColon}>:</Text>
-            <CountUnit value={countdownTorneo.horas} label="HORAS" />
+            <CountUnit value={countdownTorneo.horas} label={t('mundial_hours')} />
             <Text style={s.countColon}>:</Text>
-            <CountUnit value={countdownTorneo.mins}  label="MIN"   />
+            <CountUnit value={countdownTorneo.mins}  label={t('mundial_min')}   />
             <Text style={s.countColon}>:</Text>
-            <CountUnit value={countdownTorneo.segs}  label="SEG"   />
+            <CountUnit value={countdownTorneo.segs}  label={t('mundial_sec')}   />
           </View>
         </View>
       )}
@@ -532,8 +535,8 @@ export default function MundialWidget() {
               <Ionicons name="timer-outline" size={16} color={F.gold} />
               <Text style={s.countTitle}>
                 {proximoPartido.estado === 'en_vivo'
-                  ? '🔴  PARTIDO EN CURSO'
-                  : 'PRÓXIMO PARTIDO EN BBVA'}
+                  ? `🔴  ${t('mundial_match_in_progress')}`
+                  : t('mundial_next_match_bbva')}
               </Text>
             </View>
             <View style={s.liveDot} />
@@ -560,25 +563,25 @@ export default function MundialWidget() {
           {/* Dígitos */}
           {proximoPartido.estado !== 'en_vivo' ? (
             <View style={s.countUnits}>
-              <CountUnit value={countdown.dias}  label="DÍAS"  />
+              <CountUnit value={countdown.dias}  label={t('mundial_days')}  />
               <Text style={s.countColon}>:</Text>
-              <CountUnit value={countdown.horas} label="HORAS" />
+              <CountUnit value={countdown.horas} label={t('mundial_hours')} />
               <Text style={s.countColon}>:</Text>
-              <CountUnit value={countdown.mins}  label="MIN"   />
+              <CountUnit value={countdown.mins}  label={t('mundial_min')}   />
               <Text style={s.countColon}>:</Text>
-              <CountUnit value={countdown.segs}  label="SEG"   />
+              <CountUnit value={countdown.segs}  label={t('mundial_sec')}   />
             </View>
           ) : (
             <View style={s.enVivoWrap}>
               <View style={s.enVivoPulse} />
-              <Text style={s.enVivoText}>PARTIDO EN VIVO · Sigue en FIFA.com</Text>
+              <Text style={s.enVivoText}>{t('mundial_live_follow')}</Text>
             </View>
           )}
         </View>
       ) : (
         // Todos los partidos terminaron
         <View style={s.torneoFinWrap}>
-          <Text style={s.torneoFinText}>🏆 ¡Todos los partidos en BBVA han concluido!</Text>
+          <Text style={s.torneoFinText}>🏆 {t('mundial_all_matches_ended')}</Text>
         </View>
       )}
 
@@ -587,7 +590,7 @@ export default function MundialWidget() {
       ════════════════════════════════════════════════════════════════════ */}
       <View style={s.sectionHeader}>
         <View style={s.sectionAccent} />
-        <Text style={s.sectionTitle}>Calendario Estadio BBVA</Text>
+        <Text style={s.sectionTitle}>{t('mundial_calendar')}</Text>
         <Pressable
           onPress={abrirBBVA}
           style={({ pressed }) => [s.bbvaLinkBtn, { opacity: pressed ? 0.7 : 1 }]}
@@ -616,7 +619,7 @@ export default function MundialWidget() {
       ════════════════════════════════════════════════════════════════════ */}
       <View style={s.sectionHeader}>
         <View style={s.sectionAccent} />
-        <Text style={s.sectionTitle}>El Estadio</Text>
+        <Text style={s.sectionTitle}>{t('mundial_the_stadium')}</Text>
       </View>
 
       <LinearGradient
@@ -629,8 +632,8 @@ export default function MundialWidget() {
         {/* Header del estadio */}
         <View style={s.stadiumHeader}>
           <View>
-            <Text style={s.stadiumName}>{ESTADIO_BBVA.nombre}</Text>
-            <Text style={s.stadiumAlias}>"{ESTADIO_BBVA.alias}"</Text>
+            <Text style={s.stadiumName}>{t('mundial_stadium_name')}</Text>
+            <Text style={s.stadiumAlias}>{'"'}{t('mundial_stadium_alias')}{'"'}</Text>
           </View>
           <Text style={s.stadiumEmoji}>🏟️</Text>
         </View>
@@ -645,19 +648,19 @@ export default function MundialWidget() {
             <Text style={s.stadiumStatVal}>
               {ESTADIO_BBVA.capacidadMundial.toLocaleString('es')}
             </Text>
-            <Text style={s.stadiumStatLbl}>Aforo Mundial</Text>
+            <Text style={s.stadiumStatLbl}>{t('mundial_capacity_world')}</Text>
           </View>
           <View style={s.stadiumStatDivider} />
           <View style={s.stadiumStat}>
             <MaterialCommunityIcons name="calendar-check" size={18} color={F.gold} />
             <Text style={s.stadiumStatVal}>{ESTADIO_BBVA.inaugurado}</Text>
-            <Text style={s.stadiumStatLbl}>Inaugurado</Text>
+            <Text style={s.stadiumStatLbl}>{t('mundial_inaugurated')}</Text>
           </View>
           <View style={s.stadiumStatDivider} />
           <View style={s.stadiumStat}>
             <MaterialCommunityIcons name="soccer" size={18} color={F.gold} />
             <Text style={s.stadiumStatVal}>Rayados</Text>
-            <Text style={s.stadiumStatLbl}>Equipo local</Text>
+            <Text style={s.stadiumStatLbl}>{t('mundial_home_team')}</Text>
           </View>
         </View>
 
@@ -687,7 +690,7 @@ export default function MundialWidget() {
           }
         >
           <Ionicons name="map" size={16} color="#fff" />
-          <Text style={s.mapBtnText}>Ver ubicación en mapa</Text>
+          <Text style={s.mapBtnText}>{t('mundial_view_on_map')}</Text>
         </Pressable>
       </LinearGradient>
 
@@ -696,7 +699,7 @@ export default function MundialWidget() {
       ════════════════════════════════════════════════════════════════════ */}
       <View style={s.sectionHeader}>
         <View style={s.sectionAccent} />
-        <Text style={s.sectionTitle}>Noticias BBVA</Text>
+        <Text style={s.sectionTitle}>{t('mundial_news')}</Text>
       </View>
 
       <Pressable
@@ -714,19 +717,17 @@ export default function MundialWidget() {
 
           {/* Badge */}
           <View style={s.noticiaBadge}>
-            <Text style={s.noticiaBadgeText}>⚽ CLASIFICATORIO</Text>
+            <Text style={s.noticiaBadgeText}>⚽ {t('mundial_qualifier_badge')}</Text>
           </View>
 
           {/* Título */}
           <Text style={s.noticiaTitle}>
-            ¡Estadio Monterrey fue sede del primer partido clasificatorio al Mundial 2026!
+            {t('mundial_news_title')}
           </Text>
 
           {/* Resumen */}
           <Text style={s.noticiaDesc} numberOfLines={3}>
-            Bolivia vs Surinam se enfrentaron en el Play-Off Intercontinental para
-            definir el último boleto al FIFA World Cup 2026. Un adelanto mundialista
-            en el Estadio BBVA.
+            {t('mundial_news_desc')}
           </Text>
 
           {/* Footer */}
@@ -736,7 +737,7 @@ export default function MundialWidget() {
               <Text style={s.noticiaSourceText}>estadio-bbva.mx</Text>
             </View>
             <View style={s.noticiaReadMore}>
-              <Text style={s.noticiaReadMoreText}>Leer más</Text>
+              <Text style={s.noticiaReadMoreText}>{t('news_read_more')}</Text>
               <Ionicons name="arrow-forward" size={12} color={F.gold} />
             </View>
           </View>
@@ -751,8 +752,7 @@ export default function MundialWidget() {
         <View style={s.notaWrap}>
           <Ionicons name="information-circle-outline" size={14} color={F.textSub} />
           <Text style={s.notaText}>
-            Calendario basado en el sorteo oficial FIFA (dic. 2025). Horarios en CST (UTC-6).
-            El calendario y resultados pueden actualizarse.
+            {t('mundial_disclaimer')}
           </Text>
         </View>
 
@@ -771,7 +771,7 @@ export default function MundialWidget() {
             style={s.fifaBtnGradient}
           >
             <MaterialCommunityIcons name="soccer-field" size={20} color="#000" />
-            <Text style={s.fifaBtnText}>FIFA.com — Calendario Oficial</Text>
+            <Text style={s.fifaBtnText}>{t('mundial_fifa_official')}</Text>
             <Ionicons name="open-outline" size={16} color="#000" />
           </LinearGradient>
         </Pressable>

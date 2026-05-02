@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useEffect, useRef, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
@@ -17,6 +18,12 @@ import {
 } from 'react-native';
 import { enviarMensajeSoporte, getContactoInfo, getEmergencias } from '../../src/api/api';
 import { useTheme } from '../../src/context/ThemeContext';
+
+// ── Filtro de lenguaje inapropiado ──────────────────────────────────────────
+// Usamos el filtro centralizado en src/utils/filtrarPalabras.ts para asegurar
+// la misma cobertura y comportamiento que las reseñas (mayús/minús, mEzClA,
+// con/sin acentos y sin falsos positivos como "círculo" → "culo").
+import { contienePalabraProhibida } from '../../src/utils/filtrarPalabras';
 
 // ── Datos por defecto (fallback si la API no responde) ───
 const EMERGENCIAS_DEFAULT = [
@@ -99,6 +106,8 @@ function FocusInput({
   autoCorrect = true,
   numberOfLines,
   textAlignVertical,
+  onClear,
+  errorMsg,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   placeholder: string;
@@ -112,6 +121,8 @@ function FocusInput({
   autoCorrect?: boolean;
   numberOfLines?: number;
   textAlignVertical?: 'auto' | 'top' | 'center' | 'bottom';
+  onClear?: () => void;
+  errorMsg?: string;
 }) {
   const focusAnim = useRef(new Animated.Value(0)).current;
 
@@ -142,44 +153,61 @@ function FocusInput({
   });
 
   return (
-    <Animated.View
-      style={[
-        inputStyles.wrapper,
-        {
-          backgroundColor: colors.inputBackground,
-          borderColor,
-          shadowColor: '#E96928',
-          shadowOpacity,
-        },
-        multiline && inputStyles.textAreaWrapper,
-      ]}
-    >
-      <Ionicons
-        name={icon}
-        size={18}
-        color={colors.subtext}
-        style={[inputStyles.icon, multiline ? { marginTop: 2 } : null]}
-      />
-      <TextInput
-        placeholder={placeholder}
-        placeholderTextColor={colors.subtext}
+    <>
+      <Animated.View
         style={[
-          inputStyles.input,
-          { color: colors.text, fontSize: fonts.base },
-          multiline && inputStyles.textArea,
+          inputStyles.wrapper,
+          {
+            backgroundColor: colors.inputBackground,
+            borderColor: errorMsg ? '#EF4444' : borderColor,
+            shadowColor: errorMsg ? '#EF4444' : '#E96928',
+            shadowOpacity,
+          },
+          multiline && inputStyles.textAreaWrapper,
         ]}
-        value={value}
-        onChangeText={onChangeText}
-        multiline={multiline}
-        numberOfLines={numberOfLines}
-        textAlignVertical={textAlignVertical}
-        keyboardType={keyboardType}
-        autoCapitalize={autoCapitalize}
-        autoCorrect={autoCorrect}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-      />
-    </Animated.View>
+      >
+        <Ionicons
+          name={icon}
+          size={18}
+          color={errorMsg ? '#EF4444' : colors.subtext}
+          style={[inputStyles.icon, multiline ? { marginTop: 2 } : null]}
+        />
+        <TextInput
+          placeholder={placeholder}
+          placeholderTextColor={colors.subtext}
+          style={[
+            inputStyles.input,
+            { color: colors.text, fontSize: fonts.base },
+            multiline && inputStyles.textArea,
+          ]}
+          value={value}
+          onChangeText={onChangeText}
+          multiline={multiline}
+          numberOfLines={numberOfLines}
+          textAlignVertical={textAlignVertical}
+          keyboardType={keyboardType}
+          autoCapitalize={autoCapitalize}
+          autoCorrect={autoCorrect}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+        />
+        {onClear && value.length > 0 && (
+          <Pressable
+            onPress={onClear}
+            hitSlop={8}
+            style={[inputStyles.clearBtn, multiline && { alignSelf: 'flex-start', marginTop: 1 }]}
+          >
+            <Ionicons name="close-circle" size={18} color={colors.subtext} />
+          </Pressable>
+        )}
+      </Animated.View>
+      {!!errorMsg && (
+        <View style={inputStyles.errorRow}>
+          <Ionicons name="warning-outline" size={13} color="#EF4444" />
+          <Text style={[inputStyles.errorText, { fontSize: fonts.xs }]}>{errorMsg}</Text>
+        </View>
+      )}
+    </>
   );
 }
 
@@ -211,6 +239,23 @@ const inputStyles = StyleSheet.create({
     minHeight: 90,
     textAlignVertical: 'top',
   },
+  clearBtn: {
+    marginLeft: 6,
+    padding: 2,
+  },
+  errorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: -8,
+    marginBottom: 10,
+    paddingHorizontal: 4,
+  },
+  errorText: {
+    color: '#EF4444',
+    fontWeight: '600',
+    flex: 1,
+  },
 });
 
 export default function ContactoScreen() {
@@ -218,12 +263,34 @@ export default function ContactoScreen() {
   const { colors, fonts, isDark } = useTheme();
   const s = makeStyles(colors, fonts, isDark);
 
+  // StatusBar — el header del drawer (GuadalupeGO) es el que vive arriba con
+  // fondo de tema, no el banner naranja. Iconos del tema para que se vean bien.
+  useFocusEffect(
+    useCallback(() => {
+      StatusBar.setBarStyle(isDark ? 'light-content' : 'dark-content', true);
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor(colors.card);
+      }
+    }, [isDark, colors.card])
+  );
+
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [telefono, setTelefono] = useState('');
   const [mensaje, setMensaje] = useState('');
+  const [mensajeError, setMensajeError] = useState('');
   const [enviando, setEnviando] = useState(false);
+
   const [emergencias, setEmergencias] = useState<Emergencia[]>(EMERGENCIAS_DEFAULT);
+
+  const handleMensaje = (text: string) => {
+    setMensaje(text);
+    if (text.length > 0 && contienePalabraProhibida(text)) {
+      setMensajeError(t('profanity_inline_warning'));
+    } else {
+      setMensajeError('');
+    }
+  };
 
   // Info de contacto institucional desde la BD
   const [contactoInfo, setContactoInfo] = useState<{
@@ -295,6 +362,15 @@ export default function ContactoScreen() {
       Alert.alert(t('required_fields'), t('required_fields_msg'));
       return;
     }
+    if (contienePalabraProhibida(mensaje)) {
+      setMensajeError(t('profanity_inline_warning'));
+      Alert.alert(
+        t('profanity_alert_title'),
+        t('profanity_alert_msg'),
+        [{ text: t('profanity_alert_btn'), style: 'default' }],
+      );
+      return;
+    }
     setEnviando(true);
     try {
       await enviarMensajeSoporte({
@@ -310,6 +386,7 @@ export default function ContactoScreen() {
       setEmail('');
       setTelefono('');
       setMensaje('');
+      setMensajeError('');
       setEnviando(false);
       Alert.alert(t('message_sent'), t('message_sent_sub'));
     }
@@ -322,7 +399,6 @@ export default function ContactoScreen() {
       contentContainerStyle={{ paddingBottom: 50 }}
       keyboardShouldPersistTaps="handled"
     >
-      <StatusBar barStyle="light-content" backgroundColor="#E96928" />
 
       {/* ══ BANNER ══════════════════════════════════════ */}
       <AnimatedSection delay={0}>
@@ -417,6 +493,7 @@ export default function ContactoScreen() {
               onChangeText={setNombre}
               colors={colors}
               fonts={fonts}
+              onClear={() => setNombre('')}
             />
 
             <FocusInput
@@ -429,6 +506,7 @@ export default function ContactoScreen() {
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
+              onClear={() => setEmail('')}
             />
 
             <FocusInput
@@ -439,18 +517,21 @@ export default function ContactoScreen() {
               colors={colors}
               fonts={fonts}
               keyboardType="phone-pad"
+              onClear={() => setTelefono('')}
             />
 
             <FocusInput
               icon="chatbubble-outline"
               placeholder={t('contact_message')}
               value={mensaje}
-              onChangeText={setMensaje}
+              onChangeText={handleMensaje}
               colors={colors}
               fonts={fonts}
               multiline
               numberOfLines={4}
               textAlignVertical="top"
+              onClear={() => { setMensaje(''); setMensajeError(''); }}
+              errorMsg={mensajeError}
             />
 
             <Pressable

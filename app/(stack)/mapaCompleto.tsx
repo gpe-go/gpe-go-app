@@ -1,6 +1,6 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -32,6 +32,23 @@ const DIRECTORIO_CATS = [
 ];
 const TODAS_CATS = [...EXPLORAR_CATS, ...DIRECTORIO_CATS];
 
+// Mapeo de nombres de categoría (español, usados internamente) → claves i18n
+const CAT_I18N_KEY: Record<string, string> = {
+  'Cerros':          'cat_cerros',
+  'Parques':         'cat_parques',
+  'Pueblos Mágicos': 'cat_pueblos_magicos',
+  'Museos':          'cat_museos',
+  'Restaurantes':    'cat_restaurantes',
+  'Hoteles':         'cat_hoteles',
+  'Tiendas':         'cat_tiendas',
+  'Servicios':       'cat_servicios',
+  'Plazas':          'cat_plazas',
+  'Hospitales':      'cat_hospitales',
+  'Farmacias':       'cat_farmacias',
+  'Supermercados':   'cat_supermercados',
+  'Gasolineras':     'cat_gasolineras',
+};
+
 const DEFAULT_REGION = {
   latitude: 25.676,
   longitude: -100.256,
@@ -45,6 +62,24 @@ export default function MapaCompletoScreen() {
   const { colors, fonts, isDark } = useTheme();
   const insets  = useSafeAreaInsets();
   const mapRef  = useRef<MapView>(null);
+
+  // StatusBar — light-content translucent mientras está activa, restaura al salir
+  useFocusEffect(
+    useCallback(() => {
+      StatusBar.setBarStyle('light-content', true);
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor('transparent');
+        StatusBar.setTranslucent(true);
+      }
+      return () => {
+        StatusBar.setBarStyle(isDark ? 'light-content' : 'dark-content', true);
+        if (Platform.OS === 'android') {
+          StatusBar.setBackgroundColor(colors.background);
+          StatusBar.setTranslucent(false);
+        }
+      };
+    }, [isDark, colors.background])
+  );
 
   const params = useLocalSearchParams<{
     latitude?:         string;
@@ -204,14 +239,17 @@ export default function MapaCompletoScreen() {
 
   const searchHints = useMemo(() => {
     const cats = scopeCats ?? TODAS_CATS;
-    const catHints = cats.slice(0, 3);
+    const catHints = cats.slice(0, 3).map(c => {
+      const key = CAT_I18N_KEY[c];
+      return key ? t(key) : c;
+    });
     const hints: string[] = [];
     for (let i = 0; i < 3; i++) {
       if (pickedPlaceNames[i]) hints.push(pickedPlaceNames[i]);
       if (catHints[i])          hints.push(catHints[i]);
     }
-    return hints.length > 0 ? hints : ['Buscar lugares o categorías'];
-  }, [pickedPlaceNames, scopeCats]);
+    return hints.length > 0 ? hints : [t('search_places_or_cats')];
+  }, [pickedPlaceNames, scopeCats, t]);
 
   const { index: hintIdx, opacity: hintOpacity } = useAnimatedPlaceholder(searchHints.length);
 
@@ -222,7 +260,6 @@ export default function MapaCompletoScreen() {
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <View style={ms.container}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
       {/* ── MAPA ─────────────────────────────────────────── */}
       <MapView
@@ -250,6 +287,7 @@ export default function MapaCompletoScreen() {
             title={pinLabel ?? undefined}
             description={pinSub ?? undefined}
             zIndex={600}
+            anchor={{ x: 0.5, y: 1 }}
           >
             <View style={ms.pinMarkerWrap}>
               <Text style={ms.pinMarkerEmoji}>🏟️</Text>
@@ -358,7 +396,7 @@ export default function MapaCompletoScreen() {
           <View style={ms.resultsHeader}>
             <View style={ms.resultsHeaderDot} />
             <Text style={[ms.resultsTitle, { color: textCol, fontSize: fonts.sm }]}>
-              {searchResults.length} resultado{searchResults.length !== 1 ? 's' : ''}
+              {t('search_results_count', { count: searchResults.length })}
             </Text>
           </View>
 
@@ -424,7 +462,7 @@ export default function MapaCompletoScreen() {
         <View style={[ms.noResultsBubble, { backgroundColor: cardBg, bottom: insets.bottom + 100 }]}>
           <Ionicons name="search-outline" size={16} color={subCol} />
           <Text style={[ms.noResultsText, { color: subCol, fontSize: fonts.sm }]}>
-            Sin resultados para "{mapSearch}"
+            {t('search_no_results', { query: mapSearch })}
           </Text>
         </View>
       )}

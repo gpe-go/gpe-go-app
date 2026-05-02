@@ -1,8 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Linking from "expo-linking";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useRef } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Animated,
@@ -43,6 +43,24 @@ export default function DetalleNoticiaScreen() {
   const { colors, fonts, isDark } = useTheme();
   const s = makeStyles(colors, fonts, isDark);
   const router = useRouter();
+
+  // StatusBar — light-content translucent mientras está activa, restaura al salir
+  useFocusEffect(
+    useCallback(() => {
+      StatusBar.setBarStyle('light-content', true);
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor('transparent');
+        StatusBar.setTranslucent(true);
+      }
+      return () => {
+        StatusBar.setBarStyle(isDark ? 'light-content' : 'dark-content', true);
+        if (Platform.OS === 'android') {
+          StatusBar.setBackgroundColor(colors.background);
+          StatusBar.setTranslucent(false);
+        }
+      };
+    }, [isDark, colors.background])
+  );
 
   const { title, description, image, content, url, date } = useLocalSearchParams();
 
@@ -89,7 +107,6 @@ export default function DetalleNoticiaScreen() {
   if (isLoading) {
     return (
       <View style={s.wrapper}>
-        <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
         <View style={s.skeletonHero} />
 
@@ -116,7 +133,6 @@ export default function DetalleNoticiaScreen() {
 
   return (
     <View style={s.wrapper}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={s.hero}>

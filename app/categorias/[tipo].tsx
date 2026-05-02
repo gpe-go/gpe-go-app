@@ -1,13 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useRef } from 'react';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Animated,
   FlatList,
   Image,
+  Platform,
   Pressable,
   StatusBar,
   StyleSheet,
@@ -78,6 +79,17 @@ export default function Categoria() {
   ) as { data?: any[]; loading: boolean };
 
   const s = makeStyles(colors, fonts, isDark);
+
+  // StatusBar — la zona del status bar es la SafeAreaView (fondo del tema),
+  // no el header naranja. Por eso usamos iconos del tema, NO siempre claros.
+  useFocusEffect(
+    useCallback(() => {
+      StatusBar.setBarStyle(isDark ? 'light-content' : 'dark-content', true);
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor(colors.background);
+      }
+    }, [isDark, colors.background])
+  );
 
   const bannerAnim = useRef(new Animated.Value(0)).current;
   const contentAnim = useRef(new Animated.Value(0)).current;
@@ -157,8 +169,6 @@ export default function Categoria() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <StatusBar barStyle="light-content" backgroundColor="#E96928" />
-
       <Animated.View style={bannerAnimatedStyle}>
         <LinearGradient
           colors={['#E96928', '#c4511a']}

@@ -552,7 +552,7 @@ export default function EventosScreen() {
 
             {/* ── Chips de categoría ─────────────────────── */}
             <Animated.View style={categoryAnimatedStyle}>
-              <View style={{ paddingHorizontal: 20, marginBottom: 10 }}>
+              <View style={{ marginTop: 18, marginBottom: 10 }}>
                 <View style={s.sectionHeader}>
                   <View style={s.sectionDot} />
                   <Text style={[s.sectionTitle, { fontSize: fonts.lg }]}>

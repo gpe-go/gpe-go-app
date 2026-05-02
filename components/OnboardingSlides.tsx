@@ -4,7 +4,8 @@
  * Pasos: 0=Home · 1=Idiomas · 2=MapaCompleto · 3=Noticias · 4=Directorio
  *        5=Explorar · 6=Eventos · 7=Favoritos · 8=Contacto
  *        9=BarraLateral · 10=Notificaciones · 11=Perfil
- *        12=RegistrarNegocio · 13=Configuracion · →Finish card
+ *        12=EditarPerfil · 13=RegistrarNegocio · 14=Configuracion
+ *        15=Privacidad · →Finish card
  */
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -225,7 +226,22 @@ const STEPS: TourStep[] = [
     ],
   },
   {
-    // Step 12 — Registrar negocio: tap campo nombre + scroll
+    // Step 12 — Editar perfil: tap en campo nombre (con label flotante)
+    type: 'stack',
+    route: '/(stack)/editarPerfil',
+    titleKey: 'onboarding_tooltip_editarPerfil_title',
+    descKey: 'onboarding_tooltip_editarPerfil_desc',
+    arrowX: 0, arrowY: -18, arrowDir: 'up',
+    icon: 'create-outline', color: '#0EA5E9',
+    interactions: [
+      // TAP en el campo "Nombre completo" (~38% vertical)
+      { type: 'tap',        x: W * 0.50, y: H * 0.38, delay: 700 },
+      // Scroll para ver la sección de foto
+      { type: 'swipe-down', x: W * 0.50, y: H * 0.55, delay: 1500 },
+    ],
+  },
+  {
+    // Step 13 — Registrar negocio: tap campo nombre + scroll
     type: 'stack',
     route: '/(stack)/registrar-negocio',
     titleKey: 'onboarding_tooltip_registrarNegocio_title',
@@ -238,7 +254,7 @@ const STEPS: TourStep[] = [
     ],
   },
   {
-    // Step 13 — Configuración: tap toggle modo oscuro + scroll
+    // Step 14 — Configuración: tap toggle modo oscuro + scroll
     type: 'stack',
     route: '/(stack)/configuracion',
     titleKey: 'onboarding_tooltip_configuracion_title',
@@ -248,6 +264,19 @@ const STEPS: TourStep[] = [
     interactions: [
       { type: 'tap',        x: W * 0.82, y: H * 0.25, delay: 700 },
       { type: 'swipe-down', x: W * 0.50, y: H * 0.40, delay: 1500 },
+    ],
+  },
+  {
+    // Step 15 — Privacidad y permisos
+    type: 'stack',
+    route: '/(stack)/privacidad',
+    titleKey: 'onboarding_tooltip_privacidad_title',
+    descKey: 'onboarding_tooltip_privacidad_desc',
+    arrowX: 0, arrowY: -18, arrowDir: 'up',
+    icon: 'shield-checkmark-outline', color: '#22C55E',
+    interactions: [
+      // Scroll para ver tarjeta de permisos del sistema
+      { type: 'swipe-down', x: W * 0.50, y: H * 0.45, delay: 700 },
     ],
   },
 ];

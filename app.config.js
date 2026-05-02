@@ -5,6 +5,14 @@
 //  marcadas con  ← PENDIENTE  con los datos del municipio.
 // ============================================================
 
+// API Key oficial de Google Maps proporcionada por el municipio.
+// Es la misma para iOS y Android (confirmado por el ingeniero).
+// La seguridad de esta key se controla en Google Cloud Console
+// restringiendo por Bundle ID (iOS) + SHA-1 del firmado (Android).
+// Se puede sobreescribir con la variable de entorno GOOGLE_MAPS_API_KEY.
+const GOOGLE_MAPS_API_KEY =
+  process.env.GOOGLE_MAPS_API_KEY ?? "AIzaSyADD8zRXUdokHP_CvyxOtkh50T6DtMVrww";
+
 module.exports = {
   expo: {
     name: "GuadalupeGo",
@@ -27,6 +35,11 @@ module.exports = {
       //   nueva versión al App Store (formato string)
       buildNumber: "1",
 
+      // Google Maps API Key para iOS (proporcionada por el municipio).
+      config: {
+        googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+      },
+
       infoPlist: {
         NSLocationWhenInUseUsageDescription:
           "GuadalupeGo usa tu ubicación para mostrar restaurantes, lugares turísticos y eventos cercanos.",
@@ -44,11 +57,8 @@ module.exports = {
 
       config: {
         googleMaps: {
-          // ← PENDIENTE: reemplaza con la API Key de Google Maps
-          //   que te proporcione el municipio o que obtengas en
-          //   https://console.cloud.google.com
-          //   (habilita "Maps SDK for Android" en la consola)
-          apiKey: process.env.GOOGLE_MAPS_API_KEY ?? "GOOGLE_MAPS_API_KEY_PENDIENTE",
+          // Google Maps API Key para Android (la misma que iOS).
+          apiKey: GOOGLE_MAPS_API_KEY,
         },
       },
 
@@ -99,6 +109,8 @@ module.exports = {
             "GuadalupeGo necesita tu ubicación para mostrarte lugares cercanos.",
         },
       ],
+
+      "expo-web-browser",
     ],
 
     // ── Experimental ────────────────────────────────────────

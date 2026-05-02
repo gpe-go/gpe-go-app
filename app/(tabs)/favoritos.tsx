@@ -463,7 +463,7 @@ export default function FavoritosScreen() {
         />
 
         <View style={s.container}>
-          <StatusBar barStyle="light-content" />
+          <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
 
           <FlatList
             data={[{ id: 'empty-auth' }]}
@@ -505,7 +505,7 @@ export default function FavoritosScreen() {
     return (
       <GestureHandlerRootView style={{ flex: 1 }}>
         <View style={s.container}>
-          <StatusBar barStyle="light-content" />
+          <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
 
           <FlatList
             data={[{ id: 'empty-favorites' }]}
@@ -544,7 +544,7 @@ export default function FavoritosScreen() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={s.container}>
-        <StatusBar barStyle="light-content" />
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
         <FlatList
           data={favoritos}
           keyExtractor={(item) => item.id.toString()}

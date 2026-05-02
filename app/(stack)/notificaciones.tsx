@@ -1,7 +1,8 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import {
   Animated,
   FlatList,
+  Platform,
   Pressable,
   RefreshControl,
   StatusBar,
@@ -12,8 +13,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useNotificaciones, type Notificacion } from '../../src/context/NotificacionesContext';
 
@@ -33,16 +35,42 @@ function tipoIcon(tipo: string): { name: IoniconName; color: string; bg: string 
 }
 
 // ─── Fecha relativa ──────────────────────────────────────────────────────────
-function formatRelative(dateStr: string): string {
+function formatRelative(dateStr: string, t: TFunction): string {
   const diff  = Date.now() - new Date(dateStr).getTime();
   const mins  = Math.floor(diff / 60_000);
   const hours = Math.floor(diff / 3_600_000);
   const days  = Math.floor(diff / 86_400_000);
-  if (mins  < 1)  return 'Ahora';
-  if (mins  < 60) return `Hace ${mins} min`;
-  if (hours < 24) return `Hace ${hours} h`;
-  if (days  < 7)  return `Hace ${days} d`;
-  return new Date(dateStr).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+  if (mins  < 1)  return t('time_now');
+  if (mins  < 60) return t('time_minutes_ago', { count: mins });
+  if (hours < 24) return t('time_hours_ago',   { count: hours });
+  if (days  < 7)  return t('time_days_ago',    { count: days });
+  return new Date(dateStr).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+}
+
+/**
+ * Devuelve el título/cuerpo traducidos para tipos conocidos de notificación.
+ * Si el tipo no es conocido, devuelve los valores originales (de la BD).
+ */
+function notifContenido(item: Notificacion, t: TFunction): { titulo: string; cuerpo: string } {
+  switch (item.tipo) {
+    case 'bienvenida':
+      return {
+        titulo: t('notif_welcome_title'),
+        cuerpo: t('notif_welcome_body'),
+      };
+    case 'negocio_aprobado':
+      return {
+        titulo: t('notif_business_approved_title', { defaultValue: item.titulo }),
+        cuerpo: item.cuerpo,
+      };
+    case 'negocio_rechazado':
+      return {
+        titulo: t('notif_business_rejected_title', { defaultValue: item.titulo }),
+        cuerpo: item.cuerpo,
+      };
+    default:
+      return { titulo: item.titulo, cuerpo: item.cuerpo };
+  }
 }
 
 // ─── Estilos estáticos de tarjeta ───────────────────────────────────────────
@@ -75,8 +103,10 @@ function NotifCard({
   item: Notificacion; index: number; colors: any; fonts: any;
   onPress: (n: Notificacion) => void;
 }) {
+  const { t } = useTranslation();
   const anim = useRef(new Animated.Value(0)).current;
   const icon = tipoIcon(item.tipo);
+  const { titulo, cuerpo } = notifContenido(item, t);
 
   useEffect(() => {
     Animated.timing(anim, {
@@ -113,15 +143,15 @@ function NotifCard({
               !item.leida && { fontWeight: '700' }]}
             numberOfLines={2}
           >
-            {item.titulo}
+            {titulo}
           </Text>
-          {!!item.cuerpo && (
+          {!!cuerpo && (
             <Text style={[cardSt.cuerpo, { color: colors.subtext, fontSize: fonts.sm }]} numberOfLines={2}>
-              {item.cuerpo}
+              {cuerpo}
             </Text>
           )}
           <Text style={[cardSt.time, { color: colors.subtext, fontSize: fonts.xs }]}>
-            {formatRelative(item.created_at)}
+            {formatRelative(item.created_at, t)}
           </Text>
         </View>
       </Pressable>
@@ -140,6 +170,17 @@ export default function NotificacionesScreen() {
   const bannerAnim = useRef(new Animated.Value(0)).current;
   const listAnim   = useRef(new Animated.Value(0)).current;
 
+  // StatusBar — la zona del status bar es la SafeAreaView (fondo del tema),
+  // no el header naranja. Por eso usamos iconos del tema, NO siempre claros.
+  useFocusEffect(
+    useCallback(() => {
+      StatusBar.setBarStyle(isDark ? 'light-content' : 'dark-content', true);
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor(colors.background);
+      }
+    }, [isDark, colors.background])
+  );
+
   useEffect(() => {
     Animated.stagger(100, [
       Animated.timing(bannerAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
@@ -155,8 +196,6 @@ export default function NotificacionesScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-      <StatusBar barStyle="light-content" backgroundColor="#E96928" />
-
       {/* ── Banner ── */}
       <Animated.View style={{
         opacity: bannerAnim,

@@ -1,13 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Animated,
   Image,
+  Platform,
   Pressable,
   ScrollView,
   StatusBar,
@@ -47,11 +48,126 @@ const CAT_KEY_MAP: Record<string, string> = {
   'Pueblos Mágicos':   'cat_pueblos_magicos',
 };
 
+/**
+ * Input con borde animado naranja al enfocar y botón X para limpiar.
+ */
+function FocusInput({
+  icon,
+  placeholder,
+  value,
+  onChangeText,
+  onClear,
+  colors,
+  fonts,
+  multiline = false,
+  numberOfLines,
+  keyboardType = 'default',
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  placeholder: string;
+  value: string;
+  onChangeText: (t: string) => void;
+  onClear: () => void;
+  colors: any;
+  fonts: any;
+  multiline?: boolean;
+  numberOfLines?: number;
+  keyboardType?: any;
+}) {
+  const focusAnim = useRef(new Animated.Value(0)).current;
+  const handleFocus = () =>
+    Animated.timing(focusAnim, { toValue: 1, duration: 160, useNativeDriver: false }).start();
+  const handleBlur = () =>
+    Animated.timing(focusAnim, { toValue: 0, duration: 160, useNativeDriver: false }).start();
+
+  const borderColor = focusAnim.interpolate({
+    inputRange:  [0, 1],
+    outputRange: [colors.border, '#E96928'],
+  });
+  const shadowOpacity = focusAnim.interpolate({
+    inputRange:  [0, 1],
+    outputRange: [0, 0.18],
+  });
+
+  return (
+    <Animated.View
+      style={{
+        flexDirection: 'row',
+        alignItems: multiline ? 'flex-start' : 'center',
+        backgroundColor: colors.inputBackground,
+        borderRadius: 14,
+        borderWidth: 1,
+        paddingHorizontal: 14,
+        minHeight: multiline ? 90 : 50,
+        marginBottom: 14,
+        paddingTop: multiline ? 14 : 0,
+        paddingBottom: multiline ? 10 : 0,
+        borderColor,
+        shadowColor: '#E96928',
+        shadowOpacity,
+        shadowOffset: { width: 0, height: 0 },
+        shadowRadius: 8,
+        elevation: 0,
+      }}
+    >
+      <Ionicons
+        name={icon}
+        size={18}
+        color={colors.subtext}
+        style={{ marginRight: 8, marginTop: multiline ? 2 : 0 }}
+      />
+      <TextInput
+        style={{
+          flex: 1,
+          color: colors.text,
+          fontSize: fonts.base,
+          ...(multiline ? { minHeight: 70, textAlignVertical: 'top' } : null),
+        }}
+        placeholder={placeholder}
+        placeholderTextColor={colors.subtext}
+        value={value}
+        onChangeText={onChangeText}
+        multiline={multiline}
+        numberOfLines={numberOfLines}
+        textAlignVertical={multiline ? 'top' : 'center'}
+        keyboardType={keyboardType}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+      />
+      {value.length > 0 && (
+        <Pressable
+          onPress={onClear}
+          hitSlop={8}
+          style={{
+            paddingHorizontal: 6,
+            paddingVertical: 4,
+            marginLeft: 4,
+            ...(multiline ? { alignSelf: 'flex-start', marginTop: 2 } : null),
+          }}
+        >
+          <Ionicons name="close-circle" size={18} color={colors.subtext} />
+        </Pressable>
+      )}
+    </Animated.View>
+  );
+}
+
 export default function RegistrarNegocioScreen() {
   const { colors, fonts, isDark } = useTheme();
   const { t } = useTranslation();
   const s = makeStyles(colors, fonts, isDark);
   const router = useRouter();
+
+  // StatusBar — la zona del status bar es la SafeAreaView (fondo del tema),
+  // no el header naranja. Por eso usamos iconos del tema, NO siempre claros.
+  useFocusEffect(
+    useCallback(() => {
+      StatusBar.setBarStyle(isDark ? 'light-content' : 'dark-content', true);
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor(colors.background);
+      }
+    }, [isDark, colors.background])
+  );
 
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
@@ -165,8 +281,6 @@ export default function RegistrarNegocioScreen() {
       contentContainerStyle={{ paddingBottom: 50 }}
       keyboardShouldPersistTaps="handled"
     >
-      <StatusBar barStyle="light-content" backgroundColor="#E96928" />
-
       {/* ── BANNER ── */}
       <Animated.View
         style={{
@@ -214,16 +328,15 @@ export default function RegistrarNegocioScreen() {
             <Text style={[s.label, { color: colors.subtext, fontSize: fonts.xs }]}>
               {t('biz_name_label')}
             </Text>
-            <View style={[s.inputWrap, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}>
-              <Ionicons name="storefront-outline" size={18} color={colors.subtext} style={s.inputIcon} />
-              <TextInput
-                style={[s.input, { color: colors.text, fontSize: fonts.base }]}
-                placeholder={t('biz_name_placeholder')}
-                placeholderTextColor={colors.subtext}
-                value={nombre}
-                onChangeText={setNombre}
-              />
-            </View>
+            <FocusInput
+              icon="storefront-outline"
+              placeholder={t('biz_name_placeholder')}
+              value={nombre}
+              onChangeText={setNombre}
+              onClear={() => setNombre('')}
+              colors={colors}
+              fonts={fonts}
+            />
 
             {/* Categoría */}
             <Text style={[s.label, { color: colors.subtext, fontSize: fonts.xs }]}>
@@ -258,50 +371,46 @@ export default function RegistrarNegocioScreen() {
             <Text style={[s.label, { color: colors.subtext, fontSize: fonts.xs }]}>
               {t('biz_desc_label')}
             </Text>
-            <View style={[s.inputWrap, s.textAreaWrap, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}>
-              <Ionicons name="document-text-outline" size={18} color={colors.subtext} style={[s.inputIcon, { marginTop: 2 }]} />
-              <TextInput
-                style={[s.input, s.textArea, { color: colors.text, fontSize: fonts.base }]}
-                placeholder={t('biz_desc_placeholder')}
-                placeholderTextColor={colors.subtext}
-                value={descripcion}
-                onChangeText={setDescripcion}
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-              />
-            </View>
+            <FocusInput
+              icon="document-text-outline"
+              placeholder={t('biz_desc_placeholder')}
+              value={descripcion}
+              onChangeText={setDescripcion}
+              onClear={() => setDescripcion('')}
+              colors={colors}
+              fonts={fonts}
+              multiline
+              numberOfLines={3}
+            />
 
             {/* Dirección */}
             <Text style={[s.label, { color: colors.subtext, fontSize: fonts.xs }]}>
               {t('address')}
             </Text>
-            <View style={[s.inputWrap, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}>
-              <Ionicons name="location-outline" size={18} color={colors.subtext} style={s.inputIcon} />
-              <TextInput
-                style={[s.input, { color: colors.text, fontSize: fonts.base }]}
-                placeholder={t('biz_address_placeholder')}
-                placeholderTextColor={colors.subtext}
-                value={direccion}
-                onChangeText={setDireccion}
-              />
-            </View>
+            <FocusInput
+              icon="location-outline"
+              placeholder={t('biz_address_placeholder')}
+              value={direccion}
+              onChangeText={setDireccion}
+              onClear={() => setDireccion('')}
+              colors={colors}
+              fonts={fonts}
+            />
 
             {/* Teléfono */}
             <Text style={[s.label, { color: colors.subtext, fontSize: fonts.xs }]}>
               {t('phone')}
             </Text>
-            <View style={[s.inputWrap, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}>
-              <Ionicons name="call-outline" size={18} color={colors.subtext} style={s.inputIcon} />
-              <TextInput
-                style={[s.input, { color: colors.text, fontSize: fonts.base }]}
-                placeholder={t('biz_phone_placeholder')}
-                placeholderTextColor={colors.subtext}
-                value={telefono}
-                onChangeText={setTelefono}
-                keyboardType="phone-pad"
-              />
-            </View>
+            <FocusInput
+              icon="call-outline"
+              placeholder={t('biz_phone_placeholder')}
+              value={telefono}
+              onChangeText={setTelefono}
+              onClear={() => setTelefono('')}
+              colors={colors}
+              fonts={fonts}
+              keyboardType="phone-pad"
+            />
           </View>
         </View>
 

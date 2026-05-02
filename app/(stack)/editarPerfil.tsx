@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -10,6 +10,7 @@ import {
   Animated,
   Image,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StatusBar,
@@ -38,9 +39,43 @@ export default function EditarPerfilScreen() {
   const [pendingPhoto, setPendingPhoto] = useState<{ uri: string } | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const bannerAnim = useRef(new Animated.Value(0)).current;
-  const cardAnim = useRef(new Animated.Value(0)).current;
+  const bannerAnim  = useRef(new Animated.Value(0)).current;
+  const cardAnim    = useRef(new Animated.Value(0)).current;
   const actionsAnim = useRef(new Animated.Value(0)).current;
+  const focusAnim   = useRef(new Animated.Value(0)).current;
+
+  // StatusBar — la zona del status bar es la SafeAreaView (fondo del tema),
+  // no el header naranja. Por eso usamos iconos del tema, NO siempre claros.
+  useFocusEffect(
+    useCallback(() => {
+      StatusBar.setBarStyle(isDark ? 'light-content' : 'dark-content', true);
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor(colors.background);
+      }
+    }, [isDark, colors.background])
+  );
+
+  // ── Border animado
+  const animatedBorderColor = focusAnim.interpolate({
+    inputRange:  [0, 1],
+    outputRange: [colors.border, '#E96928'],
+  });
+  const animatedShadowOpacity = focusAnim.interpolate({
+    inputRange:  [0, 1],
+    outputRange: [0, 0.18],
+  });
+
+  // ── Floating label — solo animación de color (siempre visible arriba del input)
+  const labelColor = focusAnim.interpolate({
+    inputRange:  [0, 1],
+    outputRange: [colors.text, '#E96928'],
+  });
+
+  const handleNombreFocus = () =>
+    Animated.timing(focusAnim, { toValue: 1, duration: 160, useNativeDriver: false }).start();
+
+  const handleNombreBlur = () =>
+    Animated.timing(focusAnim, { toValue: 0, duration: 160, useNativeDriver: false }).start();
 
   const fotoDisplay = pendingPhoto?.uri ?? fotoPerfil;
   const haycambios = nombre.trim() !== (usuario?.nombre ?? '') || pendingPhoto !== null;
@@ -247,7 +282,6 @@ export default function EditarPerfilScreen() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <StatusBar barStyle="light-content" backgroundColor="#E96928" />
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
         <Animated.View style={bannerAnimatedStyle}>
           <LinearGradient
@@ -310,11 +344,24 @@ export default function EditarPerfilScreen() {
               </Text>
             </View>
 
-            <Text style={[s.fieldLabel, { fontSize: fonts.sm }]}>
+            {/* Etiqueta — siempre visible, se pone naranja al enfocar */}
+            <Animated.Text style={[s.fieldLabel, { fontSize: fonts.sm, color: labelColor }]}>
               {t('edit_profile_full_name')}
-            </Text>
+            </Animated.Text>
 
-            <View style={s.inputWrap}>
+            <Animated.View
+              style={[
+                s.inputWrap,
+                {
+                  borderColor:   animatedBorderColor,
+                  shadowColor:   '#E96928',
+                  shadowOpacity: animatedShadowOpacity,
+                  shadowOffset:  { width: 0, height: 0 },
+                  shadowRadius:  8,
+                  elevation:     0,
+                },
+              ]}
+            >
               <View style={s.inputIcon}>
                 <Ionicons name="person-outline" size={18} color="#E96928" />
               </View>
@@ -326,16 +373,27 @@ export default function EditarPerfilScreen() {
                 placeholderTextColor={colors.subtext}
                 autoCapitalize="words"
                 editable={!loading}
+                onFocus={handleNombreFocus}
+                onBlur={handleNombreBlur}
               />
-              {nombre.trim() !== (usuario?.nombre ?? '') && (
+              {nombre.trim() !== (usuario?.nombre ?? '') && nombre.length > 0 && (
                 <Ionicons
                   name="checkmark-circle"
                   size={18}
                   color="#10B981"
-                  style={{ marginRight: 12 }}
+                  style={{ marginRight: 4 }}
                 />
               )}
-            </View>
+              {nombre.length > 0 && (
+                <Pressable
+                  onPress={() => setNombre('')}
+                  hitSlop={8}
+                  style={{ paddingHorizontal: 10, paddingVertical: 4 }}
+                >
+                  <Ionicons name="close-circle" size={18} color={colors.subtext} />
+                </Pressable>
+              )}
+            </Animated.View>
 
             <Text style={[s.fieldLabel, { fontSize: fonts.sm, marginTop: 6 }]}>
               {t('email')}

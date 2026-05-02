@@ -1,7 +1,7 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useMemo, useRef } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Animated,
@@ -76,6 +76,25 @@ export default function DetalleEvento() {
   const { colors, fonts, isDark } = useTheme();
   const s = makeStyles(colors, fonts, isDark);
   const router = useRouter();
+
+  // StatusBar — light-content translucent mientras está activa, restaura al salir
+  useFocusEffect(
+    useCallback(() => {
+      StatusBar.setBarStyle('light-content', true);
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor('transparent');
+        StatusBar.setTranslucent(true);
+      }
+      return () => {
+        StatusBar.setBarStyle(isDark ? 'light-content' : 'dark-content', true);
+        if (Platform.OS === 'android') {
+          StatusBar.setBackgroundColor(colors.background);
+          StatusBar.setTranslucent(false);
+        }
+      };
+    }, [isDark, colors.background])
+  );
+
   const { evento: eventoParam } = useLocalSearchParams();
 
   const evento = useMemo(() => {
@@ -200,12 +219,6 @@ export default function DetalleEvento() {
 
   return (
     <View style={s.container}>
-      <StatusBar
-        barStyle="light-content"
-        translucent
-        backgroundColor="transparent"
-      />
-
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={s.scrollContent}

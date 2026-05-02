@@ -44,6 +44,22 @@ export default function StackLayout() {
         name="mapaCompleto"
         options={{ animation: "slide_from_bottom", gestureEnabled: true, gestureDirection: "vertical", contentStyle: { backgroundColor: '#000' } }}
       />
+      <Stack.Screen
+        name="privacidad"
+        options={{ animation: "slide_from_right", gestureEnabled: true, contentStyle: { backgroundColor: colors.background } }}
+      />
+      <Stack.Screen
+        name="avisoPrivacidad"
+        options={{ animation: "slide_from_right", gestureEnabled: true, contentStyle: { backgroundColor: colors.background } }}
+      />
+      <Stack.Screen
+        name="terminosCondiciones"
+        options={{ animation: "slide_from_right", gestureEnabled: true, contentStyle: { backgroundColor: colors.background } }}
+      />
+      <Stack.Screen
+        name="registrar-negocio"
+        options={{ animation: "slide_from_right", gestureEnabled: true, contentStyle: { backgroundColor: colors.background } }}
+      />
     </Stack>
   );
 }

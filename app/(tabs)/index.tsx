@@ -17,6 +17,7 @@ import {
   View,
 } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
+import { useOnboarding } from "../../src/context/OnboardingContext";
 import { useTheme } from "../../src/context/ThemeContext";
 import { useAnimatedPlaceholder } from "../../src/hooks/useAnimatedPlaceholder";
 import { useLugares } from "../../src/hooks/useLugares";
@@ -164,6 +165,9 @@ type LugarLite = {
 
 export default function HomeScreen() {
   const router = useRouter();
+
+  // ── Sección Mundial: visible hasta el 1 Jul 2026, luego desaparece automáticamente
+  const mostrarMundial = new Date() < new Date('2026-07-01T00:00:00-06:00');
   const { t } = useTranslation();
   const { colors, fonts, isDark } = useTheme();
   const s = makeStyles(colors, fonts, isDark);
@@ -172,6 +176,20 @@ export default function HomeScreen() {
   const mapRef = useRef<MapView>(null);
   const containerRef = useRef<View>(null);
   const searchWrapRef = useRef<View>(null);
+  const scrollViewRef = useRef<any>(null);
+
+  // ── Auto-scroll al inicio del tour ─────────────────────────────────
+  // Si el usuario abrió el tutorial estando scrolleado abajo, regresamos
+  // automáticamente al inicio para que el recorrido empiece desde arriba.
+  const { tourActive, tourStep } = useOnboarding();
+  useEffect(() => {
+    if (tourActive && tourStep === 0) {
+      const t1 = setTimeout(() => {
+        scrollViewRef.current?.scrollTo?.({ y: 0, animated: true });
+      }, 250);
+      return () => clearTimeout(t1);
+    }
+  }, [tourActive, tourStep]);
   const [search, setSearch] = useState("");
   const [region, setRegion] = useState<any>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -503,7 +521,8 @@ export default function HomeScreen() {
       />
 
       <Animated.ScrollView
-        contentContainerStyle={s.scrollContent}
+        ref={scrollViewRef}
+        contentContainerStyle={[s.scrollContent, !mostrarMundial && { paddingBottom: 150 }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         scrollEventThrottle={16}
@@ -920,7 +939,21 @@ export default function HomeScreen() {
         </Animated.View>
 
         {/* ── Mundial 2026 ─────────────────────────────────────────────── */}
-        <MundialWidget />
+        {/*
+         * 🗑️  CLEANUP — después del 1 Jul 2026
+         * ─────────────────────────────────────────────────────────────────
+         * Cuando pase el 1 de julio de 2026 este bloque dejará de renderizar
+         * automáticamente gracias a la condición de fecha de abajo.
+         * Para limpiar el proyecto por completo puedes borrar:
+         *   • components/MundialWidget.tsx
+         *   • src/data/mundial2026.ts
+         *   • src/services/mundialService.ts
+         *   • Esta sección completa (import + bloque JSX)
+         * Y el import en la línea ~25 de este archivo:
+         *   import MundialWidget from "../../components/MundialWidget";
+         * ─────────────────────────────────────────────────────────────────
+         */}
+        {mostrarMundial && <MundialWidget />}
 
       </Animated.ScrollView>
 
@@ -1019,7 +1052,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
     },
 
     scrollContent: {
-      paddingBottom: 150,
+      paddingBottom: 24,
       paddingTop: 6,
     },
 

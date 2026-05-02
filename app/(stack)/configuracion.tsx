@@ -28,47 +28,30 @@ export default function ConfiguracionScreen() {
   const { t } = useTranslation();
   const { colors, fonts, isDark, toggleTheme, fontSize, setFontSize } = useTheme();
   const [langModal, setLangModal] = useState(false);
-  const [privacyModal, setPrivacyModal] = useState(false);
   const [currentLang, setCurrentLang] = useState<AppLanguage>((i18n.language ?? 'es') as AppLanguage);
   const [connStatus, setConnStatus] = useState<ConnectionStatus>('stable');
   const router = useRouter();
   const { resetOnboarding } = useOnboarding();
 
-  const bannerAnim = useRef(new Animated.Value(0)).current;
+  const bannerAnim     = useRef(new Animated.Value(0)).current;
   const appearanceAnim = useRef(new Animated.Value(0)).current;
-  const fontAnim = useRef(new Animated.Value(0)).current;
-  const languageAnim = useRef(new Animated.Value(0)).current;
-  const infoAnim = useRef(new Animated.Value(0)).current;
+  const fontAnim       = useRef(new Animated.Value(0)).current;
+  const languageAnim   = useRef(new Animated.Value(0)).current;
+  const securityAnim   = useRef(new Animated.Value(0)).current;
+  const legalAnim      = useRef(new Animated.Value(0)).current;
+  const infoAnim       = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.stagger(110, [
-      Animated.timing(bannerAnim, {
-        toValue: 1,
-        duration: 420,
-        useNativeDriver: true,
-      }),
-      Animated.timing(appearanceAnim, {
-        toValue: 1,
-        duration: 380,
-        useNativeDriver: true,
-      }),
-      Animated.timing(fontAnim, {
-        toValue: 1,
-        duration: 380,
-        useNativeDriver: true,
-      }),
-      Animated.timing(languageAnim, {
-        toValue: 1,
-        duration: 380,
-        useNativeDriver: true,
-      }),
-      Animated.timing(infoAnim, {
-        toValue: 1,
-        duration: 380,
-        useNativeDriver: true,
-      }),
+    Animated.stagger(100, [
+      Animated.timing(bannerAnim,     { toValue: 1, duration: 420, useNativeDriver: true }),
+      Animated.timing(appearanceAnim, { toValue: 1, duration: 380, useNativeDriver: true }),
+      Animated.timing(fontAnim,       { toValue: 1, duration: 380, useNativeDriver: true }),
+      Animated.timing(languageAnim,   { toValue: 1, duration: 380, useNativeDriver: true }),
+      Animated.timing(securityAnim,   { toValue: 1, duration: 380, useNativeDriver: true }),
+      Animated.timing(legalAnim,      { toValue: 1, duration: 380, useNativeDriver: true }),
+      Animated.timing(infoAnim,       { toValue: 1, duration: 380, useNativeDriver: true }),
     ]).start();
-  }, [bannerAnim, appearanceAnim, fontAnim, languageAnim, infoAnim]);
+  }, [bannerAnim, appearanceAnim, fontAnim, languageAnim, securityAnim, legalAnim, infoAnim]);
 
   const currentLangInfo = LANGUAGE_LIST.find((l) => l.code === currentLang) ?? LANGUAGE_LIST[0];
 
@@ -354,22 +337,99 @@ export default function ConfiguracionScreen() {
           </Pressable>
         </Animated.View>
 
+        {/* ── Seguridad ───────────────────────────────────────────── */}
+        <Animated.View style={fadeSlide(securityAnim)}>
+          <SectionLabel label={t('security', { defaultValue: 'Seguridad' })} colors={colors} fonts={fonts} />
+          <Pressable
+            style={({ pressed }) => [
+              s.card,
+              { opacity: pressed ? 0.94 : 1, transform: [{ scale: pressed ? 0.99 : 1 }] },
+            ]}
+            onPress={() => router.push('/(stack)/privacidad')}
+          >
+            <View style={s.row}>
+              <View style={s.rowLeft}>
+                <View style={[s.iconBox, { backgroundColor: isDark ? 'rgba(233,105,40,0.15)' : 'rgba(233,105,40,0.1)' }]}>
+                  <Ionicons name="shield-checkmark-outline" size={22} color="#E96928" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.rowTitle, { fontSize: fonts.base }]}>
+                    {t('privacy_permissions', { defaultValue: 'Privacidad y permisos' })}
+                  </Text>
+                  <Text style={[s.rowSub, { fontSize: fonts.xs }]} numberOfLines={1}>
+                    {t('privacy_permissions_sub', { defaultValue: 'Datos, permisos y configuración' })}
+                  </Text>
+                </View>
+              </View>
+              <View style={s.chevronWrap}>
+                <Ionicons name="chevron-forward" size={18} color={colors.subtext} />
+              </View>
+            </View>
+          </Pressable>
+        </Animated.View>
+
+        {/* ── Legal ───────────────────────────────────────────────── */}
+        <Animated.View style={fadeSlide(legalAnim)}>
+          <SectionLabel label={t('legal', { defaultValue: 'Legal' })} colors={colors} fonts={fonts} />
+          <View style={s.card}>
+            <Pressable
+              style={({ pressed }) => [
+                s.row,
+                { opacity: pressed ? 0.94 : 1, transform: [{ scale: pressed ? 0.99 : 1 }] },
+              ]}
+              onPress={() => router.push('/(stack)/avisoPrivacidad')}
+            >
+              <View style={s.rowLeft}>
+                <View style={[s.iconBox, { backgroundColor: isDark ? 'rgba(233,105,40,0.15)' : 'rgba(233,105,40,0.1)' }]}>
+                  <Ionicons name="document-text-outline" size={22} color="#E96928" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.rowTitle, { fontSize: fonts.base }]}>
+                    {t('privacy_notice', { defaultValue: 'Aviso de privacidad' })}
+                  </Text>
+                  <Text style={[s.rowSub, { fontSize: fonts.xs }]} numberOfLines={1}>
+                    {t('privacy_notice_sub', { defaultValue: 'Municipio de Guadalupe, N.L.' })}
+                  </Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.subtext} />
+            </Pressable>
+
+            <View style={[s.infoDivider, { marginVertical: 14 }]} />
+
+            <Pressable
+              style={({ pressed }) => [
+                s.row,
+                { opacity: pressed ? 0.94 : 1, transform: [{ scale: pressed ? 0.99 : 1 }] },
+              ]}
+              onPress={() => router.push('/(stack)/terminosCondiciones')}
+            >
+              <View style={s.rowLeft}>
+                <View style={[s.iconBox, { backgroundColor: isDark ? 'rgba(233,105,40,0.15)' : 'rgba(233,105,40,0.1)' }]}>
+                  <Ionicons name="reader-outline" size={22} color="#E96928" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.rowTitle, { fontSize: fonts.base }]}>
+                    {t('terms', { defaultValue: 'Términos y condiciones' })}
+                  </Text>
+                  <Text style={[s.rowSub, { fontSize: fonts.xs }]} numberOfLines={1}>
+                    {t('terms_sub', { defaultValue: 'Uso de la aplicación GuadalupeGO' })}
+                  </Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.subtext} />
+            </Pressable>
+          </View>
+        </Animated.View>
+
+        {/* ── Información ─────────────────────────────────────────── */}
         <Animated.View style={fadeSlide(infoAnim)}>
           <SectionLabel label={t('information')} colors={colors} fonts={fonts} />
 
           <View style={s.card}>
             <View style={s.row}>
               <View style={s.rowLeft}>
-                <View
-                  style={[
-                    s.iconBox,
-                    {
-                      backgroundColor: isDark
-                        ? 'rgba(233,105,40,0.15)'
-                        : 'rgba(233,105,40,0.1)',
-                    },
-                  ]}
-                >
+                <View style={[s.iconBox, { backgroundColor: isDark ? 'rgba(233,105,40,0.15)' : 'rgba(233,105,40,0.1)' }]}>
                   <Ionicons name="information-circle-outline" size={22} color="#E96928" />
                 </View>
                 <View>
@@ -377,24 +437,16 @@ export default function ConfiguracionScreen() {
                   <Text style={[s.rowSub, { fontSize: fonts.xs }]}>GuadalupeGO v1.0.2</Text>
                 </View>
               </View>
-
               <Pressable
                 onPress={checkConnectivity}
                 style={({ pressed }) => [
                   s.connBadge,
-                  {
-                    backgroundColor: badge.bg,
-                    borderColor: badge.border,
-                    opacity: pressed ? 0.88 : 1,
-                    transform: [{ scale: pressed ? 0.97 : 1 }],
-                  },
+                  { backgroundColor: badge.bg, borderColor: badge.border, opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
                 ]}
                 hitSlop={8}
               >
                 <Ionicons name={badge.icon} size={12} color={badge.text} />
-                <Text style={[s.connBadgeText, { color: badge.text, fontSize: fonts.xs }]}>
-                  {badge.label}
-                </Text>
+                <Text style={[s.connBadgeText, { color: badge.text, fontSize: fonts.xs }]}>{badge.label}</Text>
               </Pressable>
             </View>
 
@@ -411,46 +463,12 @@ export default function ConfiguracionScreen() {
               }}
             >
               <View style={s.rowLeft}>
-                <View
-                  style={[
-                    s.iconBox,
-                    {
-                      backgroundColor: isDark
-                        ? 'rgba(233,105,40,0.15)'
-                        : 'rgba(233,105,40,0.1)',
-                    },
-                  ]}
-                >
+                <View style={[s.iconBox, { backgroundColor: isDark ? 'rgba(233,105,40,0.15)' : 'rgba(233,105,40,0.1)' }]}>
                   <Ionicons name="play-circle-outline" size={22} color="#E96928" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[s.rowTitle, { fontSize: fonts.base }]}>
-                    {t('settings_reset_tutorial')}
-                  </Text>
-                  <Text style={[s.rowSub, { fontSize: fonts.xs }]} numberOfLines={1}>
-                    {t('settings_reset_tutorial_desc')}
-                  </Text>
-                </View>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.subtext} />
-            </Pressable>
-
-            <View style={[s.infoDivider, { marginVertical: 14 }]} />
-
-            <Pressable
-              style={({ pressed }) => [
-                s.row,
-                { opacity: pressed ? 0.94 : 1, transform: [{ scale: pressed ? 0.99 : 1 }] },
-              ]}
-              onPress={() => setPrivacyModal(true)}
-            >
-              <View style={s.rowLeft}>
-                <View style={[s.iconBox, { backgroundColor: isDark ? '#1a2e1a' : '#F0FDF4' }]}>
-                  <Ionicons name="shield-checkmark-outline" size={22} color="#22C55E" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[s.rowTitle, { fontSize: fonts.base }]}>{t('privacy')}</Text>
-                  <Text style={[s.rowSub, { fontSize: fonts.xs }]} numberOfLines={1}>{t('privacy_sub')}</Text>
+                  <Text style={[s.rowTitle, { fontSize: fonts.base }]}>{t('settings_reset_tutorial')}</Text>
+                  <Text style={[s.rowSub, { fontSize: fonts.xs }]} numberOfLines={1}>{t('settings_reset_tutorial_desc')}</Text>
                 </View>
               </View>
               <Ionicons name="chevron-forward" size={18} color={colors.subtext} />
@@ -522,114 +540,6 @@ export default function ConfiguracionScreen() {
         </View>
       </Modal>
 
-      <Modal visible={privacyModal} animationType="slide" transparent statusBarTranslucent>
-        <Pressable style={s.modalBackdrop} onPress={() => setPrivacyModal(false)} />
-        <View style={[s.modalSheet, s.privacySheet]}>
-          <View style={s.modalHandle} />
-
-          <View style={s.modalHeader}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <View style={s.privacyIconWrap}>
-                <Ionicons name="shield-checkmark" size={20} color="#22C55E" />
-              </View>
-              <Text style={[s.modalTitle, { fontSize: fonts.lg }]}>
-                {t('privacy_policy_title')}
-              </Text>
-            </View>
-            <TouchableOpacity
-              onPress={() => setPrivacyModal(false)}
-              style={s.modalCloseBtn}
-              hitSlop={12}
-            >
-              <Ionicons name="close" size={20} color={colors.subtext} />
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.privacyScroll}>
-            <View style={s.privacySection}>
-              <Text style={[s.privacySectionTitle, { fontSize: fonts.sm, color: colors.text }]}>
-                🛡️ {t('privacy_intro_title')}
-              </Text>
-              <Text style={[s.privacyBody, { fontSize: fonts.sm, color: colors.subtext }]}>
-                {t('privacy_intro_body')}
-              </Text>
-            </View>
-
-            <View style={s.privacyDivider} />
-
-            <View style={s.privacySection}>
-              <Text style={[s.privacySectionTitle, { fontSize: fonts.sm, color: colors.text }]}>
-                📋 {t('privacy_data_title')}
-              </Text>
-              {[t('privacy_data_1'), t('privacy_data_2'), t('privacy_data_3'), t('privacy_data_4')].map(
-                (item, i) => (
-                  <View key={i} style={s.privacyBulletRow}>
-                    <View style={s.privacyBullet} />
-                    <Text
-                      style={[
-                        s.privacyBody,
-                        { fontSize: fonts.sm, color: colors.subtext, flex: 1 },
-                      ]}
-                    >
-                      {item}
-                    </Text>
-                  </View>
-                ),
-              )}
-            </View>
-
-            <View style={s.privacyDivider} />
-
-            <View style={s.privacySection}>
-              <Text style={[s.privacySectionTitle, { fontSize: fonts.sm, color: colors.text }]}>
-                📱 {t('privacy_storage_title')}
-              </Text>
-              <Text style={[s.privacyBody, { fontSize: fonts.sm, color: colors.subtext }]}>
-                {t('privacy_storage_body')}
-              </Text>
-            </View>
-
-            <View style={s.privacyDivider} />
-
-            <View style={s.privacySection}>
-              <Text style={[s.privacySectionTitle, { fontSize: fonts.sm, color: colors.text }]}>
-                📍 {t('privacy_location_title')}
-              </Text>
-              <Text style={[s.privacyBody, { fontSize: fonts.sm, color: colors.subtext }]}>
-                {t('privacy_location_body')}
-              </Text>
-            </View>
-
-            <View style={s.privacyDivider} />
-
-            <View style={s.privacySection}>
-              <Text style={[s.privacySectionTitle, { fontSize: fonts.sm, color: colors.text }]}>
-                ✅ {t('privacy_rights_title')}
-              </Text>
-              <Text style={[s.privacyBody, { fontSize: fonts.sm, color: colors.subtext }]}>
-                {t('privacy_rights_body')}
-              </Text>
-            </View>
-
-            <Pressable
-              style={({ pressed }) => [
-                s.privacyCloseBtn,
-                {
-                  opacity: pressed ? 0.9 : 1,
-                  transform: [{ scale: pressed ? 0.985 : 1 }],
-                },
-              ]}
-              onPress={() => setPrivacyModal(false)}
-            >
-              <Text style={[s.privacyCloseBtnText, { fontSize: fonts.base }]}>
-                {t('privacy_close')}
-              </Text>
-            </Pressable>
-
-            <View style={{ height: Platform.OS === 'ios' ? 30 : 16 }} />
-          </ScrollView>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }

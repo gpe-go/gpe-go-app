@@ -2,7 +2,7 @@ import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -27,6 +27,114 @@ import { useAuth } from '../../src/context/AuthContext';
 import { useTheme } from '../../src/context/ThemeContext';
 
 type Step = 'login' | 'registro' | 'codigo';
+
+/**
+ * Input con animación de borde + glow naranja al enfocar y botón X
+ * para limpiar el contenido. Se usa para email/nombre en login y registro.
+ */
+function FocusInput({
+  icon,
+  placeholder,
+  value,
+  onChangeText,
+  onClear,
+  colors,
+  fonts,
+  keyboardType = 'default',
+  autoCapitalize = 'sentences',
+  editable = true,
+  maxLength,
+  textAlign,
+  letterSpacing,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  placeholder: string;
+  value: string;
+  onChangeText: (text: string) => void;
+  onClear: () => void;
+  colors: any;
+  fonts: any;
+  keyboardType?: any;
+  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  editable?: boolean;
+  maxLength?: number;
+  textAlign?: 'left' | 'center' | 'right';
+  letterSpacing?: number;
+}) {
+  const focusAnim = useRef(new Animated.Value(0)).current;
+
+  const handleFocus = () =>
+    Animated.timing(focusAnim, { toValue: 1, duration: 160, useNativeDriver: false }).start();
+  const handleBlur = () =>
+    Animated.timing(focusAnim, { toValue: 0, duration: 160, useNativeDriver: false }).start();
+
+  const borderColor = focusAnim.interpolate({
+    inputRange:  [0, 1],
+    outputRange: [colors.border, '#E96928'],
+  });
+  const shadowOpacity = focusAnim.interpolate({
+    inputRange:  [0, 1],
+    outputRange: [0, 0.18],
+  });
+
+  return (
+    <Animated.View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.inputBackground,
+        borderRadius: 18,
+        paddingHorizontal: 14,
+        height: 58,
+        borderWidth: 1,
+        borderColor,
+        shadowColor: '#E96928',
+        shadowOpacity,
+        shadowOffset: { width: 0, height: 0 },
+        shadowRadius: 8,
+        elevation: 0,
+      }}
+    >
+      <View style={{
+        width: 36, height: 36, borderRadius: 11,
+        backgroundColor: 'rgba(233,105,40,0.12)',
+        justifyContent: 'center', alignItems: 'center',
+        marginRight: 10,
+      }}>
+        <Ionicons name={icon} size={18} color="#E96928" />
+      </View>
+      <TextInput
+        style={{
+          flex: 1,
+          color: colors.text,
+          fontWeight: '500',
+          fontSize: fonts.base,
+          textAlign: textAlign ?? 'left',
+          letterSpacing: letterSpacing ?? 0,
+        }}
+        placeholder={placeholder}
+        placeholderTextColor={colors.subtext}
+        value={value}
+        onChangeText={onChangeText}
+        keyboardType={keyboardType}
+        autoCapitalize={autoCapitalize}
+        editable={editable}
+        maxLength={maxLength}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+      />
+      {value.length > 0 && (
+        <Pressable
+          onPress={onClear}
+          hitSlop={8}
+          style={{ paddingHorizontal: 6, paddingVertical: 4 }}
+        >
+          <Ionicons name="close-circle" size={18} color={colors.subtext} />
+        </Pressable>
+      )}
+    </Animated.View>
+  );
+}
 
 function AvatarSection({
   fotoPerfil,
@@ -67,8 +175,6 @@ function ScreenShell({
 }) {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-      <StatusBar barStyle="light-content" backgroundColor="#E96928" />
-
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -219,6 +325,17 @@ export default function PerfilScreen() {
   } = useAuth();
   const { refresh: refreshNotif } = useNotificaciones();
 
+  // StatusBar — la zona del status bar es la SafeAreaView (fondo del tema),
+  // no el header naranja. Por eso usamos iconos del tema, NO siempre claros.
+  useFocusEffect(
+    useCallback(() => {
+      StatusBar.setBarStyle(isDark ? 'light-content' : 'dark-content', true);
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor(colors.background);
+      }
+    }, [isDark, colors.background])
+  );
+
   const [step, setStep] = useState<Step>('login');
   const [email, setEmail] = useState('');
   const [nombre, setNombre] = useState('');
@@ -233,8 +350,20 @@ export default function PerfilScreen() {
     React.useCallback(() => {
       if (isAuthenticated) {
         getMisLugares()
-          .then(res => { if (res.success) setMisNegocios(res.data ?? []); })
-          .catch(() => {});
+          .then(res => {
+            if (res.success) {
+              // El backend puede devolver data como array o como { lugares: [...] }
+              const lista = Array.isArray(res.data)
+                ? res.data
+                : (res.data?.lugares ?? []);
+              setMisNegocios(lista);
+            } else if (__DEV__) {
+              console.warn('[Perfil] getMisLugares no success:', res);
+            }
+          })
+          .catch(err => {
+            if (__DEV__) console.warn('[Perfil] getMisLugares error:', err?.message ?? err);
+          });
         refreshNotif();
       } else {
         setMisNegocios([]);
@@ -618,21 +747,20 @@ export default function PerfilScreen() {
           }}
         >
           <View style={[s.formCard, { marginTop: 24 }]}>
-            <View style={s.inputWrapper}>
-              <View style={s.inputIconWrap}>
-                <Ionicons name="key-outline" size={18} color="#E96928" />
-              </View>
-              <TextInput
-                style={[s.input, { fontSize: fonts.base }]}
-                placeholder="000000"
-                keyboardType="number-pad"
-                maxLength={6}
-                value={codigo}
-                onChangeText={setCodigo}
-                placeholderTextColor={colors.subtext}
-                editable={!loading}
-              />
-            </View>
+            <FocusInput
+              icon="key-outline"
+              placeholder="000000"
+              value={codigo}
+              onChangeText={setCodigo}
+              onClear={() => setCodigo('')}
+              colors={colors}
+              fonts={fonts}
+              keyboardType="number-pad"
+              maxLength={6}
+              editable={!loading}
+              textAlign="center"
+              letterSpacing={8}
+            />
 
             <Pressable
               style={[s.loginBtn, { opacity: loading ? 0.6 : 1 }]}
@@ -719,36 +847,30 @@ export default function PerfilScreen() {
           }}
         >
           <View style={[s.formCard, { marginTop: 24 }]}>
-            <View style={s.inputWrapper}>
-              <View style={s.inputIconWrap}>
-                <Ionicons name="person-outline" size={18} color="#E96928" />
-              </View>
-              <TextInput
-                style={[s.input, { fontSize: fonts.base }]}
-                placeholder={t('edit_profile_full_name')}
-                autoCapitalize="words"
-                value={nombre}
-                onChangeText={setNombre}
-                placeholderTextColor={colors.subtext}
-                editable={!loading}
-              />
-            </View>
+            <FocusInput
+              icon="person-outline"
+              placeholder={t('edit_profile_full_name')}
+              value={nombre}
+              onChangeText={setNombre}
+              onClear={() => setNombre('')}
+              colors={colors}
+              fonts={fonts}
+              autoCapitalize="words"
+              editable={!loading}
+            />
 
-            <View style={s.inputWrapper}>
-              <View style={s.inputIconWrap}>
-                <Ionicons name="mail-outline" size={18} color="#E96928" />
-              </View>
-              <TextInput
-                style={[s.input, { fontSize: fonts.base }]}
-                placeholder={t('email')}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                value={email}
-                onChangeText={setEmail}
-                placeholderTextColor={colors.subtext}
-                editable={!loading}
-              />
-            </View>
+            <FocusInput
+              icon="mail-outline"
+              placeholder={t('email')}
+              value={email}
+              onChangeText={setEmail}
+              onClear={() => setEmail('')}
+              colors={colors}
+              fonts={fonts}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              editable={!loading}
+            />
 
             <Pressable
               style={[s.loginBtn, { opacity: loading ? 0.6 : 1 }]}
@@ -816,21 +938,18 @@ export default function PerfilScreen() {
         }}
       >
         <View style={[s.formCard, { marginTop: 24 }]}>
-          <View style={s.inputWrapper}>
-            <View style={s.inputIconWrap}>
-              <Ionicons name="mail-outline" size={18} color="#E96928" />
-            </View>
-            <TextInput
-              style={[s.input, { fontSize: fonts.base }]}
-              placeholder={t('email')}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              value={email}
-              onChangeText={setEmail}
-              placeholderTextColor={colors.subtext}
-              editable={!loading}
-            />
-          </View>
+          <FocusInput
+            icon="mail-outline"
+            placeholder={t('email')}
+            value={email}
+            onChangeText={setEmail}
+            onClear={() => setEmail('')}
+            colors={colors}
+            fonts={fonts}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            editable={!loading}
+          />
 
           <Pressable
             style={[s.loginBtn, { opacity: loading ? 0.6 : 1 }]}
