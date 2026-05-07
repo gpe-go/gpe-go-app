@@ -63,11 +63,12 @@ module.exports = {
         },
       },
 
-      // Icono adaptativo (Android 8+). Usamos el icon.png principal
-      // (1024x1024) que tiene el logo GuadalupeGO completo con fondo
-      // naranja. backgroundColor sirve como fallback si Android lo necesita.
+      // Icono adaptativo (Android 8+). Usamos icon-adaptive.png que es
+      // icon.png con 162px de padding naranja por cada lado, así el logo
+      // queda en el 66% interior (safe area) y no se corta cuando Android
+      // recorta el ícono al shape del dispositivo.
       adaptiveIcon: {
-        foregroundImage: "./assets/images/icon.png",
+        foregroundImage: "./assets/images/icon-adaptive.png",
         backgroundColor: "#E96928",
       },
 
@@ -87,12 +88,13 @@ module.exports = {
       [
         "expo-splash-screen",
         {
-          // Usamos icon.png (el logo bonito de GuadalupeGO) centrado
-          // sobre fondo naranja. Después aparece welcome.tsx con el slogan.
-          image: "./assets/images/icon.png",
-          resizeMode: "contain",
+          // Splash con imagen 100% naranja sólida (sin contenido visible).
+          // El plugin expo-splash-screen REQUIERE una imagen, así que usamos
+          // un PNG naranja sólido para que se vea solo el fondo. Después
+          // welcome.tsx aparece con sus animaciones (puntitos + logo + slogan).
+          image: "./assets/images/splash-blank.png",
+          resizeMode: "cover",
           backgroundColor: "#E96928",
-          imageWidth: 220,
         },
       ],
 
