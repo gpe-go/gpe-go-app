@@ -17,6 +17,7 @@ module.exports = {
   expo: {
     name: "GuadalupeGo",
     slug: "GuadalupeGo",
+    owner: "ricky-99",
     version: "1.0.2",
     orientation: "portrait",
     icon: "././assets/images/icon.png",
@@ -62,11 +63,12 @@ module.exports = {
         },
       },
 
+      // Icono adaptativo (Android 8+). Usamos el icon.png principal
+      // (1024x1024) que tiene el logo GuadalupeGO completo con fondo
+      // naranja. backgroundColor sirve como fallback si Android lo necesita.
       adaptiveIcon: {
-        backgroundColor: "#E6F4FE",
-        foregroundImage: "././assets/images/android-icon-foreground.png",
-        backgroundImage: "././assets/images/android-icon-background.png",
-        monochromeImage: "././assets/images/android-icon-monochrome.png",
+        foregroundImage: "./assets/images/icon.png",
+        backgroundColor: "#E96928",
       },
 
       predictiveBackGestureEnabled: false,
@@ -85,9 +87,12 @@ module.exports = {
       [
         "expo-splash-screen",
         {
-          image: "././assets/images/splash-screen1.png",
+          // Usamos icon.png (el logo bonito de GuadalupeGO) centrado
+          // sobre fondo naranja. Después aparece welcome.tsx con el slogan.
+          image: "./assets/images/icon.png",
           resizeMode: "contain",
-          backgroundColor: "#F37021",
+          backgroundColor: "#E96928",
+          imageWidth: 220,
         },
       ],
 
@@ -117,6 +122,15 @@ module.exports = {
     experiments: {
       typedRoutes: true,
       reactCompiler: true,
+    },
+
+    // ── EAS (Expo Application Services) ─────────────────────
+    // ID del proyecto en https://expo.dev/accounts/ricky-99/projects/GuadalupeGo
+    // Se usa para builds, credentials, OTA updates, etc.
+    extra: {
+      eas: {
+        projectId: "c02fdccf-04f3-45af-b9ce-e923f379e3a5",
+      },
     },
   },
 };
