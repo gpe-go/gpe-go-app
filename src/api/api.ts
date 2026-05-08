@@ -8,19 +8,15 @@ import { PRODUCTION_API_URL, DEV_API_URL, API_PATH } from "../config/env";
 // ============================================================
 
 const getBaseURL = (): string => {
-  // En desarrollo, Expo expone la IP del debugger automáticamente.
-  // Así la app siempre apunta al XAMPP local sin cambiar la IP manualmente.
-  const debuggerHost =
-    Constants.expoConfig?.hostUri ?? (Constants as any).manifest?.debuggerHost;
-
-  if (__DEV__ && debuggerHost) {
-    const ip = debuggerHost.split(":")[0];
-    return `http://${ip}/${API_PATH}`;
+  if (__DEV__ && API_PATH) {
+    const debuggerHost =
+      Constants.expoConfig?.hostUri ?? (Constants as any).manifest?.debuggerHost;
+    if (debuggerHost) {
+      const ip = debuggerHost.split(":")[0];
+      return `http://${ip}/${API_PATH}`;
+    }
   }
 
-  // En producción (build firmado para tiendas) usa el servidor real.
-  // ← Cuando llegue la URL del municipio, actualiza PRODUCTION_API_URL
-  //   en src/config/env.ts  — no toques nada más.
   return __DEV__ ? DEV_API_URL : PRODUCTION_API_URL;
 };
 

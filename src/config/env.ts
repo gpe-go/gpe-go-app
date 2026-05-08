@@ -17,20 +17,20 @@
 //    "https://tudominio.com/gpe_go_api/inputs.php"
 //
 export const PRODUCTION_API_URL =
-  "https://SERVIDOR_DEL_MUNICIPIO/gpe_go_api/inputs.php";
+  "https://go.guadalupe.gob.mx";
 
 // ── URL de DESARROLLO LOCAL ──────────────────────────────────
 //
-//  IP de tu computadora en la red local (donde corre XAMPP).
-//  Solo se usa cuando la app corre en modo desarrollo (Expo Go).
-//  Si cambias de red WiFi, actualiza esta IP.
+//  Se usa cuando la app corre en modo desarrollo (Expo Go).
+//  Para pruebas locales con XAMPP, cambia a:
+//    "http://TU_IP_LOCAL/gpe_go_api/inputs.php"
 //
 export const DEV_API_URL =
-  "http://192.168.100.7/gpe_go_api/inputs.php";
+  "https://go.guadalupe.gob.mx";
 
 // ── Ruta del backend dentro del servidor ────────────────────
 //
-//  La ruta relativa al archivo PHP principal. No cambiar
-//  a menos que se mueva el backend en el servidor.
+//  En el servidor remoto la API está en la raíz (sin ruta).
+//  Para XAMPP local sería "gpe_go_api/inputs.php".
 //
-export const API_PATH = "gpe_go_api/inputs.php";
+export const API_PATH = "";
