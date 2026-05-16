@@ -70,9 +70,9 @@ interface ThemeContextValue {
 // PALETA GUARDALUPEGO
 // ─────────────────────────────────────────────────────────
 
-const ORANGE       = '#E96928';
-const ORANGE_DARK  = '#c4511a';
-const ORANGE_LIGHT = 'rgba(233,105,40,0.1)';
+const ORANGE       = '#F97613';
+const ORANGE_DARK  = '#d85f0e';
+const ORANGE_LIGHT = 'rgba(249,118,19,0.1)';
 
 const light: AppColors = {
   background:      '#F8F9FA',
@@ -109,7 +109,7 @@ const dark: AppColors = {
   placeholder:     '#6B7280',
   primary:         ORANGE,
   primaryDark:     ORANGE_DARK,
-  primaryLight:    'rgba(233,105,40,0.15)',
+  primaryLight:    'rgba(249,118,19,0.15)',
   border:          '#2A2A2A',
   separator:       '#1F1F1F',
   icon:            '#C9D1D9',

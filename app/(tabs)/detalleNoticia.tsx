@@ -4,16 +4,9 @@ import * as Linking from "expo-linking";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Sharing from "expo-sharing";
 import React, { useMemo } from "react";
-import {
-  Alert,
-  Image,
-  Pressable,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Image, Pressable, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
+import { Alert } from '../../components/Alert';
+import { Text } from '../../components/Text';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from "../../src/context/ThemeContext";
 
@@ -117,7 +110,7 @@ export default function DetalleNoticiaScreen() {
           {tieneImagen ? (
             <Image source={{ uri: imagen }} style={s.heroImage} />
           ) : (
-            <LinearGradient colors={["#E96928", "#c4511a"]} style={s.heroImage}>
+            <LinearGradient colors={["#F97613", "#d85f0e"]} style={s.heroImage}>
               <Ionicons name="newspaper-outline" size={56} color="rgba(255,255,255,0.65)" />
             </LinearGradient>
           )}
@@ -159,7 +152,7 @@ export default function DetalleNoticiaScreen() {
 
         <View style={s.mainCard}>
           <View style={s.dateRow}>
-            <Ionicons name="calendar-outline" size={18} color="#E96928" />
+            <Ionicons name="calendar-outline" size={18} color="#F97613" />
             <Text style={[s.date, { fontSize: fonts.sm }]}>{fechaFormateada}</Text>
           </View>
 
@@ -184,7 +177,7 @@ export default function DetalleNoticiaScreen() {
               ]}
               onPress={compartirNoticia}
             >
-              <Ionicons name="share-social-outline" size={20} color="#E96928" />
+              <Ionicons name="share-social-outline" size={20} color="#F97613" />
               <Text style={[s.secondaryBtnText, { fontSize: fonts.base }]}>{t('share')}</Text>
             </Pressable>
           </View>
@@ -331,7 +324,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
     },
 
     date: {
-      color: "#E96928",
+      color: "#F97613",
       fontWeight: "700",
     },
 
@@ -350,14 +343,14 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
 
     primaryBtn: {
       flex: 1,
-      backgroundColor: "#E96928",
+      backgroundColor: "#F97613",
       minHeight: 60,
       borderRadius: 18,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
       gap: 10,
-      shadowColor: "#E96928",
+      shadowColor: "#F97613",
       shadowOffset: { width: 0, height: 8 },
       shadowOpacity: 0.22,
       shadowRadius: 14,
@@ -374,7 +367,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       minHeight: 60,
       borderRadius: 18,
       borderWidth: 2,
-      borderColor: "#E96928",
+      borderColor: "#F97613",
       backgroundColor: isDark ? "rgba(255,255,255,0.02)" : "#fff",
       flexDirection: "row",
       alignItems: "center",
@@ -383,7 +376,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
     },
 
     secondaryBtnText: {
-      color: "#E96928",
+      color: "#F97613",
       fontWeight: "800",
     },
 
@@ -408,7 +401,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       width: 6,
       height: 76,
       borderRadius: 3,
-      backgroundColor: "#E96928",
+      backgroundColor: "#F97613",
       marginBottom: 18,
     },
 
@@ -428,13 +421,13 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
     readFullBtn: {
       minHeight: 62,
       borderRadius: 18,
-      backgroundColor: "#E96928",
+      backgroundColor: "#F97613",
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
       gap: 10,
       marginBottom: 24,
-      shadowColor: "#E96928",
+      shadowColor: "#F97613",
       shadowOffset: { width: 0, height: 8 },
       shadowOpacity: 0.2,
       shadowRadius: 14,
@@ -457,7 +450,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       width: 34,
       height: 34,
       borderRadius: 12,
-      backgroundColor: "#E96928",
+      backgroundColor: "#F97613",
       alignItems: "center",
       justifyContent: "center",
     },

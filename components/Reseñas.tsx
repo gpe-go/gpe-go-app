@@ -1,9 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import {
-  View, Text, StyleSheet, TextInput, Pressable,
-  Image, Alert, ScrollView, Modal, ActivityIndicator,
-  Animated, Easing,
-} from 'react-native';
+import { View, StyleSheet, Pressable, Image, ScrollView, Modal, ActivityIndicator, Animated, Easing } from 'react-native';
+import { Alert } from './Alert';
+import { Text, TextInput } from './Text';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
@@ -252,7 +250,7 @@ function LoginRequiredModal({
       <View style={m.backdrop}>
         <View style={m.sheet}>
           <View style={m.iconWrap}>
-            <Ionicons name="lock-closed" size={32} color="#E96928" />
+            <Ionicons name="lock-closed" size={32} color="#F97613" />
           </View>
           <Text style={m.title}>Inicia sesión</Text>
           <Text style={m.body}>
@@ -273,10 +271,10 @@ function LoginRequiredModal({
 const m = StyleSheet.create({
   backdrop:      { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' },
   sheet:         { backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 28, alignItems: 'center', gap: 12 },
-  iconWrap:      { width: 64, height: 64, borderRadius: 20, backgroundColor: 'rgba(233,105,40,0.1)', justifyContent: 'center', alignItems: 'center' },
+  iconWrap:      { width: 64, height: 64, borderRadius: 20, backgroundColor: 'rgba(249,118,19,0.1)', justifyContent: 'center', alignItems: 'center' },
   title:         { fontSize: 20, fontWeight: '800', color: '#1A1A1A' },
   body:          { fontSize: 14, color: '#6B7280', textAlign: 'center', lineHeight: 20 },
-  primaryBtn:    { width: '100%', height: 52, borderRadius: 16, backgroundColor: '#E96928', justifyContent: 'center', alignItems: 'center' },
+  primaryBtn:    { width: '100%', height: 52, borderRadius: 16, backgroundColor: '#F97613', justifyContent: 'center', alignItems: 'center' },
   primaryBtnText:{ color: '#fff', fontWeight: '800', fontSize: 16 },
   cancelBtn:     { width: '100%', height: 44, justifyContent: 'center', alignItems: 'center' },
   cancelBtnText: { color: '#6B7280', fontWeight: '600', fontSize: 15 },
@@ -533,7 +531,7 @@ export default function Reseñas({ lugarId }: Props) {
       ))}
       {fotosActuales.length < 3 && (
         <Pressable style={s.addFotoBtn} onPress={() => seleccionarFoto(fotosActuales, setFn)}>
-          <Ionicons name="camera-outline" size={24} color="#E96928" />
+          <Ionicons name="camera-outline" size={24} color="#F97613" />
           <Text style={s.addFotoText}>{t('review_photo')}</Text>
         </Pressable>
       )}
@@ -571,7 +569,7 @@ export default function Reseñas({ lugarId }: Props) {
                 disabled={enviandoReporte}
               >
                 {enviandoReporte
-                  ? <ActivityIndicator color="#E96928" size="small" />
+                  ? <ActivityIndicator color="#F97613" size="small" />
                   : <Text style={[m.primaryBtnText, { color: '#1A1A1A' }]}>{motivo}</Text>
                 }
               </Pressable>
@@ -632,7 +630,7 @@ export default function Reseñas({ lugarId }: Props) {
         </View>
       ) : (
         <Pressable style={s.loginPrompt} onPress={() => setLoginModal(true)}>
-          <Ionicons name="pencil-outline" size={22} color="#E96928" />
+          <Ionicons name="pencil-outline" size={22} color="#F97613" />
           <View style={{ flex: 1 }}>
             <Text style={s.loginPromptTitle}>¿Quieres dejar una reseña?</Text>
             <Text style={s.loginPromptSub}>Inicia sesión para compartir tu experiencia</Text>
@@ -644,7 +642,7 @@ export default function Reseñas({ lugarId }: Props) {
       {/* ══ LISTA ══ */}
       {cargando ? (
         <View style={s.empty}>
-          <ActivityIndicator color="#E96928" />
+          <ActivityIndicator color="#F97613" />
         </View>
       ) : lista.length === 0 ? (
         <View style={s.empty}>
@@ -727,7 +725,7 @@ export default function Reseñas({ lugarId }: Props) {
                 {isAuthenticated && usuario?.id && String(reseña.id_usuario) === String(usuario.id) ? (
                   <View style={s.accionesRow}>
                     <Pressable style={s.editarBtn} onPress={() => abrirEdicion(reseña)}>
-                      <Ionicons name="pencil-outline" size={15} color="#E96928" />
+                      <Ionicons name="pencil-outline" size={15} color="#F97613" />
                       <Text style={s.editarBtnText}>{t('review_edit')}</Text>
                     </Pressable>
                     <Pressable style={s.eliminarBtn} onPress={() => confirmarEliminar(reseña.id)}>
@@ -760,7 +758,7 @@ const makeStyles = (c: any, f: any) => StyleSheet.create({
   promedioText: { fontWeight: '700', color: c.text, fontSize: f.sm },
   form:      { backgroundColor: c.card, borderRadius: 20, padding: 18, marginBottom: 20, borderWidth: 1, borderColor: c.border },
   formTitle: { fontSize: f.md, fontWeight: 'bold', color: c.text, marginBottom: 14 },
-  editTitle: { fontSize: f.md, fontWeight: 'bold', color: '#E96928', marginBottom: 14 },
+  editTitle: { fontSize: f.md, fontWeight: 'bold', color: '#F97613', marginBottom: 14 },
   loginPrompt: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: c.card, borderRadius: 20, padding: 18,
@@ -778,9 +776,9 @@ const makeStyles = (c: any, f: any) => StyleSheet.create({
   fotoWrapper: { position: 'relative' },
   fotoPreview: { width: 80, height: 80, borderRadius: 10 },
   eliminarFoto:{ position: 'absolute', top: -6, right: -6 },
-  addFotoBtn:  { width: 80, height: 80, borderRadius: 10, borderWidth: 2, borderColor: '#E96928', borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center' },
-  addFotoText: { color: '#E96928', fontSize: f.xs, marginTop: 2 },
-  submitBtn:  { backgroundColor: '#E96928', borderRadius: 12, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, paddingVertical: 14 },
+  addFotoBtn:  { width: 80, height: 80, borderRadius: 10, borderWidth: 2, borderColor: '#F97613', borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center' },
+  addFotoText: { color: '#F97613', fontSize: f.xs, marginTop: 2 },
+  submitBtn:  { backgroundColor: '#F97613', borderRadius: 12, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, paddingVertical: 14 },
   submitText: { color: '#fff', fontWeight: 'bold', fontSize: f.base },
   editBtns:   { flexDirection: 'row', gap: 10, marginTop: 4 },
   cancelBtn:  { flex: 1, borderRadius: 12, borderWidth: 1, borderColor: c.border, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, paddingVertical: 14, backgroundColor: c.card },
@@ -788,15 +786,15 @@ const makeStyles = (c: any, f: any) => StyleSheet.create({
   emptyText:  { color: c.subtext, fontSize: f.sm },
   reseñaCard:   { backgroundColor: c.card, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: c.border },
   reseñaHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
-  avatarCircle: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#E96928', justifyContent: 'center', alignItems: 'center' },
+  avatarCircle: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F97613', justifyContent: 'center', alignItems: 'center' },
   avatarLetter: { color: '#fff', fontWeight: 'bold', fontSize: f.md },
   autorText:    { fontWeight: 'bold', color: c.text, fontSize: f.sm },
   fechaText:    { color: c.subtext, fontSize: f.xs },
   reseñaTexto:  { color: c.text, fontSize: f.sm, lineHeight: f.sm * 1.6 },
   reseñaFoto:   { width: 120, height: 90, borderRadius: 10, marginRight: 8 },
   accionesRow:     { flexDirection: 'row', gap: 10, marginTop: 12, borderTopWidth: 1, borderTopColor: c.border, paddingTop: 10 },
-  editarBtn:       { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: '#E96928' },
-  editarBtnText:   { color: '#E96928', fontSize: f.xs, fontWeight: '600' },
+  editarBtn:       { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: '#F97613' },
+  editarBtnText:   { color: '#F97613', fontSize: f.xs, fontWeight: '600' },
   eliminarBtn:     { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: '#E11D48' },
   eliminarBtnText: { color: '#E11D48', fontSize: f.xs, fontWeight: '600' },
   reportarBtn:     { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },

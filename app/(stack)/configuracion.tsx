@@ -4,20 +4,8 @@ import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useOnboarding } from '../../src/context/OnboardingContext';
-import {
-  Animated,
-  AppState,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Switch,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Animated, AppState, Modal, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Switch, TouchableOpacity, View } from 'react-native';
+import { Text } from '../../components/Text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontSize, useTheme } from '../../src/context/ThemeContext';
 import i18n, { AppLanguage, cambiarIdioma, LANGUAGE_LIST } from '../../src/i18n/i18n';
@@ -161,7 +149,7 @@ export default function ConfiguracionScreen() {
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
         <Animated.View style={fadeSlide(bannerAnim, 24)}>
           <LinearGradient
-            colors={['#E96928', '#c4511a']}
+            colors={['#F97613', '#d85f0e']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={s.banner}
@@ -185,7 +173,7 @@ export default function ConfiguracionScreen() {
 
             <View style={s.bannerContent}>
               <View style={s.bannerIconWrap}>
-                <Ionicons name="settings-outline" size={24} color="#E96928" />
+                <Ionicons name="settings-outline" size={24} color="#F97613" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[s.bannerTitle, { fontSize: fonts['2xl'] }]}>
@@ -224,7 +212,7 @@ export default function ConfiguracionScreen() {
               <Switch
                 value={isDark}
                 onValueChange={toggleTheme}
-                trackColor={{ false: colors.border, true: '#E96928' }}
+                trackColor={{ false: colors.border, true: '#F97613' }}
                 thumbColor="#fff"
                 ios_backgroundColor={colors.border}
               />
@@ -245,10 +233,10 @@ export default function ConfiguracionScreen() {
                     style={({ pressed }) => [
                       s.fontBtn,
                       active && {
-                        borderColor: '#E96928',
+                        borderColor: '#F97613',
                         backgroundColor: isDark
-                          ? 'rgba(233,105,40,0.15)'
-                          : 'rgba(233,105,40,0.08)',
+                          ? 'rgba(249,118,19,0.15)'
+                          : 'rgba(249,118,19,0.08)',
                       },
                       {
                         opacity: pressed ? 0.92 : 1,
@@ -266,7 +254,7 @@ export default function ConfiguracionScreen() {
                       style={[
                         s.fontBtnLetter,
                         { fontSize: opt.size },
-                        active && { color: '#E96928' },
+                        active && { color: '#F97613' },
                       ]}
                     >
                       A
@@ -275,7 +263,7 @@ export default function ConfiguracionScreen() {
                       style={[
                         s.fontBtnLabel,
                         { fontSize: fonts.xs },
-                        active && { color: '#E96928', fontWeight: '700' },
+                        active && { color: '#F97613', fontWeight: '700' },
                       ]}
                     >
                       {opt.label}
@@ -314,8 +302,8 @@ export default function ConfiguracionScreen() {
                     s.iconBox,
                     {
                       backgroundColor: isDark
-                        ? 'rgba(233,105,40,0.15)'
-                        : 'rgba(233,105,40,0.1)',
+                        ? 'rgba(249,118,19,0.15)'
+                        : 'rgba(249,118,19,0.1)',
                     },
                   ]}
                 >
@@ -349,8 +337,8 @@ export default function ConfiguracionScreen() {
           >
             <View style={s.row}>
               <View style={s.rowLeft}>
-                <View style={[s.iconBox, { backgroundColor: isDark ? 'rgba(233,105,40,0.15)' : 'rgba(233,105,40,0.1)' }]}>
-                  <Ionicons name="shield-checkmark-outline" size={22} color="#E96928" />
+                <View style={[s.iconBox, { backgroundColor: isDark ? 'rgba(249,118,19,0.15)' : 'rgba(249,118,19,0.1)' }]}>
+                  <Ionicons name="shield-checkmark-outline" size={22} color="#F97613" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[s.rowTitle, { fontSize: fonts.base }]}>
@@ -380,8 +368,8 @@ export default function ConfiguracionScreen() {
               onPress={() => router.push('/(stack)/avisoPrivacidad')}
             >
               <View style={s.rowLeft}>
-                <View style={[s.iconBox, { backgroundColor: isDark ? 'rgba(233,105,40,0.15)' : 'rgba(233,105,40,0.1)' }]}>
-                  <Ionicons name="document-text-outline" size={22} color="#E96928" />
+                <View style={[s.iconBox, { backgroundColor: isDark ? 'rgba(249,118,19,0.15)' : 'rgba(249,118,19,0.1)' }]}>
+                  <Ionicons name="document-text-outline" size={22} color="#F97613" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[s.rowTitle, { fontSize: fonts.base }]}>
@@ -405,8 +393,8 @@ export default function ConfiguracionScreen() {
               onPress={() => router.push('/(stack)/terminosCondiciones')}
             >
               <View style={s.rowLeft}>
-                <View style={[s.iconBox, { backgroundColor: isDark ? 'rgba(233,105,40,0.15)' : 'rgba(233,105,40,0.1)' }]}>
-                  <Ionicons name="reader-outline" size={22} color="#E96928" />
+                <View style={[s.iconBox, { backgroundColor: isDark ? 'rgba(249,118,19,0.15)' : 'rgba(249,118,19,0.1)' }]}>
+                  <Ionicons name="reader-outline" size={22} color="#F97613" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[s.rowTitle, { fontSize: fonts.base }]}>
@@ -429,8 +417,8 @@ export default function ConfiguracionScreen() {
           <View style={s.card}>
             <View style={s.row}>
               <View style={s.rowLeft}>
-                <View style={[s.iconBox, { backgroundColor: isDark ? 'rgba(233,105,40,0.15)' : 'rgba(233,105,40,0.1)' }]}>
-                  <Ionicons name="information-circle-outline" size={22} color="#E96928" />
+                <View style={[s.iconBox, { backgroundColor: isDark ? 'rgba(249,118,19,0.15)' : 'rgba(249,118,19,0.1)' }]}>
+                  <Ionicons name="information-circle-outline" size={22} color="#F97613" />
                 </View>
                 <View>
                   <Text style={[s.rowTitle, { fontSize: fonts.base }]}>{t('version')}</Text>
@@ -463,12 +451,33 @@ export default function ConfiguracionScreen() {
               }}
             >
               <View style={s.rowLeft}>
-                <View style={[s.iconBox, { backgroundColor: isDark ? 'rgba(233,105,40,0.15)' : 'rgba(233,105,40,0.1)' }]}>
-                  <Ionicons name="play-circle-outline" size={22} color="#E96928" />
+                <View style={[s.iconBox, { backgroundColor: isDark ? 'rgba(249,118,19,0.15)' : 'rgba(249,118,19,0.1)' }]}>
+                  <Ionicons name="play-circle-outline" size={22} color="#F97613" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[s.rowTitle, { fontSize: fonts.base }]}>{t('settings_reset_tutorial')}</Text>
                   <Text style={[s.rowSub, { fontSize: fonts.xs }]} numberOfLines={1}>{t('settings_reset_tutorial_desc')}</Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.subtext} />
+            </Pressable>
+
+            <View style={[s.infoDivider, { marginVertical: 14 }]} />
+
+            <Pressable
+              style={({ pressed }) => [
+                s.row,
+                { opacity: pressed ? 0.94 : 1, transform: [{ scale: pressed ? 0.99 : 1 }] },
+              ]}
+              onPress={() => router.push('/(stack)/acercaDe')}
+            >
+              <View style={s.rowLeft}>
+                <View style={[s.iconBox, { backgroundColor: isDark ? 'rgba(249,118,19,0.15)' : 'rgba(249,118,19,0.1)' }]}>
+                  <Ionicons name="information-circle-outline" size={22} color="#F97613" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.rowTitle, { fontSize: fonts.base }]}>{t('settings_about')}</Text>
+                  <Text style={[s.rowSub, { fontSize: fonts.xs }]} numberOfLines={1}>{t('settings_about_sub')}</Text>
                 </View>
               </View>
               <Ionicons name="chevron-forward" size={18} color={colors.subtext} />
@@ -507,8 +516,8 @@ export default function ConfiguracionScreen() {
                     s.langItem,
                     selected && {
                       backgroundColor: isDark
-                        ? 'rgba(233,105,40,0.15)'
-                        : 'rgba(233,105,40,0.08)',
+                        ? 'rgba(249,118,19,0.15)'
+                        : 'rgba(249,118,19,0.08)',
                     },
                     {
                       opacity: pressed ? 0.92 : 1,
@@ -522,7 +531,7 @@ export default function ConfiguracionScreen() {
                     style={[
                       s.langLabel,
                       { fontSize: fonts.base },
-                      selected && { color: '#E96928', fontWeight: '700' },
+                      selected && { color: '#F97613', fontWeight: '700' },
                     ]}
                   >
                     {item.label}
@@ -568,7 +577,7 @@ function SectionLabel({
           width: 3,
           height: 16,
           borderRadius: 2,
-          backgroundColor: '#E96928',
+          backgroundColor: '#F97613',
         }}
       />
       <Text
@@ -745,7 +754,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       width: 16,
       height: 16,
       borderRadius: 8,
-      backgroundColor: '#E96928',
+      backgroundColor: '#F97613',
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -867,7 +876,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       width: 24,
       height: 24,
       borderRadius: 12,
-      backgroundColor: '#E96928',
+      backgroundColor: '#F97613',
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -925,7 +934,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
 
     privacyCloseBtn: {
       marginTop: 20,
-      backgroundColor: '#E96928',
+      backgroundColor: '#F97613',
       borderRadius: 16,
       paddingVertical: 16,
       alignItems: 'center',

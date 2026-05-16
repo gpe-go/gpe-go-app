@@ -4,27 +4,16 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  ActivityIndicator,
-  Alert,
-  Animated,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Animated, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
+import { Alert } from '../../components/Alert';
+import { Text, TextInput } from '../../components/Text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { getMisLugares, registrarUsuario, solicitarCodigo, verificarCodigo } from '../../src/api/api';
+import { getMisLugares, registrarUsuario, solicitarCodigo, verificarCodigo, getApiErrorMessage } from '../../src/api/api';
 import { useNotificaciones } from '../../src/context/NotificacionesContext';
 import { useAuth } from '../../src/context/AuthContext';
 import { useTheme } from '../../src/context/ThemeContext';
+import { signInWithGoogle, signInWithApple, SocialAuthNotConfigured } from '../../src/auth/socialAuth';
 
 type Step = 'login' | 'registro' | 'codigo';
 
@@ -70,7 +59,7 @@ function FocusInput({
 
   const borderColor = focusAnim.interpolate({
     inputRange:  [0, 1],
-    outputRange: [colors.border, '#E96928'],
+    outputRange: [colors.border, '#F97613'],
   });
   const shadowOpacity = focusAnim.interpolate({
     inputRange:  [0, 1],
@@ -88,7 +77,7 @@ function FocusInput({
         height: 58,
         borderWidth: 1,
         borderColor,
-        shadowColor: '#E96928',
+        shadowColor: '#F97613',
         shadowOpacity,
         shadowOffset: { width: 0, height: 0 },
         shadowRadius: 8,
@@ -97,11 +86,11 @@ function FocusInput({
     >
       <View style={{
         width: 36, height: 36, borderRadius: 11,
-        backgroundColor: 'rgba(233,105,40,0.12)',
+        backgroundColor: 'rgba(249,118,19,0.12)',
         justifyContent: 'center', alignItems: 'center',
         marginRight: 10,
       }}>
-        <Ionicons name={icon} size={18} color="#E96928" />
+        <Ionicons name={icon} size={18} color="#F97613" />
       </View>
       <TextInput
         style={{
@@ -154,7 +143,7 @@ function AvatarSection({
         <Image source={{ uri: fotoPerfil }} style={styles.avatarImage} />
       ) : (
         <View style={styles.avatarCircle}>
-          <Ionicons name="person" size={38} color="#E96928" />
+          <Ionicons name="person" size={38} color="#F97613" />
         </View>
       )}
       {showCamera && (
@@ -234,7 +223,7 @@ function AuthBanner({
   return (
     <Animated.View style={animatedStyle}>
       <LinearGradient
-        colors={['#E96928', '#C4511A']}
+        colors={['#F97613', '#D85F0E']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={s.banner}
@@ -259,7 +248,7 @@ function AuthBanner({
         </View>
 
         <View style={s.bannerIconCircle}>
-          <Ionicons name={iconName || 'person'} size={44} color="#E96928" />
+          <Ionicons name={iconName || 'person'} size={44} color="#F97613" />
         </View>
 
         <Text style={[s.welcomeText, { fontSize: fonts['3xl'] ?? fonts['2xl'] }]}>
@@ -293,7 +282,7 @@ function AppInfoFooter({
             { fontSize: fonts.sm, color: colors.text },
           ]}
         >
-          Guadalupe<Text style={{ color: '#E96928' }}>GO</Text>
+          Guadalupe<Text style={{ color: '#F97613' }}>GO</Text>
         </Text>
       </View>
 
@@ -374,6 +363,11 @@ export default function PerfilScreen() {
   const topAnim = useRef(new Animated.Value(0)).current;
   const cardsAnim = useRef(new Animated.Value(0)).current;
   const cardAnim = useRef(new Animated.Value(0)).current;
+  // Marcamos cuando isAuthenticated transita de true → false (logout o
+  // eliminar cuenta). En ese caso saltamos la animación de fade-in del
+  // card de login para que la transición sea instantánea y el usuario
+  // no vea el botón Confirmar a medio renderizar.
+  const prevAuthRef = useRef(isAuthenticated);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -392,10 +386,16 @@ export default function PerfilScreen() {
         Animated.timing(topAnim, { toValue: 1, duration: 420, useNativeDriver: true }),
         Animated.timing(cardsAnim, { toValue: 1, duration: 380, useNativeDriver: true }),
       ]).start();
+    } else if (prevAuthRef.current === true) {
+      // Veníamos de estar autenticados → logout/eliminar cuenta.
+      // No animamos: dejamos el card visible al instante.
+      cardAnim.setValue(1);
     } else {
+      // Entrada normal a perfil estando deslogueado: animar fade-in.
       cardAnim.setValue(0);
       Animated.timing(cardAnim, { toValue: 1, duration: 380, useNativeDriver: true }).start();
     }
+    prevAuthRef.current = isAuthenticated;
   }, [isAuthenticated, usuario, step, topAnim, cardsAnim, cardAnim]);
 
   const cambiarFoto = () => {
@@ -459,7 +459,7 @@ export default function PerfilScreen() {
         Alert.alert('Error', res.error?.mensaje || t('login_error_send_code'));
       }
     } catch (e: any) {
-      Alert.alert('Error', e.response?.data?.error?.mensaje || t('login_error_connection'));
+      Alert.alert('Error', getApiErrorMessage(e, t));
     } finally {
       setLoading(false);
     }
@@ -483,7 +483,7 @@ export default function PerfilScreen() {
         Alert.alert('Error', res.error?.mensaje || t('register_error_create'));
       }
     } catch (e: any) {
-      Alert.alert('Error', e.response?.data?.error?.mensaje || t('login_error_connection'));
+      Alert.alert('Error', getApiErrorMessage(e, t));
     } finally {
       setLoading(false);
     }
@@ -508,18 +508,67 @@ export default function PerfilScreen() {
         Alert.alert('Error', res.error?.mensaje || t('login_error_wrong_code'));
       }
     } catch (e: any) {
-      Alert.alert('Error', e.response?.data?.error?.mensaje || t('login_error_connection'));
+      Alert.alert('Error', getApiErrorMessage(e, t));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Inicio de sesión con Google / Apple.
+  // Si las credenciales aún no están configuradas, los wrappers lanzan
+  // `SocialAuthNotConfigured` y caemos a la alerta "Próximamente disponible"
+  // — exactamente la misma UX que tenía antes.
+  const handleGoogleLogin = async () => {
+    try {
+      setLoading(true);
+      const { token, usuario } = await signInWithGoogle();
+      await login(token, usuario);
+    } catch (e: any) {
+      if (e instanceof SocialAuthNotConfigured) {
+        Alert.alert(
+          t('google_signin_title'),
+          t('google_signin_coming_soon'),
+        );
+      } else {
+        Alert.alert(t('google_signin_title'), e?.message ?? String(e));
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAppleLogin = async () => {
+    try {
+      setLoading(true);
+      const { token, usuario } = await signInWithApple();
+      await login(token, usuario);
+    } catch (e: any) {
+      if (e instanceof SocialAuthNotConfigured) {
+        Alert.alert(
+          t('apple_signin_title'),
+          t('apple_signin_coming_soon'),
+        );
+      } else {
+        Alert.alert(t('apple_signin_title'), e?.message ?? String(e));
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const handleCerrarSesion = async () => {
+    // Saltamos la animación de entrada del card de login en este caso
+    // (de logged-in a logged-out): si dejamos que cardAnim arranque en
+    // 0 y haga fade-in, durante 380ms el botón Confirmar se ve como
+    // una línea aplastada. Forzando cardAnim=1 antes de que isAuthenticated
+    // cambie, el switch a la pantalla de login es instantáneo y limpio.
+    cardAnim.setValue(1);
     await logout();
     setStep('login');
     setEmail('');
     setNombre('');
     setCodigo('');
+    setLoading(false);
   };
 
   if (isAuthenticated && usuario) {
@@ -539,7 +588,7 @@ export default function PerfilScreen() {
           }}
         >
           <LinearGradient
-            colors={['#E96928', '#C4511A']}
+            colors={['#F97613', '#D85F0E']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={s.bannerLogged}
@@ -579,7 +628,7 @@ export default function PerfilScreen() {
 
             {usuario.rol === 'comercio' && (
               <View style={styles.rolBadge}>
-                <Ionicons name="storefront" size={13} color="#E96928" />
+                <Ionicons name="storefront" size={13} color="#F97613" />
                 <Text style={styles.rolBadgeText}>{t('role_merchant')}</Text>
               </View>
             )}
@@ -614,10 +663,10 @@ export default function PerfilScreen() {
               <View
                 style={[
                   styles.actionIconWrap,
-                  { backgroundColor: 'rgba(233,105,40,0.1)' },
+                  { backgroundColor: 'rgba(249,118,19,0.1)' },
                 ]}
               >
-                <Ionicons name="create-outline" size={20} color="#E96928" />
+                <Ionicons name="create-outline" size={20} color="#F97613" />
               </View>
               <Text
                 style={[
@@ -641,8 +690,8 @@ export default function PerfilScreen() {
               ]}
               onPress={() => router.push('/(stack)/registrar-negocio' as any)}
             >
-              <View style={[styles.actionIconWrap, { backgroundColor: 'rgba(233,105,40,0.1)' }]}>
-                <Ionicons name="storefront-outline" size={20} color="#E96928" />
+              <View style={[styles.actionIconWrap, { backgroundColor: 'rgba(249,118,19,0.1)' }]}>
+                <Ionicons name="storefront-outline" size={20} color="#F97613" />
               </View>
               <Text style={[styles.actionLabel, { color: colors.text, fontSize: fonts.base }]}>
                 {t('biz_register_btn')}
@@ -668,8 +717,8 @@ export default function PerfilScreen() {
                       <View
                         style={[styles.misNegociosCard, { backgroundColor: colors.background, borderColor: colors.border }]}
                       >
-                        <View style={[styles.misNegociosIconWrap, { backgroundColor: 'rgba(233,105,40,0.1)' }]}>
-                          <Ionicons name="storefront-outline" size={18} color="#E96928" />
+                        <View style={[styles.misNegociosIconWrap, { backgroundColor: 'rgba(249,118,19,0.1)' }]}>
+                          <Ionicons name="storefront-outline" size={18} color="#F97613" />
                         </View>
                         <Text
                           style={[styles.misNegociosName, { color: colors.text, fontSize: fonts.sm }]}
@@ -702,7 +751,7 @@ export default function PerfilScreen() {
               style={({ pressed }) => [
                 styles.logoutButton,
                 {
-                  borderColor: '#E96928',
+                  borderColor: '#F97613',
                   backgroundColor: colors.card,
                   opacity: pressed ? 0.92 : 1,
                   transform: [{ scale: pressed ? 0.985 : 1 }],
@@ -710,7 +759,7 @@ export default function PerfilScreen() {
               ]}
               onPress={handleCerrarSesion}
             >
-              <Ionicons name="log-out-outline" size={20} color="#E96928" />
+              <Ionicons name="log-out-outline" size={20} color="#F97613" />
               <Text style={styles.logoutText}>{t('profile_logout')}</Text>
             </Pressable>
           </View>
@@ -768,7 +817,7 @@ export default function PerfilScreen() {
               disabled={loading}
             >
               <LinearGradient
-                colors={['#E96928', '#C4511A']}
+                colors={['#F97613', '#D85F0E']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={s.loginBtnGradient}
@@ -878,7 +927,7 @@ export default function PerfilScreen() {
               disabled={loading}
             >
               <LinearGradient
-                colors={['#E96928', '#C4511A']}
+                colors={['#F97613', '#D85F0E']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={s.loginBtnGradient}
@@ -957,7 +1006,7 @@ export default function PerfilScreen() {
             disabled={loading}
           >
             <LinearGradient
-              colors={['#E96928', '#C4511A']}
+              colors={['#F97613', '#D85F0E']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={s.loginBtnGradient}
@@ -1008,12 +1057,7 @@ export default function PerfilScreen() {
                 transform: [{ scale: pressed ? 0.985 : 1 }],
               },
             ]}
-            onPress={() =>
-              Alert.alert(
-                t('google_signin_title'),
-                t('google_signin_coming_soon')
-              )
-            }
+            onPress={handleGoogleLogin}
           >
             <View style={s.socialIconWrap}>
               <FontAwesome5 name="google" size={16} color="#EA4335" />
@@ -1038,12 +1082,7 @@ export default function PerfilScreen() {
                 transform: [{ scale: pressed ? 0.985 : 1 }],
               },
             ]}
-            onPress={() =>
-              Alert.alert(
-                t('apple_signin_title'),
-                t('apple_signin_coming_soon')
-              )
-            }
+            onPress={handleAppleLogin}
           >
             <View style={[s.socialIconWrap, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
               <Ionicons name="logo-apple" size={18} color="#fff" />
@@ -1108,7 +1147,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 2,
     right: 2,
-    backgroundColor: '#C4511A',
+    backgroundColor: '#D85F0E',
     borderRadius: 14,
     width: 28,
     height: 28,
@@ -1158,7 +1197,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    backgroundColor: '#E96928',
+    backgroundColor: '#F97613',
     borderRadius: 18,
     height: 56,
     marginBottom: 14,
@@ -1200,7 +1239,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   logoutText: {
-    color: '#E96928',
+    color: '#F97613',
     fontSize: 16,
     fontWeight: '700',
   },
@@ -1274,7 +1313,7 @@ const styles = StyleSheet.create({
     width: 18,
     height: 18,
     borderRadius: 5,
-    backgroundColor: '#E96928',
+    backgroundColor: '#F97613',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1375,7 +1414,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       width: 64,
       height: 64,
       borderRadius: 20,
-      backgroundColor: isDark ? 'rgba(233,105,40,0.12)' : 'rgba(233,105,40,0.08)',
+      backgroundColor: isDark ? 'rgba(249,118,19,0.12)' : 'rgba(249,118,19,0.08)',
       justifyContent: 'center',
       alignItems: 'center',
       marginBottom: 4,
@@ -1409,8 +1448,8 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       height: 36,
       borderRadius: 11,
       backgroundColor: isDark
-        ? 'rgba(233,105,40,0.15)'
-        : 'rgba(233,105,40,0.1)',
+        ? 'rgba(249,118,19,0.15)'
+        : 'rgba(249,118,19,0.1)',
       justifyContent: 'center',
       alignItems: 'center',
       marginRight: 10,
@@ -1424,7 +1463,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       borderRadius: 18,
       overflow: 'hidden',
       elevation: 5,
-      shadowColor: '#E96928',
+      shadowColor: '#F97613',
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.35,
       shadowRadius: 8,
@@ -1513,7 +1552,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       textAlign: 'center',
     },
     orangeLink: {
-      color: '#E96928',
+      color: '#F97613',
       fontWeight: '800',
     },
   });

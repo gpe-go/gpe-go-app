@@ -1,15 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import {
-  Animated,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Animated, Modal, Platform, Pressable, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Text } from './Text';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { AppLanguage, LANGUAGE_LIST } from '../src/i18n/i18n';
@@ -89,10 +80,10 @@ export default function LanguageSheet({
           <View
             style={[
               styles.sheetIconBg,
-              { backgroundColor: 'rgba(233,105,40,0.12)' },
+              { backgroundColor: 'rgba(249,118,19,0.12)' },
             ]}
           >
-            <Ionicons name="globe-outline" size={20} color="#E96928" />
+            <Ionicons name="globe-outline" size={20} color="#F97613" />
           </View>
 
           <Text
@@ -136,8 +127,8 @@ export default function LanguageSheet({
                   styles.langRow,
                   selected && {
                     backgroundColor: isDark
-                      ? 'rgba(233,105,40,0.15)'
-                      : 'rgba(233,105,40,0.08)',
+                      ? 'rgba(249,118,19,0.15)'
+                      : 'rgba(249,118,19,0.08)',
                   },
                   { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.99 : 1 }] },
                 ]}
@@ -149,7 +140,7 @@ export default function LanguageSheet({
                     styles.langLabel,
                     {
                       fontSize: fonts.base,
-                      color: selected ? '#E96928' : colors.text,
+                      color: selected ? '#F97613' : colors.text,
                       fontWeight: selected ? '700' : '500',
                     },
                   ]}
@@ -240,7 +231,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#E96928',
+    backgroundColor: '#F97613',
     justifyContent: 'center',
     alignItems: 'center',
   },

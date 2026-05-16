@@ -3,20 +3,9 @@ import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Animated,
-  Image,
-  Platform,
-  Pressable,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Animated, Image, Platform, Pressable, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
+import { Alert } from '../../components/Alert';
+import { Text, TextInput } from '../../components/Text';
 import { useTranslation } from 'react-i18next';
 import { getCategoriasAPI, registrarComercio, subirFotoLugar } from '../../src/api/api';
 import { useTheme } from '../../src/context/ThemeContext';
@@ -82,7 +71,7 @@ function FocusInput({
 
   const borderColor = focusAnim.interpolate({
     inputRange:  [0, 1],
-    outputRange: [colors.border, '#E96928'],
+    outputRange: [colors.border, '#F97613'],
   });
   const shadowOpacity = focusAnim.interpolate({
     inputRange:  [0, 1],
@@ -103,7 +92,7 @@ function FocusInput({
         paddingTop: multiline ? 14 : 0,
         paddingBottom: multiline ? 10 : 0,
         borderColor,
-        shadowColor: '#E96928',
+        shadowColor: '#F97613',
         shadowOpacity,
         shadowOffset: { width: 0, height: 0 },
         shadowRadius: 8,
@@ -289,7 +278,7 @@ export default function RegistrarNegocioScreen() {
         }}
       >
         <LinearGradient
-          colors={['#E96928', '#C4511A']}
+          colors={['#F97613', '#D85F0E']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={s.banner}
@@ -303,7 +292,7 @@ export default function RegistrarNegocioScreen() {
             <Ionicons name="close" size={20} color="#fff" />
           </Pressable>
           <View style={s.bannerIconWrap}>
-            <Ionicons name="storefront" size={26} color="#E96928" />
+            <Ionicons name="storefront" size={26} color="#F97613" />
           </View>
           <Text style={[s.bannerTitle, { fontSize: fonts['2xl'] }]}>{t('biz_title')}</Text>
           <Text style={[s.bannerSub, { fontSize: fonts.sm }]}>{t('biz_subtitle')}</Text>
@@ -343,7 +332,7 @@ export default function RegistrarNegocioScreen() {
               {t('biz_category_label')}
             </Text>
             {loadingCats ? (
-              <ActivityIndicator color="#E96928" style={{ marginBottom: 12 }} />
+              <ActivityIndicator color="#F97613" style={{ marginBottom: 12 }} />
             ) : (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.catScroll} contentContainerStyle={s.catContent}>
                 {categorias.map(cat => (
@@ -352,8 +341,8 @@ export default function RegistrarNegocioScreen() {
                     style={({ pressed }) => [
                       s.catChip,
                       {
-                        backgroundColor: categoriaId === cat.id ? '#E96928' : colors.inputBackground,
-                        borderColor: categoriaId === cat.id ? '#E96928' : colors.border,
+                        backgroundColor: categoriaId === cat.id ? '#F97613' : colors.inputBackground,
+                        borderColor: categoriaId === cat.id ? '#F97613' : colors.border,
                         opacity: pressed ? 0.85 : 1,
                       },
                     ]}
@@ -449,7 +438,7 @@ export default function RegistrarNegocioScreen() {
                   ]}
                   onPress={agregarFoto}
                 >
-                  <Ionicons name="camera-outline" size={28} color="#E96928" />
+                  <Ionicons name="camera-outline" size={28} color="#F97613" />
                   <Text style={[s.fotoAddText, { color: colors.subtext, fontSize: fonts.xs }]}>
                     {t('biz_photos_add')}
                   </Text>
@@ -478,7 +467,7 @@ export default function RegistrarNegocioScreen() {
           disabled={loading}
         >
           <LinearGradient
-            colors={['#E96928', '#C4511A']}
+            colors={['#F97613', '#D85F0E']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={s.submitGradient}
@@ -518,7 +507,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) => StyleSheet.create({
 
   section: { paddingHorizontal: 20, marginTop: 24 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 },
-  sectionDot: { width: 4, height: 20, borderRadius: 2, backgroundColor: '#E96928' },
+  sectionDot: { width: 4, height: 20, borderRadius: 2, backgroundColor: '#F97613' },
   sectionTitle: { fontWeight: '800', color: c.text },
 
   card: { borderRadius: 22, padding: 18, borderWidth: 1, elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: isDark ? 0.3 : 0.08, shadowRadius: 6 },
@@ -544,7 +533,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) => StyleSheet.create({
   fotoAdd: { width: 80, height: 80, borderRadius: 12, borderWidth: 1.5, borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center', gap: 4 },
   fotoAddText: { fontWeight: '600' },
 
-  submitBtn: { borderRadius: 16, overflow: 'hidden', elevation: 4, shadowColor: '#E96928', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 8 },
+  submitBtn: { borderRadius: 16, overflow: 'hidden', elevation: 4, shadowColor: '#F97613', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 8 },
   submitGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 16 },
   submitText: { color: '#fff', fontWeight: '800' },
 

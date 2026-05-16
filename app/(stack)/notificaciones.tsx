@@ -1,15 +1,6 @@
 import React, { useCallback, useEffect, useRef } from 'react';
-import {
-  Animated,
-  FlatList,
-  Platform,
-  Pressable,
-  RefreshControl,
-  StatusBar,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Animated, FlatList, Platform, Pressable, RefreshControl, StatusBar, StyleSheet, View } from 'react-native';
+import { Text } from '../../components/Text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,11 +17,11 @@ function tipoIcon(tipo: string): { name: IoniconName; color: string; bg: string 
   switch (tipo) {
     case 'negocio_aprobado':  return { name: 'checkmark-circle', color: '#22c55e', bg: 'rgba(34,197,94,0.12)'  };
     case 'negocio_rechazado': return { name: 'close-circle',     color: '#ef4444', bg: 'rgba(239,68,68,0.12)'  };
-    case 'nuevo_evento':      return { name: 'calendar',         color: '#E96928', bg: 'rgba(233,105,40,0.12)' };
-    case 'nuevo_lugar':       return { name: 'location',         color: '#E96928', bg: 'rgba(233,105,40,0.12)' };
+    case 'nuevo_evento':      return { name: 'calendar',         color: '#F97613', bg: 'rgba(249,118,19,0.12)' };
+    case 'nuevo_lugar':       return { name: 'location',         color: '#F97613', bg: 'rgba(249,118,19,0.12)' };
     case 'nueva_noticia':     return { name: 'newspaper',        color: '#3b82f6', bg: 'rgba(59,130,246,0.12)' };
-    case 'bienvenida':        return { name: 'hand-left',        color: '#E96928', bg: 'rgba(233,105,40,0.12)' };
-    default:                  return { name: 'notifications',    color: '#E96928', bg: 'rgba(233,105,40,0.12)' };
+    case 'bienvenida':        return { name: 'hand-left',        color: '#F97613', bg: 'rgba(249,118,19,0.12)' };
+    default:                  return { name: 'notifications',    color: '#F97613', bg: 'rgba(249,118,19,0.12)' };
   }
 }
 
@@ -84,7 +75,7 @@ const cardSt = StyleSheet.create({
   },
   dot: {
     position: 'absolute', top: 14, right: 14,
-    width: 8, height: 8, borderRadius: 4, backgroundColor: '#E96928',
+    width: 8, height: 8, borderRadius: 4, backgroundColor: '#F97613',
   },
   iconWrap: {
     width: 44, height: 44, borderRadius: 13,
@@ -125,7 +116,7 @@ function NotifCard({
           cardSt.wrap,
           {
             backgroundColor: colors.card,
-            borderColor: item.leida ? colors.border : '#E96928' + '40',
+            borderColor: item.leida ? colors.border : '#F97613' + '40',
             opacity: pressed ? 0.9 : 1,
             transform: [{ scale: pressed ? 0.985 : 1 }],
           },
@@ -141,12 +132,11 @@ function NotifCard({
           <Text
             style={[cardSt.title, { color: colors.text, fontSize: fonts.base },
               !item.leida && { fontWeight: '700' }]}
-            numberOfLines={2}
           >
             {titulo}
           </Text>
           {!!cuerpo && (
-            <Text style={[cardSt.cuerpo, { color: colors.subtext, fontSize: fonts.sm }]} numberOfLines={2}>
+            <Text style={[cardSt.cuerpo, { color: colors.subtext, fontSize: fonts.sm }]}>
               {cuerpo}
             </Text>
           )}
@@ -202,7 +192,7 @@ export default function NotificacionesScreen() {
         transform: [{ translateY: bannerAnim.interpolate({ inputRange: [0,1], outputRange: [20,0] }) }],
       }}>
         <LinearGradient
-          colors={['#E96928', '#C4511A']}
+          colors={['#F97613', '#D85F0E']}
           start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
           style={s.banner}
         >
@@ -221,7 +211,7 @@ export default function NotificacionesScreen() {
             {/* Centro */}
             <View style={s.bannerCenter}>
               <View style={s.bannerIconWrap}>
-                <Ionicons name="notifications" size={26} color="#E96928" />
+                <Ionicons name="notifications" size={26} color="#F97613" />
               </View>
               <Text style={[s.bannerTitle, { fontSize: fonts['2xl'] }]}>
                 {t('notif_title')}
@@ -276,8 +266,8 @@ export default function NotificacionesScreen() {
               <RefreshControl
                 refreshing={loading}
                 onRefresh={refresh}
-                tintColor="#E96928"
-                colors={['#E96928']}
+                tintColor="#F97613"
+                colors={['#F97613']}
               />
             }
             renderItem={({ item, index }) => (
@@ -326,7 +316,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       backgroundColor: '#fff', paddingHorizontal: 10, paddingVertical: 2,
       borderRadius: 20, marginTop: 2,
     },
-    unreadBadgeText: { color: '#E96928', fontWeight: '800' },
+    unreadBadgeText: { color: '#F97613', fontWeight: '800' },
     readAllBtn:      { width: 60, alignItems: 'flex-end', justifyContent: 'center' },
     readAllText:     { color: 'rgba(255,255,255,0.9)', fontWeight: '600' },
     list:            { padding: 16, paddingBottom: 40 },

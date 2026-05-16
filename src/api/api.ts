@@ -31,8 +31,59 @@ API.interceptors.request.use(async (config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  if (__DEV__) {
+    // Log temporal para diagnosticar "Error de conexión".
+    console.log("[API →]", config.method?.toUpperCase(), (config.baseURL ?? "") + (config.url ?? ""), config.params);
+  }
   return config;
 });
+
+if (__DEV__) {
+  // Log de respuestas/errores para diagnóstico.
+  API.interceptors.response.use(
+    (res) => {
+      console.log("[API ←]", res.status, res.config.url, res.data);
+      return res;
+    },
+    (err) => {
+      console.log("[API ✗]", {
+        message: err.message,
+        code: err.code,
+        url: err.config?.baseURL + (err.config?.url ?? ""),
+        params: err.config?.params,
+        status: err.response?.status,
+        data: err.response?.data,
+      });
+      return Promise.reject(err);
+    },
+  );
+}
+
+/**
+ * Convierte un error de axios en un mensaje legible para mostrar al usuario.
+ * Distingue 3 casos:
+ *  1. El backend devolvió un mensaje en `response.data.error.mensaje`
+ *     → se usa ese mensaje literal (ej. "No existe un usuario con este email").
+ *  2. El servidor devolvió 5xx pero sin mensaje (backend roto)
+ *     → "Error del servidor, intenta más tarde".
+ *  3. Axios no recibió response (red caída, DNS, timeout, etc.)
+ *     → "Error de conexión".
+ *
+ * Esto evita que un 500 silencioso del backend se confunda con un
+ * problema de conexión del usuario.
+ */
+export const getApiErrorMessage = (
+  err: any,
+  t: (key: string) => string,
+): string => {
+  const backendMsg = err?.response?.data?.error?.mensaje;
+  if (backendMsg) return backendMsg;
+  const status = err?.response?.status;
+  if (typeof status === "number" && status >= 500) {
+    return t("login_error_server");
+  }
+  return t("login_error_connection");
+};
 
 /* ================= AUTH (FLUJO EMAIL + CÓDIGO) ================= */
 
@@ -130,7 +181,11 @@ export const agregarFavorito = async (payload: {
 };
 
 export const quitarFavorito = async (id: number) => {
-  const response = await API.delete("", {
+  // nginx en go.guadalupe.gob.mx solo permite GET y POST en esta
+  // ubicación; PUT y DELETE devuelven 405. Por eso usamos POST con
+  // la action correcta como query param — el backend PHP enruta por
+  // (modulo, action), no por método HTTP, así que funciona igual.
+  const response = await API.post("", {}, {
     params: { modulo: "favoritos", action: "quitar", id },
   });
   return response.data;
@@ -146,7 +201,9 @@ export const getUsuario = async () => {
 };
 
 export const editarPerfil = async (nombre: string) => {
-  const response = await API.put("", { nombre }, {
+  // POST en lugar de PUT — nginx del servidor bloquea PUT con 405.
+  // Ver explicación en quitarFavorito.
+  const response = await API.post("", { nombre }, {
     params: { modulo: "usuarios", action: "editar" },
   });
   return response.data;
@@ -290,14 +347,16 @@ export const editarResena = async (id: number, data: {
   calificacion?: number;
   comentario?: string;
 }) => {
-  const response = await API.put("", data, {
+  // POST en lugar de PUT — nginx bloquea PUT con 405.
+  const response = await API.post("", data, {
     params: { modulo: "resenas", action: "editar", id },
   });
   return response.data;
 };
 
 export const eliminarResena = async (id: number) => {
-  const response = await API.delete("", {
+  // POST en lugar de DELETE — nginx bloquea DELETE con 405.
+  const response = await API.post("", {}, {
     params: { modulo: "resenas", action: "eliminar", id },
   });
   return response.data;

@@ -2,15 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Linking,
-  Pressable,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Linking, Pressable, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
+import { Text } from '../../components/Text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/context/ThemeContext';
 
@@ -66,8 +59,8 @@ export default function AvisoPrivacidadScreen() {
       >
         {/* ── Hero ────────────────────────────────────────────────── */}
         <View style={st.heroWrap}>
-          <View style={[st.heroIcon, { backgroundColor: isDark ? 'rgba(233,105,40,0.15)' : 'rgba(233,105,40,0.1)' }]}>
-            <Ionicons name="document-text" size={32} color="#E96928" />
+          <View style={[st.heroIcon, { backgroundColor: isDark ? 'rgba(249,118,19,0.15)' : 'rgba(249,118,19,0.1)' }]}>
+            <Ionicons name="document-text" size={32} color="#F97613" />
           </View>
           <Text style={[st.heroTitle, { color: colors.text, fontSize: fonts.xl }]}>
             {t('privacy_notice_hero_title')}
@@ -95,7 +88,7 @@ export default function AvisoPrivacidadScreen() {
             ]}
           >
             <View style={st.sectionHeader}>
-              <View style={[st.sectionNum, { backgroundColor: isDark ? 'rgba(233,105,40,0.2)' : 'rgba(233,105,40,0.12)' }]}>
+              <View style={[st.sectionNum, { backgroundColor: isDark ? 'rgba(249,118,19,0.2)' : 'rgba(249,118,19,0.12)' }]}>
                 <Text style={[st.sectionNumText, { fontSize: fonts.xs }]}>{i + 1}</Text>
               </View>
               <Text style={[st.sectionTitle, { color: colors.text, fontSize: fonts.base }]}>
@@ -120,7 +113,7 @@ export default function AvisoPrivacidadScreen() {
           ]}
           onPress={abrirAvisoCompleto}
         >
-          <Ionicons name="globe-outline" size={22} color="#E96928" />
+          <Ionicons name="globe-outline" size={22} color="#F97613" />
           <View style={{ flex: 1, gap: 3 }}>
             <Text style={[st.linkCardTitle, { fontSize: fonts.base }]}>
               {t('privacy_notice_view_full_online')}
@@ -190,14 +183,14 @@ const st = StyleSheet.create({
     lineHeight: 20,
   },
   dateBadge: {
-    backgroundColor: 'rgba(233,105,40,0.15)',
+    backgroundColor: 'rgba(249,118,19,0.15)',
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 5,
     marginTop: 4,
   },
   dateBadgeText: {
-    color: '#E96928',
+    color: '#F97613',
     fontWeight: '700',
   },
 
@@ -223,7 +216,7 @@ const st = StyleSheet.create({
     flexShrink: 0,
   },
   sectionNumText: {
-    color: '#E96928',
+    color: '#F97613',
     fontWeight: '800',
   },
   sectionTitle: {

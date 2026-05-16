@@ -1,12 +1,15 @@
 import { Lugar } from "../types/lugar";
 
-const PLACEHOLDER_IMG = "https://via.placeholder.com/400x300?text=Sin+Imagen";
-
+// Cuando el lugar no tiene foto en la BD, dejamos `imagen = ""` y los
+// consumidores resuelven el fallback al logo oficial vía
+// `getImagenLugarSource()` (src/utils/imagenLugar.ts). Mantener el
+// campo como string vacío (no null) preserva la compatibilidad con
+// código que aún hace `{ uri: lugar.imagen }`.
 export const mapLugar = (raw: any, imagenOverride?: string): Lugar => ({
   id: String(raw.id),
   nombre: raw.nombre ?? "",
   ubicacion: raw.direccion ?? "",
-  imagen: imagenOverride ?? PLACEHOLDER_IMG,
+  imagen: imagenOverride ?? "",
   categoria: raw.categoria_nombre ?? "",
   subcategoria: raw.subcategoria ?? undefined,
   costo: "Consultar",

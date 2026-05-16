@@ -4,39 +4,34 @@ import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Animated,
-  FlatList,
-  Image,
-  Platform,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Animated, FlatList, Image, Platform, Pressable, RefreshControl, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
+import { Text, TextInput } from '../../components/Text';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { Lugar, useFavoritos } from '../../src/context/FavoritosContext';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useAnimatedPlaceholder } from '../../src/hooks/useAnimatedPlaceholder';
 import { useLugares } from '../../src/hooks/useLugares';
+import { excluirTuristicas, rotarLugares } from '../../src/hooks/filtrosLugares';
+import { getImagenLugarSource } from '../../src/utils/imagenLugar';
+import { useCategorias } from '../../src/hooks/useCategorias';
+import { resolverPresentacion } from '../../src/utils/categoriaPresentacion';
 
 const COSTOS_GRATIS = ['Gratis', 'Gratis (entrada)'];
 
-const CATEGORIAS = [
-  { id: '1', value: 'Restaurantes', labelKey: 'cat_restaurantes', icon: 'silverware-fork-knife', color: '#FF6B35' },
-  { id: '2', value: 'Hoteles',      labelKey: 'cat_hoteles',       icon: 'office-building',       color: '#4A90E2' },
-  { id: '3', value: 'Tiendas',      labelKey: 'cat_tiendas',       icon: 'shopping',              color: '#F5BE41' },
-  { id: '4', value: 'Servicios',    labelKey: 'cat_servicios',     icon: 'hammer-wrench',         color: '#E96928' },
-  { id: '5', value: 'Plazas',       labelKey: 'cat_plazas',        icon: 'storefront',            color: '#10B981' },
-  { id: '6', value: 'Hospitales',   labelKey: 'cat_hospitales',    icon: 'hospital-box',          color: '#A2A6A6' },
-  { id: '7', value: 'Farmacias',    labelKey: 'cat_farmacias',     icon: 'pill',                  color: '#528968' },
-  { id: '8', value: 'Supermercados',labelKey: 'cat_supermercados', icon: 'cart',                  color: '#87479C' },
-  { id: '9', value: 'Gasolineras',  labelKey: 'cat_gasolineras',   icon: 'gas-station',           color: '#EF4444' },
-];
+// Los chips de categorías ahora son DINÁMICOS — se generan desde la
+// respuesta de `useCategorias()` (API: ?modulo=categorias&action=listar).
+// Cuando el municipio agregue / edite categorías en el dashboard, los
+// chips aparecen automáticamente sin tocar este archivo. El icono, color
+// y la clave i18n para cada categoría los resuelve
+// `resolverPresentacion(nombre)`; categorías nuevas no mapeadas caen al
+// default visual sin romper la pantalla.
+type Categoria = {
+  id: string;
+  value: string;
+  labelKey: string | null;
+  icon: string;
+  color: string;
+};
 
 // Mapa: categoría padre → valores exactos que agrupa (para el filtro)
 const CATEGORIA_GRUPOS: Record<string, string[]> = {
@@ -171,6 +166,8 @@ type HeaderProps = {
   onToggleFavorito: (item: Lugar) => void;
   isDark: boolean;
   chipScrollX: React.MutableRefObject<number>;
+  categorias: Categoria[];
+  labelDeCategoria: (cat: Pick<Categoria, 'labelKey' | 'value'>) => string;
 };
 
 const DirectorioHeader = React.memo(
@@ -200,6 +197,8 @@ const DirectorioHeader = React.memo(
     onToggleFavorito,
     isDark,
     chipScrollX,
+    categorias,
+    labelDeCategoria,
   }: HeaderProps) => {
     const bannerAnim = useRef(new Animated.Value(0)).current;
     const mapAnim = useRef(new Animated.Value(0)).current;
@@ -223,7 +222,7 @@ const DirectorioHeader = React.memo(
 
     // Subcategorías disponibles para la categoría activa
     const subcats = categoriaActiva ? (SUBCATEGORIAS[categoriaActiva] ?? []) : [];
-    const catInfo = categoriaActiva ? CATEGORIAS.find((c) => c.value === categoriaActiva) : null;
+    const catInfo = categoriaActiva ? categorias.find((c) => c.value === categoriaActiva) : null;
 
     // Lugares aleatorios de directorio para el placeholder animado (se eligen una vez al cargar)
     const [randomDirPlaces, setRandomDirPlaces] = useState<string[]>([]);
@@ -369,7 +368,7 @@ const DirectorioHeader = React.memo(
 
         <Animated.View style={bannerAnimatedStyle}>
           <LinearGradient
-            colors={['#E96928', '#C4511A']}
+            colors={['#F97613', '#D85F0E']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={s.banner}
@@ -379,7 +378,7 @@ const DirectorioHeader = React.memo(
 
             <View style={s.bannerContent}>
               <View style={s.bannerIconWrap}>
-                <MaterialCommunityIcons name="office-building" size={24} color="#E96928" />
+                <MaterialCommunityIcons name="office-building" size={24} color="#F97613" />
               </View>
               <View style={s.bannerTextWrap}>
                 <Text style={[s.bannerTitle, { fontSize: fonts.xl }]}>{t('tab_directory2')}</Text>
@@ -456,7 +455,7 @@ const DirectorioHeader = React.memo(
                         onPress={() => onSelectItem(item)}
                       >
                         <View style={s.searchItemIconWrap}>
-                          <Ionicons name="location-outline" size={16} color="#E96928" />
+                          <Ionicons name="location-outline" size={16} color="#F97613" />
                         </View>
                         <Text style={[s.searchItemText, { fontSize: fonts.sm }]} numberOfLines={1}>
                           {item.nombre}
@@ -526,7 +525,7 @@ const DirectorioHeader = React.memo(
                 ]}
                 onPress={onUbicacion}
               >
-                <MaterialCommunityIcons name="crosshairs-gps" size={22} color="#E96928" />
+                <MaterialCommunityIcons name="crosshairs-gps" size={22} color="#F97613" />
               </Pressable>
 
               <Pressable
@@ -536,7 +535,7 @@ const DirectorioHeader = React.memo(
                 ]}
                 onPress={onExpandMap}
               >
-                <Ionicons name="expand-outline" size={18} color="#E96928" />
+                <Ionicons name="expand-outline" size={18} color="#F97613" />
               </Pressable>
             </View>
           </View>
@@ -558,7 +557,7 @@ const DirectorioHeader = React.memo(
             onScroll={(e) => { chipScrollX.current = e.nativeEvent.contentOffset.x; }}
             scrollEventThrottle={32}
           >
-            {CATEGORIAS.map((cat) => {
+            {categorias.map((cat) => {
               const activa = categoriaActiva === cat.value;
               return (
                 <Pressable
@@ -576,7 +575,7 @@ const DirectorioHeader = React.memo(
                     color={activa ? '#fff' : cat.color}
                   />
                   <Text style={[s.chipText, { fontSize: fonts.xs }, activa && s.chipTextActive]}>
-                    {t(cat.labelKey)}
+                    {labelDeCategoria(cat)}
                   </Text>
                 </Pressable>
               );
@@ -631,7 +630,10 @@ const DirectorioHeader = React.memo(
                 {subcategoriaActiva
                   ? t(subcats.find((s) => s.value === subcategoriaActiva)?.labelKey ?? '')
                   : categoriaActiva
-                  ? t(CATEGORIAS.find((c) => c.value === categoriaActiva)?.labelKey ?? '')
+                  ? (() => {
+                      const c = categorias.find((c) => c.value === categoriaActiva);
+                      return c ? labelDeCategoria(c) : t('all');
+                    })()
                   : t('all')}
               </Text>
               <View style={s.countBadge}>
@@ -652,7 +654,7 @@ const DirectorioHeader = React.memo(
                 contentContainerStyle={s.hScroll}
                 renderItem={({ item }) => {
                   const isFav = esFavorito(item.id);
-                  const catInfo = CATEGORIAS.find((c) => c.value === item.categoria);
+                  const catInfo = categorias.find((c) => c.value === item.categoria);
                   return (
                     <Pressable
                       onPress={() => onIrAlDetalle(item)}
@@ -661,7 +663,7 @@ const DirectorioHeader = React.memo(
                         { opacity: pressed ? 0.93 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
                       ]}
                     >
-                      <Image source={{ uri: item.imagen }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
+                      <Image source={getImagenLugarSource(item.imagen)} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
                       <LinearGradient
                         colors={['transparent', 'rgba(0,0,0,0.72)']}
                         style={StyleSheet.absoluteFillObject}
@@ -725,6 +727,31 @@ export default function DirectorioScreen() {
   const [search, setSearch] = useState('');
   const [categoriaActiva, setCategoriaActiva] = useState<string | null>(null);
   const [subcategoriaActiva, setSubcategoriaActiva] = useState<string | null>(null);
+
+  // ── Chips de categorías generados dinámicamente desde el backend ──
+  // (?modulo=categorias&action=listar). Si la respuesta aún no llega,
+  // `apiCategorias` queda vacío y los chips se renderizan en cuanto
+  // termine el fetch — el resto de la pantalla sigue siendo funcional.
+  const { data: apiCategorias } = useCategorias();
+  const CATEGORIAS = useMemo<Categoria[]>(
+    () =>
+      apiCategorias.map((c) => {
+        const p = resolverPresentacion(c.nombre);
+        return {
+          id: String(c.id),
+          value: c.nombre,
+          labelKey: p.labelKey,
+          icon: p.icon,
+          color: p.color,
+        };
+      }),
+    [apiCategorias],
+  );
+  const labelDeCategoria = useCallback(
+    (cat: Pick<Categoria, 'labelKey' | 'value'>) =>
+      cat.labelKey ? t(cat.labelKey) : cat.value,
+    [t],
+  );
   const [region, setRegion] = useState<any>(null);
   const [refreshing, setRefreshing] = useState(false);
   const emptyAnim = useRef(new Animated.Value(0)).current;
@@ -732,11 +759,22 @@ export default function DirectorioScreen() {
   const chipScrollX = useRef(0);
 
   // Radio 10 km · máx 40 lugares. Con búsqueda activa el hook consulta toda la BD.
-  const { data: lugares, refresh: refreshLugares } = useLugares(
+  const { data: lugaresRaw, refresh: refreshLugares } = useLugares(
     undefined,
     search,
     { radio_km: 10, limite: 40 },
   );
+
+  // Directorio muestra todo lo NO turístico. Usamos exclusión en vez de
+  // una lista blanca hardcoded: si el dashboard agrega una categoría
+  // nueva (ej. "Veterinarias"), aparece automáticamente sin tocar código.
+  // Lo turístico (Sitios turísticos, Cerros, Parques, etc.) queda en
+  // Explorar. Después rotamos para que cada visita muestre lugares
+  // distintos al inicio.
+  const lugares = useMemo(() => {
+    const directorio = excluirTuristicas(lugaresRaw);
+    return rotarLugares(directorio);
+  }, [lugaresRaw]);
 
   // Filtra por categoría (agrupando subcategorías del mismo padre) y luego por subcategoría
   const filteredData = useMemo(() => {
@@ -909,6 +947,8 @@ export default function DirectorioScreen() {
       onToggleFavorito={toggleFavorito}
       isDark={isDark}
       chipScrollX={chipScrollX}
+      categorias={CATEGORIAS}
+      labelDeCategoria={labelDeCategoria}
     />
   );
 
@@ -942,6 +982,14 @@ export default function DirectorioScreen() {
         data={lugares}
         keyExtractor={(item) => item.id}
         keyboardShouldPersistTaps="handled"
+        // ── Optimización de rendimiento ──────────────────────
+        // removeClippedSubviews evita renderizar items fuera de pantalla
+        // (gran ahorro de memoria con listas de imágenes). Los demás
+        // ajustes reducen el costo del primer pintado y los re-renders.
+        removeClippedSubviews
+        initialNumToRender={6}
+        maxToRenderPerBatch={6}
+        windowSize={5}
         ListHeaderComponent={directorioHeader}
         ListEmptyComponent={
           !refreshing ? (
@@ -993,7 +1041,7 @@ export default function DirectorioScreen() {
               }
             >
               <View style={s.imageWrapper}>
-                <Image source={{ uri: item.imagen }} style={s.placeImage} />
+                <Image source={getImagenLugarSource(item.imagen)} style={s.placeImage} />
                 <LinearGradient
                   colors={['transparent', 'rgba(0,0,0,0.45)']}
                   style={StyleSheet.absoluteFillObject}
@@ -1029,20 +1077,20 @@ export default function DirectorioScreen() {
                 <View
                   style={[
                     s.tagWrap,
-                    { backgroundColor: (catInfo?.color ?? '#E96928') + '18' },
+                    { backgroundColor: (catInfo?.color ?? '#F97613') + '18' },
                   ]}
                 >
                   <View
                     style={[
                       s.tagDot,
-                      { backgroundColor: catInfo?.color ?? '#E96928' },
+                      { backgroundColor: catInfo?.color ?? '#F97613' },
                     ]}
                   />
                   <Text
                     style={[
                       s.placeTag,
                       {
-                        color: catInfo?.color ?? '#E96928',
+                        color: catInfo?.color ?? '#F97613',
                         fontSize: fonts.xs,
                       },
                     ]}
@@ -1222,7 +1270,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       width: 28,
       height: 28,
       borderRadius: 10,
-      backgroundColor: isDark ? 'rgba(233,105,40,0.12)' : 'rgba(233,105,40,0.08)',
+      backgroundColor: isDark ? 'rgba(249,118,19,0.12)' : 'rgba(249,118,19,0.08)',
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -1250,7 +1298,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       width: 5,
       height: 18,
       borderRadius: 999,
-      backgroundColor: '#E96928',
+      backgroundColor: '#F97613',
     },
 
     sectionTitle: {
@@ -1270,7 +1318,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       borderRadius: 24,
       overflow: 'hidden',
       borderLeftWidth: 5,
-      borderLeftColor: '#E96928',
+      borderLeftColor: '#F97613',
       elevation: 4,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 3 },
@@ -1321,7 +1369,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       width: 24,
       height: 24,
       borderRadius: 12,
-      backgroundColor: 'rgba(233,105,40,0.18)',
+      backgroundColor: 'rgba(249,118,19,0.18)',
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -1329,7 +1377,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
     userMarker: {
       width: 14,
       height: 14,
-      backgroundColor: '#E96928',
+      backgroundColor: '#F97613',
       borderRadius: 7,
       borderWidth: 3,
       borderColor: '#fff',
@@ -1668,7 +1716,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       width: 74,
       height: 74,
       borderRadius: 24,
-      backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(233,105,40,0.06)',
+      backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(249,118,19,0.06)',
       justifyContent: 'center',
       alignItems: 'center',
       marginBottom: 14,

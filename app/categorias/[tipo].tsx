@@ -3,22 +3,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  ActivityIndicator,
-  Animated,
-  FlatList,
-  Image,
-  Platform,
-  Pressable,
-  StatusBar,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Animated, FlatList, Image, Platform, Pressable, StatusBar, StyleSheet, View } from 'react-native';
+import { Text } from '../../components/Text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFavoritos } from '../../src/context/FavoritosContext';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useLugares } from '../../src/hooks/useLugares';
+import { CARD_CATEGORIAS, filtrarPorCategorias, rotarLugares } from '../../src/hooks/filtrosLugares';
+import { getImagenLugarSource } from '../../src/utils/imagenLugar';
 
 const CATEGORIA_KEYS: Record<string, string> = {
   'Naturaleza & Aventura': 'cat_nature',
@@ -72,11 +64,32 @@ export default function Categoria() {
   // Todos los datos vienen de la API (gpe-go-api).
   // - Categorías del directorio (ID numérico): filtra por id_categoria + radio 15 km.
   // - Categorías Gantt (nombre string): trae los `limite` lugares más cercanos sin filtro de cat.
-  const { data: lugares = [], loading } = useLugares(
+  const { data: lugaresRaw = [], loading } = useLugares(
     idCategoria,
     undefined,
     { radio_km: 15, limite },
   ) as { data?: any[]; loading: boolean };
+
+  // ── Filtro por card del home ─────────────────────────────────
+  // Las cards del home (Explorar, Naturaleza, Cultura, Compras, etc)
+  // mandan un `nombre` que mapea a un subconjunto de categorías
+  // permitidas. Antes todas las cards mostraban los mismos lugares
+  // porque no se filtraba por categoría — ahora cada card respeta
+  // su lista. Para categorías del directorio (id numérico) NO se
+  // aplica el filtro por nombre; ya viene filtrado del backend.
+  // ── Rotación ─────────────────────────────────────────────────
+  // rotarLugares mezcla la lista para que cada visita/refresh el
+  // usuario vea lugares distintos al frente. Lo memoizamos por
+  // referencia de lugaresRaw — solo re-mezcla cuando cambia el
+  // dataset (no en cada re-render).
+  const lugares = useMemo(() => {
+    if (idCategoria) return rotarLugares(lugaresRaw);
+    const permitidas = CARD_CATEGORIAS[rawNombre];
+    const filtrados = permitidas
+      ? filtrarPorCategorias(lugaresRaw as any, permitidas)
+      : lugaresRaw;
+    return rotarLugares(filtrados);
+  }, [lugaresRaw, idCategoria, rawNombre]);
 
   const s = makeStyles(colors, fonts, isDark);
 
@@ -171,7 +184,7 @@ export default function Categoria() {
     <SafeAreaView style={s.safe} edges={['top']}>
       <Animated.View style={bannerAnimatedStyle}>
         <LinearGradient
-          colors={['#E96928', '#c4511a']}
+          colors={['#F97613', '#d85f0e']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={s.banner}
@@ -194,7 +207,7 @@ export default function Categoria() {
 
           <View style={s.bannerContent}>
             <View style={s.bannerIconWrap}>
-              <Ionicons name="location" size={22} color="#E96928" />
+              <Ionicons name="location" size={22} color="#F97613" />
             </View>
 
             <View style={{ flex: 1 }}>
@@ -223,7 +236,7 @@ export default function Categoria() {
             loading ? (
               <View style={s.loadingWrap}>
                 <View style={s.loadingCard}>
-                  <ActivityIndicator size="large" color="#E96928" />
+                  <ActivityIndicator size="large" color="#F97613" />
                   <Text style={[s.loadingText, { fontSize: fonts.sm }]}>
                     {t('loading')}
                   </Text>
@@ -233,7 +246,7 @@ export default function Categoria() {
               <Animated.View style={[s.emptyWrap, emptyAnimatedStyle]}>
                 <View style={s.emptyGlow} />
                 <View style={s.emptyIconWrap}>
-                  <Ionicons name="location-outline" size={34} color="#E96928" />
+                  <Ionicons name="location-outline" size={34} color="#F97613" />
                 </View>
 
                 <Text style={[s.emptyTitle, { fontSize: fonts.lg }]}>
@@ -279,7 +292,7 @@ export default function Categoria() {
                   })
                 }
               >
-                <Image source={{ uri: item.imagen }} style={s.cardImg} />
+                <Image source={getImagenLugarSource(item.imagen)} style={s.cardImg} />
 
                 <LinearGradient
                   colors={['rgba(0,0,0,0.05)', 'rgba(0,0,0,0.22)', 'rgba(0,0,0,0.84)']}
@@ -519,7 +532,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
 
     catBadge: {
       alignSelf: 'flex-start',
-      backgroundColor: '#E96928',
+      backgroundColor: '#F97613',
       paddingHorizontal: 9,
       paddingVertical: 4,
       borderRadius: 9,
@@ -552,7 +565,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
     },
 
     priceBadge: {
-      backgroundColor: 'rgba(233,105,40,0.95)',
+      backgroundColor: 'rgba(249,118,19,0.95)',
       paddingHorizontal: 13,
       paddingVertical: 7,
       borderRadius: 13,
@@ -623,8 +636,8 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       height: 150,
       borderRadius: 75,
       backgroundColor: isDark
-        ? 'rgba(233,105,40,0.08)'
-        : 'rgba(233,105,40,0.06)',
+        ? 'rgba(249,118,19,0.08)'
+        : 'rgba(249,118,19,0.06)',
     },
 
     emptyIconWrap: {
@@ -632,8 +645,8 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       height: 78,
       borderRadius: 24,
       backgroundColor: isDark
-        ? 'rgba(233,105,40,0.15)'
-        : 'rgba(233,105,40,0.10)',
+        ? 'rgba(249,118,19,0.15)'
+        : 'rgba(249,118,19,0.10)',
       justifyContent: 'center',
       alignItems: 'center',
       marginBottom: 2,
@@ -650,12 +663,12 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: 5,
-      backgroundColor: '#E96928',
+      backgroundColor: '#F97613',
       paddingVertical: 11,
       paddingHorizontal: 22,
       borderRadius: 22,
       marginTop: 8,
-      shadowColor: '#E96928',
+      shadowColor: '#F97613',
       shadowOffset: { width: 0, height: 6 },
       shadowOpacity: 0.24,
       shadowRadius: 12,

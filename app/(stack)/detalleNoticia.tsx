@@ -4,18 +4,8 @@ import * as Linking from "expo-linking";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Animated,
-  Image,
-  Platform,
-  Pressable,
-  ScrollView,
-  Share,
-  StatusBar,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Animated, Image, Platform, Pressable, ScrollView, Share, StatusBar, StyleSheet, View } from 'react-native';
+import { Text } from '../../components/Text';
 import { useTheme } from "../../src/context/ThemeContext";
 
 function formatearFechaSeguro(fecha?: string | string[]) {
@@ -139,7 +129,7 @@ export default function DetalleNoticiaScreen() {
           {image ? (
             <Image source={{ uri: image as string }} style={s.heroImage} />
           ) : (
-            <LinearGradient colors={["#E96928", "#c4511a"]} style={s.heroImage}>
+            <LinearGradient colors={["#F97613", "#d85f0e"]} style={s.heroImage}>
               <Ionicons name="newspaper-outline" size={64} color="rgba(255,255,255,0.4)" />
             </LinearGradient>
           )}
@@ -194,7 +184,7 @@ export default function DetalleNoticiaScreen() {
         >
           <View style={s.mainCard}>
             <View style={s.dateRow}>
-              <Ionicons name="calendar-outline" size={14} color="#E96928" />
+              <Ionicons name="calendar-outline" size={14} color="#F97613" />
               <Text style={[s.date, { fontSize: fonts.xs }]} numberOfLines={1}>
                 {fechaFormateada}
               </Text>
@@ -213,7 +203,7 @@ export default function DetalleNoticiaScreen() {
                 ]}
                 onPress={abrirFuente}
               >
-                <LinearGradient colors={["#E96928", "#c4511a"]} style={s.actionBtnGradient}>
+                <LinearGradient colors={["#F97613", "#d85f0e"]} style={s.actionBtnGradient}>
                   <Ionicons name="open-outline" size={16} color="#fff" />
                   <Text style={[s.actionBtnText, { fontSize: fonts.sm }]}>{t('news_source')}</Text>
                 </LinearGradient>
@@ -229,7 +219,7 @@ export default function DetalleNoticiaScreen() {
                 ]}
                 onPress={compartir}
               >
-                <Ionicons name="share-social-outline" size={16} color="#E96928" />
+                <Ionicons name="share-social-outline" size={16} color="#F97613" />
                 <Text style={[s.shareBtnText, { fontSize: fonts.sm }]}>{t("share")}</Text>
               </Pressable>
             </View>
@@ -267,7 +257,7 @@ export default function DetalleNoticiaScreen() {
               ]}
               onPress={abrirFuente}
             >
-              <LinearGradient colors={["#E96928", "#c4511a"]} style={s.fullBtnGradient}>
+              <LinearGradient colors={["#F97613", "#d85f0e"]} style={s.fullBtnGradient}>
                 <Ionicons name="globe-outline" size={18} color="#fff" />
                 <Text style={[s.fullBtnText, { fontSize: fonts.base }]}>{t('news_view_full_article')}</Text>
                 <Ionicons name="arrow-forward" size={16} color="#fff" />
@@ -280,7 +270,7 @@ export default function DetalleNoticiaScreen() {
                   <Ionicons name="location" size={10} color="#fff" />
                 </View>
                 <Text style={[s.footerLogo, { fontSize: fonts.sm }]}>
-                  Guadalupe<Text style={{ color: "#E96928" }}>GO</Text>
+                  Guadalupe<Text style={{ color: "#F97613" }}>GO</Text>
                 </Text>
               </View>
               <Text style={[s.footerSub, { fontSize: fonts.xs }]}>{t('app_tagline')}</Text>
@@ -402,7 +392,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
     },
 
     date: {
-      color: "#E96928",
+      color: "#F97613",
       fontWeight: "600",
       textTransform: "capitalize",
     },
@@ -425,7 +415,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       borderRadius: 14,
       overflow: "hidden",
       elevation: 4,
-      shadowColor: "#E96928",
+      shadowColor: "#F97613",
       shadowOffset: { width: 0, height: 3 },
       shadowOpacity: 0.35,
       shadowRadius: 6,
@@ -447,7 +437,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
     shareBtn: {
       height: 48,
       borderWidth: 2,
-      borderColor: "#E96928",
+      borderColor: "#F97613",
       borderRadius: 14,
       flexDirection: "row",
       justifyContent: "center",
@@ -458,7 +448,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
     },
 
     shareBtnText: {
-      color: "#E96928",
+      color: "#F97613",
       fontWeight: "700",
     },
 
@@ -487,7 +477,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
     descAccent: {
       width: 4,
       borderRadius: 2,
-      backgroundColor: "#E96928",
+      backgroundColor: "#F97613",
     },
 
     description: {
@@ -531,7 +521,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       borderRadius: 16,
       overflow: "hidden",
       elevation: 5,
-      shadowColor: "#E96928",
+      shadowColor: "#F97613",
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.35,
       shadowRadius: 8,
@@ -567,7 +557,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       width: 18,
       height: 18,
       borderRadius: 5,
-      backgroundColor: "#E96928",
+      backgroundColor: "#F97613",
       justifyContent: "center",
       alignItems: "center",
     },

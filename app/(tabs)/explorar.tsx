@@ -4,36 +4,31 @@ import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Alert,
-  Animated,
-  FlatList,
-  Image,
-  Platform,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Animated, FlatList, Image, Platform, Pressable, RefreshControl, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
+import { Alert } from '../../components/Alert';
+import { Text, TextInput } from '../../components/Text';
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import { Lugar, useFavoritos } from '../../src/context/FavoritosContext';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useAnimatedPlaceholder } from '../../src/hooks/useAnimatedPlaceholder';
 import { useLugares } from '../../src/hooks/useLugares';
+import { soloTuristicas, rotarLugares } from '../../src/hooks/filtrosLugares';
 import { abrirEnMapa } from '../../src/utils/abrirMapa';
+import { getImagenLugarSource } from '../../src/utils/imagenLugar';
+import { useCategorias } from '../../src/hooks/useCategorias';
+import { resolverPresentacion } from '../../src/utils/categoriaPresentacion';
 
 const COSTOS_GRATIS = ['Gratis', 'Gratis (entrada)'];
 
-const CATEGORIAS = [
-  { id: '1', value: 'Cerros', labelKey: 'cat_cerros', icon: 'image-filter-hdr', color: '#E96928' },
-  { id: '2', value: 'Parques', labelKey: 'cat_parques', icon: 'pine-tree', color: '#4CAF50' },
-  { id: '3', value: 'Pueblos Mágicos', labelKey: 'cat_pueblos_magicos', icon: 'church', color: '#9C27B0' },
-  { id: '4', value: 'Museos', labelKey: 'cat_museos', icon: 'domain', color: '#4A90E2' },
-];
+// Tipo unificado con directorio: los chips se generan en el componente
+// principal a partir de `useCategorias()` y se filtran a lo turístico.
+type Categoria = {
+  id: string;
+  value: string;
+  labelKey: string | null;
+  icon: string;
+  color: string;
+};
 
 function RefreshLogo({ refreshing, isDark }: { refreshing: boolean; isDark: boolean }) {
   const spinAnim = useRef(new Animated.Value(0)).current;
@@ -147,6 +142,8 @@ type ExplorarHeaderProps = {
   onToggleFavorito: (item: Lugar) => void;
   isDark: boolean;
   chipScrollX: React.MutableRefObject<number>;
+  categorias: Categoria[];
+  labelDeCategoria: (cat: Pick<Categoria, 'labelKey' | 'value'>) => string;
 };
 
 const ExplorarHeader = React.memo(
@@ -175,6 +172,8 @@ const ExplorarHeader = React.memo(
     onToggleFavorito,
     isDark,
     chipScrollX,
+    categorias,
+    labelDeCategoria,
   }: ExplorarHeaderProps) => {
     const bannerAnim = useRef(new Animated.Value(0)).current;
     const mapAnim = useRef(new Animated.Value(0)).current;
@@ -304,7 +303,7 @@ const ExplorarHeader = React.memo(
 
         <Animated.View style={bannerAnimatedStyle}>
           <LinearGradient
-            colors={['#E96928', '#C4511A']}
+            colors={['#F97613', '#D85F0E']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={s.banner}
@@ -314,7 +313,7 @@ const ExplorarHeader = React.memo(
 
             <View style={s.bannerContent}>
               <View style={s.bannerIconWrap}>
-                <Ionicons name="compass" size={24} color="#E96928" />
+                <Ionicons name="compass" size={24} color="#F97613" />
               </View>
               <View style={s.bannerTextWrap}>
                 <Text style={[s.bannerTitle, { fontSize: fonts.xl }]}>{t('places')}</Text>
@@ -391,7 +390,7 @@ const ExplorarHeader = React.memo(
                         onPress={() => onSelectItem(item)}
                       >
                         <View style={s.searchItemIconWrap}>
-                          <Ionicons name="location-outline" size={16} color="#E96928" />
+                          <Ionicons name="location-outline" size={16} color="#F97613" />
                         </View>
                         <Text style={[s.searchItemText, { fontSize: fonts.sm }]} numberOfLines={1}>
                           {item.nombre}
@@ -461,7 +460,7 @@ const ExplorarHeader = React.memo(
                 ]}
                 onPress={onUbicacion}
               >
-                <MaterialCommunityIcons name="crosshairs-gps" size={22} color="#E96928" />
+                <MaterialCommunityIcons name="crosshairs-gps" size={22} color="#F97613" />
               </Pressable>
 
               <Pressable
@@ -471,7 +470,7 @@ const ExplorarHeader = React.memo(
                 ]}
                 onPress={onExpandMap}
               >
-                <Ionicons name="expand-outline" size={18} color="#E96928" />
+                <Ionicons name="expand-outline" size={18} color="#F97613" />
               </Pressable>
             </View>
           </View>
@@ -493,7 +492,7 @@ const ExplorarHeader = React.memo(
             onScroll={(e) => { chipScrollX.current = e.nativeEvent.contentOffset.x; }}
             scrollEventThrottle={32}
           >
-            {CATEGORIAS.map((cat) => {
+            {categorias.map((cat) => {
               const activa = categoriaActiva === cat.value;
               return (
                 <Pressable
@@ -511,7 +510,7 @@ const ExplorarHeader = React.memo(
                     color={activa ? '#fff' : cat.color}
                   />
                   <Text style={[s.chipText, { fontSize: fonts.xs }, activa && s.chipTextActive]}>
-                    {t(cat.labelKey)}
+                    {labelDeCategoria(cat)}
                   </Text>
                 </Pressable>
               );
@@ -526,7 +525,10 @@ const ExplorarHeader = React.memo(
               <View style={s.sectionDot} />
               <Text style={[s.sectionTitle, { fontSize: fonts.lg }]}>
                 {categoriaActiva
-                  ? t(CATEGORIAS.find((c) => c.value === categoriaActiva)?.labelKey ?? '')
+                  ? (() => {
+                      const c = categorias.find((c) => c.value === categoriaActiva);
+                      return c ? labelDeCategoria(c) : t('tab_explore');
+                    })()
                   : t('tab_explore')}
               </Text>
               <View style={s.countBadge}>
@@ -547,7 +549,7 @@ const ExplorarHeader = React.memo(
                 contentContainerStyle={s.hScroll}
                 renderItem={({ item }) => {
                   const isFav = esFavorito(item.id);
-                  const catInfo = CATEGORIAS.find((c) => c.value === item.categoria);
+                  const catInfo = categorias.find((c) => c.value === item.categoria);
                   return (
                     <Pressable
                       onPress={() => onIrAlDetalle(item)}
@@ -556,7 +558,7 @@ const ExplorarHeader = React.memo(
                         { opacity: pressed ? 0.93 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
                       ]}
                     >
-                      <Image source={{ uri: item.imagen }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
+                      <Image source={getImagenLugarSource(item.imagen)} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
                       <LinearGradient
                         colors={['transparent', 'rgba(0,0,0,0.72)']}
                         style={StyleSheet.absoluteFillObject}
@@ -626,10 +628,50 @@ export default function ExplorarScreen() {
   const chipScrollX = useRef(0);
 
   // Radio 15 km · máx 40 lugares. Con búsqueda activa el hook consulta toda la BD.
-  const { data: sitios, refresh: refreshSitios } = useLugares(
+  const { data: sitiosRaw, refresh: refreshSitios } = useLugares(
     undefined,
     search,
     { radio_km: 15, limite: 40 },
+  );
+
+  // Explorar es la pestaña TURÍSTICA. Filtramos a las categorías
+  // "Sitios turísticos / Cerros / Parques / Pueblos Mágicos / Museos"
+  // (la lista vive en `filtrosLugares.CATEGORIAS_TURISTICAS`). Si el
+  // municipio agrega una categoría turística nueva al dashboard, basta
+  // con sumarla allí. El resto del flujo es dinámico: rotamos para que
+  // cada refresh muestre lugares distintos al inicio.
+  const sitios = useMemo(() => {
+    const turistico = soloTuristicas(sitiosRaw);
+    return rotarLugares(turistico);
+  }, [sitiosRaw]);
+
+  // ── Chips de categorías derivados de la API ───────────────────────
+  // `useCategorias()` trae todas las categorías del backend. En Explorar
+  // restringimos visualmente a las turísticas (igual que el filtro de
+  // lugares); si la API trae alguna que no es turística, no se muestra
+  // en el chip pero la app sigue funcionando.
+  const { data: apiCategorias } = useCategorias();
+  const CATEGORIAS = useMemo<Categoria[]>(() => {
+    const TURIST = new Set(['sitios turisticos', 'cerros', 'parques', 'pueblos magicos', 'museos']);
+    const norm = (s: string) =>
+      s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+    return apiCategorias
+      .filter((c) => TURIST.has(norm(c.nombre)))
+      .map((c) => {
+        const p = resolverPresentacion(c.nombre);
+        return {
+          id: String(c.id),
+          value: c.nombre,
+          labelKey: p.labelKey,
+          icon: p.icon,
+          color: p.color,
+        };
+      });
+  }, [apiCategorias]);
+  const labelDeCategoria = useCallback(
+    (cat: Pick<Categoria, 'labelKey' | 'value'>) =>
+      cat.labelKey ? t(cat.labelKey) : cat.value,
+    [t],
   );
 
   // La búsqueda ya la maneja el hook (backend). Aquí solo filtramos por categoría local.
@@ -783,6 +825,8 @@ export default function ExplorarScreen() {
       onToggleFavorito={toggleFavorito}
       isDark={isDark}
       chipScrollX={chipScrollX}
+      categorias={CATEGORIAS}
+      labelDeCategoria={labelDeCategoria}
     />
   );
 
@@ -817,6 +861,11 @@ export default function ExplorarScreen() {
         keyExtractor={(item) => item.id}
         numColumns={2}
         keyboardShouldPersistTaps="handled"
+        // ── Optimización de rendimiento ──────────────────────
+        removeClippedSubviews
+        initialNumToRender={6}
+        maxToRenderPerBatch={6}
+        windowSize={5}
         ListHeaderComponent={explorarHeader}
         ListEmptyComponent={
           <Animated.View style={[s.emptyWrap, emptyAnimatedStyle]}>
@@ -866,7 +915,7 @@ export default function ExplorarScreen() {
               }
             >
               <View style={s.imgWrapper}>
-                <Image source={{ uri: item.imagen }} style={s.placeImg} />
+                <Image source={getImagenLugarSource(item.imagen)} style={s.placeImg} />
                 <LinearGradient
                   colors={['transparent', 'rgba(0,0,0,0.55)']}
                   style={StyleSheet.absoluteFillObject}
@@ -902,20 +951,20 @@ export default function ExplorarScreen() {
                 <View
                   style={[
                     s.tagWrap,
-                    { backgroundColor: (catInfo?.color ?? '#E96928') + '18' },
+                    { backgroundColor: (catInfo?.color ?? '#F97613') + '18' },
                   ]}
                 >
                   <View
                     style={[
                       s.tagDot,
-                      { backgroundColor: catInfo?.color ?? '#E96928' },
+                      { backgroundColor: catInfo?.color ?? '#F97613' },
                     ]}
                   />
                   <Text
                     style={[
                       s.tagText,
                       {
-                        color: catInfo?.color ?? '#E96928',
+                        color: catInfo?.color ?? '#F97613',
                         fontSize: fonts.xs,
                       },
                     ]}
@@ -1102,7 +1151,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       width: 28,
       height: 28,
       borderRadius: 10,
-      backgroundColor: isDark ? 'rgba(233,105,40,0.12)' : 'rgba(233,105,40,0.08)',
+      backgroundColor: isDark ? 'rgba(249,118,19,0.12)' : 'rgba(249,118,19,0.08)',
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -1130,7 +1179,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       width: 5,
       height: 18,
       borderRadius: 999,
-      backgroundColor: '#E96928',
+      backgroundColor: '#F97613',
     },
 
     sectionTitle: {
@@ -1150,7 +1199,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       borderRadius: 24,
       overflow: 'hidden',
       borderLeftWidth: 5,
-      borderLeftColor: '#E96928',
+      borderLeftColor: '#F97613',
       elevation: 4,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 3 },
@@ -1201,7 +1250,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       width: 24,
       height: 24,
       borderRadius: 12,
-      backgroundColor: 'rgba(233,105,40,0.18)',
+      backgroundColor: 'rgba(249,118,19,0.18)',
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -1209,7 +1258,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
     userMarker: {
       width: 14,
       height: 14,
-      backgroundColor: '#E96928',
+      backgroundColor: '#F97613',
       borderRadius: 7,
       borderWidth: 3,
       borderColor: '#fff',
@@ -1493,7 +1542,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
     },
 
     mapBtn: {
-      backgroundColor: '#E96928',
+      backgroundColor: '#F97613',
       marginTop: 7,
       paddingVertical: 7,
       borderRadius: 10,
@@ -1525,7 +1574,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       width: 74,
       height: 74,
       borderRadius: 24,
-      backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(233,105,40,0.06)',
+      backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(249,118,19,0.06)',
       justifyContent: 'center',
       alignItems: 'center',
       marginBottom: 14,

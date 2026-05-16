@@ -3,23 +3,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Alert,
-  Animated,
-  FlatList,
-  Image,
-  Modal,
-  Platform,
-  Pressable,
-  StatusBar,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Animated, FlatList, Image, Modal, Platform, Pressable, StatusBar, StyleSheet, View } from 'react-native';
+import { Alert } from '../../components/Alert';
+import { Text } from '../../components/Text';
 import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
 import { useAuth } from '../../src/context/AuthContext';
 import { useFavoritos } from '../../src/context/FavoritosContext';
 import { useTheme } from '../../src/context/ThemeContext';
+import { getImagenLugarSource } from '../../src/utils/imagenLugar';
 
 const da = StyleSheet.create({
   wrapper: {
@@ -131,7 +122,7 @@ function SwipeableCard({
           onPress();
         }}
       >
-        <Image source={{ uri: item.imagen }} style={s.image} />
+        <Image source={getImagenLugarSource(item.imagen)} style={s.image} />
         <LinearGradient
           colors={['transparent', 'rgba(0,0,0,0.82)']}
           style={s.gradient}
@@ -244,7 +235,7 @@ function LoginModal({
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={s.modalBackdrop}>
         <Animated.View style={[s.modalSheet, animatedStyle]}>
-          <LinearGradient colors={['#E96928', '#C4511A']} style={s.modalIconWrap}>
+          <LinearGradient colors={['#F97613', '#D85F0E']} style={s.modalIconWrap}>
             <Ionicons name="heart" size={28} color="#fff" />
           </LinearGradient>
 
@@ -267,7 +258,7 @@ function LoginModal({
             onPress={onGoLogin}
           >
             <LinearGradient
-              colors={['#E96928', '#C4511A']}
+              colors={['#F97613', '#D85F0E']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={s.modalPrimaryGradient}
@@ -352,7 +343,7 @@ function EmptyStateCard({
       <View style={s.emptyDecorCircle} />
       <View style={s.emptyDecorCircleSmall} />
 
-      <LinearGradient colors={['#E96928', '#C4511A']} style={s.emptyCardIconWrap}>
+      <LinearGradient colors={['#F97613', '#D85F0E']} style={s.emptyCardIconWrap}>
         <Ionicons name={icon} size={34} color="#fff" />
       </LinearGradient>
 
@@ -375,7 +366,7 @@ function EmptyStateCard({
         onPress={onPrimaryPress}
       >
         <LinearGradient
-          colors={['#E96928', '#C4511A']}
+          colors={['#F97613', '#D85F0E']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={s.emptyPrimaryBtnGradient}
@@ -551,6 +542,11 @@ export default function FavoritosScreen() {
           ListHeaderComponent={Header}
           contentContainerStyle={{ paddingBottom: 30 }}
           showsVerticalScrollIndicator={false}
+          // ── Optimización de rendimiento ──────────────────────
+          removeClippedSubviews
+          initialNumToRender={6}
+          maxToRenderPerBatch={6}
+          windowSize={5}
           renderItem={({ item }) => (
             <SwipeableCard
               item={item}
@@ -616,7 +612,7 @@ function AnimatedHeader({
         }}
       >
         <LinearGradient
-          colors={['#E96928', '#C4511A']}
+          colors={['#F97613', '#D85F0E']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={s.banner}
@@ -626,7 +622,7 @@ function AnimatedHeader({
 
           <View style={s.bannerContent}>
             <View style={s.bannerIconWrap}>
-              <Ionicons name="heart" size={24} color="#E96928" />
+              <Ionicons name="heart" size={24} color="#F97613" />
             </View>
 
             <View style={{ flex: 1 }}>
@@ -761,7 +757,7 @@ const makeStyles = (c: any, f: any) =>
       width: 6,
       height: 32,
       borderRadius: 999,
-      backgroundColor: '#E96928',
+      backgroundColor: '#F97613',
     },
     sectionLabel: {
       color: c.subtext,
@@ -797,7 +793,7 @@ const makeStyles = (c: any, f: any) =>
       width: 220,
       height: 220,
       borderRadius: 110,
-      backgroundColor: 'rgba(233,105,40,0.06)',
+      backgroundColor: 'rgba(249,118,19,0.06)',
       top: -70,
       right: -40,
     },
@@ -806,7 +802,7 @@ const makeStyles = (c: any, f: any) =>
       width: 120,
       height: 120,
       borderRadius: 60,
-      backgroundColor: 'rgba(233,105,40,0.04)',
+      backgroundColor: 'rgba(249,118,19,0.04)',
       bottom: 36,
       left: -26,
     },
@@ -817,7 +813,7 @@ const makeStyles = (c: any, f: any) =>
       justifyContent: 'center',
       alignItems: 'center',
       marginBottom: 24,
-      shadowColor: '#E96928',
+      shadowColor: '#F97613',
       shadowOffset: { width: 0, height: 10 },
       shadowOpacity: 0.34,
       shadowRadius: 18,
@@ -842,7 +838,7 @@ const makeStyles = (c: any, f: any) =>
       maxWidth: 380,
       borderRadius: 22,
       overflow: 'hidden',
-      shadowColor: '#E96928',
+      shadowColor: '#F97613',
       shadowOffset: { width: 0, height: 8 },
       shadowOpacity: 0.34,
       shadowRadius: 16,
@@ -949,7 +945,7 @@ const makeStyles = (c: any, f: any) =>
       fontSize: f.xs,
     },
     priceBadge: {
-      backgroundColor: '#E96928',
+      backgroundColor: '#F97613',
       paddingHorizontal: 10,
       paddingVertical: 4,
       borderRadius: 12,
@@ -989,7 +985,7 @@ const makeStyles = (c: any, f: any) =>
       borderRadius: 22,
       justifyContent: 'center',
       alignItems: 'center',
-      shadowColor: '#E96928',
+      shadowColor: '#F97613',
       shadowOffset: { width: 0, height: 8 },
       shadowOpacity: 0.32,
       shadowRadius: 14,
@@ -1013,7 +1009,7 @@ const makeStyles = (c: any, f: any) =>
       borderRadius: 18,
       overflow: 'hidden',
       marginTop: 8,
-      shadowColor: '#E96928',
+      shadowColor: '#F97613',
       shadowOffset: { width: 0, height: 5 },
       shadowOpacity: 0.28,
       shadowRadius: 10,

@@ -11,15 +11,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Animated,
-  Dimensions,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Animated, Dimensions, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from './Text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOnboarding } from '../src/context/OnboardingContext';
 import { useTheme } from '../src/context/ThemeContext';
@@ -67,7 +60,7 @@ const STEPS: TourStep[] = [
     titleKey: 'onboarding_tooltip_home_title',
     descKey: 'onboarding_tooltip_home_desc',
     arrowX: 0, arrowY: -18, arrowDir: 'up',
-    icon: 'home-outline', color: '#E96928',
+    icon: 'home-outline', color: '#F97613',
     interactions: [
       // TAP en el buscador — ~30% desde el tope de la pantalla
       { type: 'tap',  x: W * 0.50, y: H * 0.30, delay: 600 },
@@ -83,7 +76,7 @@ const STEPS: TourStep[] = [
     descKey: 'onboarding_tooltip_idiomas_desc',
     // Flecha apunta al chip 🌐 (esquina sup-der, debajo del header)
     arrowX: 38, arrowY: -32, arrowDir: 'up',
-    icon: 'globe-outline', color: '#E96928',
+    icon: 'globe-outline', color: '#F97613',
     interactions: [
       // TAP en el chip 🌐 — ~88% horizontal, ~15% vertical (justo bajo el header)
       { type: 'tap', x: W * 0.88, y: H * 0.155, delay: 700 },
@@ -195,7 +188,7 @@ const STEPS: TourStep[] = [
     descKey: 'onboarding_tooltip_barraLateral_desc',
     // Flecha apunta al ☰ (izquierda del header)
     arrowX: -40, arrowY: -34, arrowDir: 'up',
-    icon: 'menu-outline', color: '#E96928',
+    icon: 'menu-outline', color: '#F97613',
     interactions: [
       // ☰ está a ~x=28px, y=insets.top+26px ≈ H*0.09
       { type: 'tap', x: W * 0.075, y: H * 0.090, delay: 700 },
@@ -464,10 +457,10 @@ function TypingIndicator({ x, y, text, textKey, delay }: { x: number; y: number;
         opacity: opacityAnim,
       }}
     >
-      <Ionicons name="search-outline" size={15} color="#E96928" />
+      <Ionicons name="search-outline" size={15} color="#F97613" />
       <Text style={{ fontSize: 14, color: '#111', fontWeight: '500', flex: 1 }}>
         {displayText}
-        <Text style={{ opacity: cursorOn ? 1 : 0, color: '#E96928' }}>|</Text>
+        <Text style={{ opacity: cursorOn ? 1 : 0, color: '#F97613' }}>|</Text>
       </Text>
     </Animated.View>
   );
@@ -803,8 +796,8 @@ export default function TourGuide() {
           ]}
         >
           <View style={s.finishLogoArea}>
-            <View style={[s.finishRingOuter, { borderColor: 'rgba(233,105,40,0.16)' }]}>
-              <View style={[s.finishRingInner, { borderColor: 'rgba(233,105,40,0.30)' }]}>
+            <View style={[s.finishRingOuter, { borderColor: 'rgba(249,118,19,0.16)' }]}>
+              <View style={[s.finishRingInner, { borderColor: 'rgba(249,118,19,0.30)' }]}>
                 <View style={s.finishLogoBg}>
                   <Ionicons name="location" size={30} color="#fff" />
                 </View>
@@ -813,13 +806,13 @@ export default function TourGuide() {
           </View>
 
           <Text style={[s.finishAppName, { color: titleColor }]}>
-            Guadalupe<Text style={{ color: '#E96928' }}>GO</Text>
+            Guadalupe<Text style={{ color: '#F97613' }}>GO</Text>
           </Text>
 
           <View style={s.finishSloganRow}>
-            <View style={[s.finishSloganLine, { backgroundColor: '#E96928' }]} />
-            <Text style={[s.finishSlogan, { color: '#E96928' }]}>{t('onboarding_finish_tagline')}</Text>
-            <View style={[s.finishSloganLine, { backgroundColor: '#E96928' }]} />
+            <View style={[s.finishSloganLine, { backgroundColor: '#F97613' }]} />
+            <Text style={[s.finishSlogan, { color: '#F97613' }]}>{t('onboarding_finish_tagline')}</Text>
+            <View style={[s.finishSloganLine, { backgroundColor: '#F97613' }]} />
           </View>
 
           <Text style={[s.finishDesc, { color: descColor }]}>{t('onboarding_welcome_desc')}</Text>
@@ -858,8 +851,8 @@ export default function TourGuide() {
           ]}
         >
           <View style={s.finishLogoArea}>
-            <View style={[s.finishRingOuter, { borderColor: 'rgba(233,105,40,0.16)' }]}>
-              <View style={[s.finishRingInner, { borderColor: 'rgba(233,105,40,0.30)' }]}>
+            <View style={[s.finishRingOuter, { borderColor: 'rgba(249,118,19,0.16)' }]}>
+              <View style={[s.finishRingInner, { borderColor: 'rgba(249,118,19,0.30)' }]}>
                 <View style={s.finishLogoBg}>
                   <Ionicons name="location" size={30} color="#fff" />
                 </View>
@@ -868,13 +861,13 @@ export default function TourGuide() {
           </View>
 
           <Text style={[s.finishAppName, { color: titleColor }]}>
-            Guadalupe<Text style={{ color: '#E96928' }}>GO</Text>
+            Guadalupe<Text style={{ color: '#F97613' }}>GO</Text>
           </Text>
 
           <View style={s.finishSloganRow}>
-            <View style={[s.finishSloganLine, { backgroundColor: '#E96928' }]} />
-            <Text style={[s.finishSlogan, { color: '#E96928' }]}>{t('onboarding_finish_tagline')}</Text>
-            <View style={[s.finishSloganLine, { backgroundColor: '#E96928' }]} />
+            <View style={[s.finishSloganLine, { backgroundColor: '#F97613' }]} />
+            <Text style={[s.finishSlogan, { color: '#F97613' }]}>{t('onboarding_finish_tagline')}</Text>
+            <View style={[s.finishSloganLine, { backgroundColor: '#F97613' }]} />
           </View>
 
           <Text style={[s.finishDesc, { color: descColor }]}>{t('onboarding_finish_desc')}</Text>
@@ -949,9 +942,9 @@ const s = StyleSheet.create({
   finishRingOuter: { width: 96, height: 96, borderRadius: 48, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   finishRingInner: { width: 76, height: 76, borderRadius: 38, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   finishLogoBg: {
-    width: 58, height: 58, borderRadius: 20, backgroundColor: '#E96928',
+    width: 58, height: 58, borderRadius: 20, backgroundColor: '#F97613',
     alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#E96928', shadowOffset: { width: 0, height: 6 },
+    shadowColor: '#F97613', shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.50, shadowRadius: 16, elevation: 8,
   },
   finishAppName: { fontSize: 32, fontWeight: '900', letterSpacing: -0.8, marginBottom: 12, textAlign: 'center' },
@@ -961,8 +954,8 @@ const s = StyleSheet.create({
   finishDesc: { fontSize: 14, lineHeight: 22, textAlign: 'center', marginBottom: 26, paddingHorizontal: 4 },
   finishBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#E96928', borderRadius: 50, paddingVertical: 15, width: '100%',
-    shadowColor: '#E96928', shadowOffset: { width: 0, height: 6 },
+    backgroundColor: '#F97613', borderRadius: 50, paddingVertical: 15, width: '100%',
+    shadowColor: '#F97613', shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.45, shadowRadius: 16, elevation: 8,
   },
   finishBtnText: { color: '#ffffff', fontSize: 17, fontWeight: '900', letterSpacing: 0.4 },

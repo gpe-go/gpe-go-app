@@ -2,16 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Linking,
-  Platform,
-  Pressable,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Linking, Platform, Pressable, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
+import { Text } from '../../components/Text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/context/ThemeContext';
 
@@ -74,8 +66,8 @@ export default function PrivacidadScreen() {
 
         {/* Card: Recomendaciones */}
         <View style={[st.dataCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={[st.dataIconWrap, { backgroundColor: isDark ? 'rgba(233,105,40,0.15)' : 'rgba(233,105,40,0.1)' }]}>
-            <Ionicons name="bar-chart-outline" size={22} color="#E96928" />
+          <View style={[st.dataIconWrap, { backgroundColor: isDark ? 'rgba(249,118,19,0.15)' : 'rgba(249,118,19,0.1)' }]}>
+            <Ionicons name="bar-chart-outline" size={22} color="#F97613" />
           </View>
           <View style={st.dataCardBody}>
             <Text style={[st.dataCardTitle, { color: colors.text, fontSize: fonts.base }]}>
@@ -89,8 +81,8 @@ export default function PrivacidadScreen() {
 
         {/* Card: Ubicación */}
         <View style={[st.dataCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={[st.dataIconWrap, { backgroundColor: isDark ? 'rgba(233,105,40,0.15)' : 'rgba(233,105,40,0.1)' }]}>
-            <Ionicons name="location-outline" size={22} color="#E96928" />
+          <View style={[st.dataIconWrap, { backgroundColor: isDark ? 'rgba(249,118,19,0.15)' : 'rgba(249,118,19,0.1)' }]}>
+            <Ionicons name="location-outline" size={22} color="#F97613" />
           </View>
           <View style={st.dataCardBody}>
             <Text style={[st.dataCardTitle, { color: colors.text, fontSize: fonts.base }]}>
@@ -107,7 +99,7 @@ export default function PrivacidadScreen() {
           style={({ pressed }) => [st.linkBtn, { opacity: pressed ? 0.7 : 1 }]}
           onPress={abrirAvisoCompleto}
         >
-          <Ionicons name="open-outline" size={14} color="#E96928" />
+          <Ionicons name="open-outline" size={14} color="#F97613" />
           <Text style={[st.linkBtnText, { fontSize: fonts.sm }]}>
             {t('privacy_view_full_notice')}
           </Text>
@@ -120,7 +112,7 @@ export default function PrivacidadScreen() {
 
         <View style={[st.permCard, { backgroundColor: isDark ? '#1C2333' : '#1C2333' }]}>
           <View style={st.permIconWrap}>
-            <Ionicons name="shield-checkmark" size={26} color="#E96928" />
+            <Ionicons name="shield-checkmark" size={26} color="#F97613" />
           </View>
           <Text style={st.permTitle}>
             {t('privacy_perm_title')}
@@ -229,7 +221,7 @@ const st = StyleSheet.create({
     paddingVertical: 4,
   },
   linkBtnText: {
-    color: '#E96928',
+    color: '#F97613',
     fontWeight: '700',
   },
 
@@ -243,7 +235,7 @@ const st = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 14,
-    backgroundColor: 'rgba(233,105,40,0.2)',
+    backgroundColor: 'rgba(249,118,19,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 4,
@@ -265,7 +257,7 @@ const st = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#E96928',
+    backgroundColor: '#F97613',
     borderRadius: 14,
     paddingVertical: 15,
     marginTop: 8,

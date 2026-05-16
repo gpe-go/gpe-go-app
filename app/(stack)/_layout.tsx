@@ -60,6 +60,10 @@ export default function StackLayout() {
         name="registrar-negocio"
         options={{ animation: "slide_from_right", gestureEnabled: true, contentStyle: { backgroundColor: colors.background } }}
       />
+      <Stack.Screen
+        name="acercaDe"
+        options={{ animation: "slide_from_right", gestureEnabled: true, contentStyle: { backgroundColor: colors.background } }}
+      />
     </Stack>
   );
 }

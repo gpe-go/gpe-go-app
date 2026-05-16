@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getLugares, getFotosLugar } from '../api/api';
+import { getLugares } from '../api/api';
 import { mapLugar } from '../mappers/lugaresMapper';
 import { Lugar } from '../types/lugar';
 import { useUbicacion } from './useUbicacion';
+import { getFotoLugarCached } from './fotosCache';
 
 export interface LugaresConfig {
   /** Radio en km para traer lugares cercanos (ej. 5 = Explorar, 15 = Directorio) */
@@ -74,18 +75,13 @@ export const useLugares = (
       const res = await getLugares(params);
 
       if (res.success && res.data?.lugares?.length > 0) {
+        // getFotoLugarCached deduplica peticiones del mismo id_lugar y
+        // mantiene un cache en memoria por 30 min. Esto reduce de ~40
+        // requests por carga a ~0 en re-entradas a la misma pantalla.
         const lugaresConFotos = await Promise.all(
           res.data.lugares.map(async (raw: any) => {
-            let imagen: string | undefined;
-            try {
-              const fotosRes = await getFotosLugar(raw.id);
-              if (fotosRes.success && Array.isArray(fotosRes.data) && fotosRes.data.length > 0) {
-                imagen = fotosRes.data[0].url;
-              }
-            } catch {
-              // Foto no disponible — se usará placeholder
-            }
-            return mapLugar(raw, imagen);
+            const url = await getFotoLugarCached(raw.id);
+            return mapLugar(raw, url ?? undefined);
           })
         );
         setData(lugaresConFotos);

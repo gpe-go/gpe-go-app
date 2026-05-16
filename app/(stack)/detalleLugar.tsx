@@ -3,24 +3,14 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Animated,
-  Image,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  Share,
-  StatusBar,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Animated, Image, Modal, Platform, Pressable, ScrollView, Share, StatusBar, StyleSheet, View } from 'react-native';
+import { Text } from '../../components/Text';
 import Reseñas from "../../components/Reseñas";
 import { useAuth } from "../../src/context/AuthContext";
 import { useFavoritos } from "../../src/context/FavoritosContext";
 import { useTheme } from "../../src/context/ThemeContext";
 import { abrirEnMapa } from "../../src/utils/abrirMapa";
+import { getImagenLugarSource } from "../../src/utils/imagenLugar";
 
 const CATEGORIA_KEYS: Record<string, string> = {
   "Naturaleza & Aventura": "cat_nature",
@@ -234,13 +224,13 @@ export default function DetalleLugar() {
           <View
             style={[
               s.detailIconWrap,
-              { backgroundColor: "rgba(233,105,40,0.12)" },
+              { backgroundColor: "rgba(249,118,19,0.12)" },
             ]}
           >
             <MaterialCommunityIcons
               name="map-marker"
               size={20}
-              color="#E96928"
+              color="#F97613"
             />
           </View>
           <View style={s.detailInfo}>
@@ -261,7 +251,7 @@ export default function DetalleLugar() {
               },
             ]}
           >
-            <Ionicons name="open-outline" size={16} color="#E96928" />
+            <Ionicons name="open-outline" size={16} color="#F97613" />
           </Pressable>
         </View>
 
@@ -410,7 +400,7 @@ export default function DetalleLugar() {
           <View style={s.modalSheet}>
             <View style={s.modalHandle} />
             <View style={s.modalIconWrap}>
-              <Ionicons name="heart" size={30} color="#E96928" />
+              <Ionicons name="heart" size={30} color="#F97613" />
             </View>
 
             <Text style={[s.modalTitle, { fontSize: fonts.xl }]}>
@@ -462,7 +452,7 @@ export default function DetalleLugar() {
       >
         <Animated.View style={heroAnimatedStyle}>
           <View style={s.hero}>
-            <Image source={{ uri: lugar.imagen }} style={s.heroImage} />
+            <Image source={getImagenLugarSource(lugar.imagen)} style={s.heroImage} />
             <LinearGradient
               colors={[
                 "rgba(0,0,0,0.22)",
@@ -590,7 +580,7 @@ export default function DetalleLugar() {
                 onPress={abrirMapa}
               >
                 <LinearGradient
-                  colors={["#E96928", "#C4511A"]}
+                  colors={["#F97613", "#D85F0E"]}
                   style={s.actionBtnGradient}
                 >
                   <Ionicons name="navigate" size={17} color="#fff" />
@@ -613,7 +603,7 @@ export default function DetalleLugar() {
                 <Ionicons
                   name="share-social-outline"
                   size={17}
-                  color="#E96928"
+                  color="#F97613"
                 />
                 <Text
                   style={[s.actionTextSecondary, { fontSize: fonts.sm }]}
@@ -641,7 +631,7 @@ export default function DetalleLugar() {
               <Ionicons
                 name="information-circle-outline"
                 size={16}
-                color={activeTab === "info" ? "#E96928" : colors.subtext}
+                color={activeTab === "info" ? "#F97613" : colors.subtext}
               />
               <Text
                 style={[
@@ -668,7 +658,7 @@ export default function DetalleLugar() {
               <Ionicons
                 name="chatbubbles-outline"
                 size={16}
-                color={activeTab === "reseñas" ? "#E96928" : colors.subtext}
+                color={activeTab === "reseñas" ? "#F97613" : colors.subtext}
               />
               <Text
                 style={[
@@ -764,7 +754,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
 
     heroCatBadge: {
       alignSelf: "flex-start",
-      backgroundColor: "#E96928",
+      backgroundColor: "#F97613",
       paddingHorizontal: 11,
       paddingVertical: 5,
       borderRadius: 999,
@@ -849,17 +839,17 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
 
     priceBadge: {
       backgroundColor: isDark
-        ? "rgba(233,105,40,0.18)"
-        : "rgba(233,105,40,0.1)",
+        ? "rgba(249,118,19,0.18)"
+        : "rgba(249,118,19,0.1)",
       paddingHorizontal: 14,
       paddingVertical: 7,
       borderRadius: 999,
       borderWidth: 1,
-      borderColor: "rgba(233,105,40,0.45)",
+      borderColor: "rgba(249,118,19,0.45)",
     },
 
     priceText: {
-      color: "#E96928",
+      color: "#F97613",
       fontWeight: "800",
     },
 
@@ -873,7 +863,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       borderRadius: 16,
       overflow: "hidden",
       elevation: 4,
-      shadowColor: "#E96928",
+      shadowColor: "#F97613",
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.28,
       shadowRadius: 8,
@@ -891,13 +881,13 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       flex: 1,
       height: 52,
       borderWidth: 1.5,
-      borderColor: "#E96928",
+      borderColor: "#F97613",
       borderRadius: 16,
       flexDirection: "row",
       justifyContent: "center",
       alignItems: "center",
       gap: 6,
-      backgroundColor: isDark ? "rgba(233,105,40,0.08)" : c.card,
+      backgroundColor: isDark ? "rgba(249,118,19,0.08)" : c.card,
     },
 
     actionText: {
@@ -906,7 +896,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
     },
 
     actionTextSecondary: {
-      color: "#E96928",
+      color: "#F97613",
       fontWeight: "800",
     },
 
@@ -947,7 +937,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
     },
 
     tabTextActive: {
-      color: "#E96928",
+      color: "#F97613",
     },
 
     detailsCard: {
@@ -1036,8 +1026,8 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       justifyContent: "center",
       alignItems: "center",
       backgroundColor: isDark
-        ? "rgba(233,105,40,0.1)"
-        : "rgba(233,105,40,0.08)",
+        ? "rgba(249,118,19,0.1)"
+        : "rgba(249,118,19,0.08)",
     },
 
     detailDivider: {
@@ -1103,7 +1093,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       width: 66,
       height: 66,
       borderRadius: 20,
-      backgroundColor: "rgba(233,105,40,0.12)",
+      backgroundColor: "rgba(249,118,19,0.12)",
       justifyContent: "center",
       alignItems: "center",
       marginBottom: 14,
@@ -1127,7 +1117,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       width: "100%",
       height: 52,
       borderRadius: 16,
-      backgroundColor: "#E96928",
+      backgroundColor: "#F97613",
       justifyContent: "center",
       alignItems: "center",
       marginBottom: 10,

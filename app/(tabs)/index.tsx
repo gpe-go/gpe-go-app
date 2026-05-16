@@ -4,18 +4,8 @@ import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Animated,
-  ImageBackground,
-  Keyboard,
-  Pressable,
-  RefreshControl,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Animated, ImageBackground, Keyboard, Pressable, RefreshControl, StatusBar, StyleSheet, View } from 'react-native';
+import { Text, TextInput } from '../../components/Text';
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { useOnboarding } from "../../src/context/OnboardingContext";
 import { useTheme } from "../../src/context/ThemeContext";
@@ -453,7 +443,7 @@ export default function HomeScreen() {
         inputRange: [0, 1],
         outputRange: [
           isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.06)",
-          "#E96928",
+          "#F97613",
         ],
       }),
       shadowOpacity: searchFocusAnim.interpolate({
@@ -567,12 +557,12 @@ export default function HomeScreen() {
 
               <View style={s.dateTimeRow}>
                 <View style={s.dateChip}>
-                  <Ionicons name="calendar-outline" size={13} color="#E96928" />
+                  <Ionicons name="calendar-outline" size={13} color="#F97613" />
                   <Text style={[s.dateChipText, { fontSize: fonts.xs }]}>{fecha}</Text>
                 </View>
 
                 <View style={s.timeChip}>
-                  <Ionicons name="time-outline" size={13} color="#E96928" />
+                  <Ionicons name="time-outline" size={13} color="#F97613" />
                   <Text style={[s.timeChipText, { fontSize: fonts.xs }]}>{hora}</Text>
                 </View>
               </View>
@@ -929,7 +919,7 @@ export default function HomeScreen() {
             ]}
             onPress={centerMap}
           >
-            <LinearGradient colors={["#E96928", "#c4511a"]} style={s.locationBtnGradient}>
+            <LinearGradient colors={["#F97613", "#d85f0e"]} style={s.locationBtnGradient}>
               <Ionicons name="locate-outline" size={20} color="#fff" />
               <Text style={[s.btnText, { fontSize: fonts.sm }]}>
                 {t("cat_my_location")}
@@ -978,7 +968,7 @@ export default function HomeScreen() {
                 }}
               >
                 <View style={s.searchItemIcon}>
-                  <Ionicons name="location-outline" size={16} color="#E96928" />
+                  <Ionicons name="location-outline" size={16} color="#F97613" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text
@@ -1080,7 +1070,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       borderRadius: 80,
       backgroundColor: isDark
         ? "rgba(255,255,255,0.025)"
-        : "rgba(233,105,40,0.06)",
+        : "rgba(249,118,19,0.06)",
       opacity: 0.9,
     },
 
@@ -1105,16 +1095,16 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       flexDirection: "row",
       alignItems: "center",
       gap: 5,
-      backgroundColor: isDark ? "rgba(233,105,40,0.12)" : "rgba(233,105,40,0.08)",
+      backgroundColor: isDark ? "rgba(249,118,19,0.12)" : "rgba(249,118,19,0.08)",
       paddingHorizontal: 13,
       paddingVertical: 7,
       borderRadius: 20,
       borderWidth: 1,
-      borderColor: isDark ? "rgba(233,105,40,0.30)" : "rgba(233,105,40,0.18)",
+      borderColor: isDark ? "rgba(249,118,19,0.30)" : "rgba(249,118,19,0.18)",
     },
 
     dateChipText: {
-      color: isDark ? "#E96928" : "#c4511a",
+      color: isDark ? "#F97613" : "#d85f0e",
       fontWeight: "600",
     },
 
@@ -1122,16 +1112,16 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       flexDirection: "row",
       alignItems: "center",
       gap: 5,
-      backgroundColor: isDark ? "rgba(233,105,40,0.12)" : "rgba(233,105,40,0.08)",
+      backgroundColor: isDark ? "rgba(249,118,19,0.12)" : "rgba(249,118,19,0.08)",
       paddingHorizontal: 13,
       paddingVertical: 7,
       borderRadius: 20,
       borderWidth: 1,
-      borderColor: isDark ? "rgba(233,105,40,0.30)" : "rgba(233,105,40,0.18)",
+      borderColor: isDark ? "rgba(249,118,19,0.30)" : "rgba(249,118,19,0.18)",
     },
 
     timeChipText: {
-      color: isDark ? "#E96928" : "#c4511a",
+      color: isDark ? "#F97613" : "#d85f0e",
       fontWeight: "700",
     },
 
@@ -1206,7 +1196,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       width: 32,
       height: 32,
       borderRadius: 10,
-      backgroundColor: isDark ? "rgba(233,105,40,0.12)" : "rgba(233,105,40,0.08)",
+      backgroundColor: isDark ? "rgba(249,118,19,0.12)" : "rgba(249,118,19,0.08)",
       justifyContent: "center",
       alignItems: "center",
     },
@@ -1310,7 +1300,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       width: 5,
       height: 22,
       borderRadius: 3,
-      backgroundColor: "#E96928",
+      backgroundColor: "#F97613",
     },
 
     mapTitle: {
@@ -1365,7 +1355,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
     userMarker: {
       width: 16,
       height: 16,
-      backgroundColor: "#E96928",
+      backgroundColor: "#F97613",
       borderRadius: 8,
       borderWidth: 3,
       borderColor: "#fff",
@@ -1377,7 +1367,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       borderRadius: 32,
       overflow: "hidden",
       elevation: 5,
-      shadowColor: "#E96928",
+      shadowColor: "#F97613",
       shadowOffset: { width: 0, height: 6 },
       shadowOpacity: 0.28,
       shadowRadius: 14,

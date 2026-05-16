@@ -5,13 +5,26 @@
 //  marcadas con  ← PENDIENTE  con los datos del municipio.
 // ============================================================
 
-// API Key oficial de Google Maps proporcionada por el municipio.
-// Es la misma para iOS y Android (confirmado por el ingeniero).
-// La seguridad de esta key se controla en Google Cloud Console
-// restringiendo por Bundle ID (iOS) + SHA-1 del firmado (Android).
-// Se puede sobreescribir con la variable de entorno GOOGLE_MAPS_API_KEY.
-const GOOGLE_MAPS_API_KEY =
-  process.env.GOOGLE_MAPS_API_KEY ?? "AIzaSyADD8zRXUdokHP_CvyxOtkh50T6DtMVrww";
+// API Keys de Google Maps proporcionadas por el municipio.
+// El ingeniero generó keys SEPARADAS por plataforma para que cada una
+// tenga su propia restricción en Google Cloud Console:
+//
+//   • Android  → restringida por package name + SHA-1 del firmado APK
+//   • iOS      → restringida por Bundle Identifier   (⏳ PENDIENTE)
+//   • Web      → restringida al subdominio go.guadalupe.gob.mx
+//                (NO se usa en esta app — vive del lado del backend)
+//
+// ⚠️ iOS PENDIENTE: cuando el ingeniero entregue la key específica de
+// iOS con restricción por Bundle ID `com.guadalupego.app`, reemplazar
+// el string vacío de GOOGLE_MAPS_API_KEY_IOS por la nueva key.
+//
+// Mientras tanto en iOS:
+//   • Expo Go    → los mapas funcionan (Expo usa sus propias credenciales)
+//   • Build IPA  → los mapas saldrán en gris hasta tener la key
+const GOOGLE_MAPS_API_KEY_ANDROID =
+  process.env.GOOGLE_MAPS_API_KEY_ANDROID ?? "AIzaSyDQhdj6DHeFL1lRTpud20uAmvsu6MkVHrk";
+const GOOGLE_MAPS_API_KEY_IOS =
+  process.env.GOOGLE_MAPS_API_KEY_IOS ?? "";
 
 module.exports = {
   expo: {
@@ -20,7 +33,7 @@ module.exports = {
     owner: "ricky-99",
     version: "1.0.2",
     orientation: "portrait",
-    icon: "././assets/images/icon.png",
+    icon: "./assets/images/gpego-icon.png",
     scheme: "guadalupego",
     userInterfaceStyle: "automatic",
 
@@ -36,9 +49,14 @@ module.exports = {
       //   nueva versión al App Store (formato string)
       buildNumber: "1",
 
-      // Google Maps API Key para iOS (proporcionada por el municipio).
+      // Google Maps API Key para iOS — ⏳ PENDIENTE de que el ingeniero
+      // la genere con restricción por Bundle ID `com.guadalupego.app`.
+      // Cuando llegue, reemplazar GOOGLE_MAPS_API_KEY_IOS arriba con la
+      // nueva key. Mientras esté vacía, los mapas en builds nativos
+      // de iOS saldrán en gris (en Expo Go siguen funcionando porque
+      // Expo usa sus propias credenciales internas).
       config: {
-        googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+        googleMapsApiKey: GOOGLE_MAPS_API_KEY_IOS,
       },
 
       infoPlist: {
@@ -58,18 +76,21 @@ module.exports = {
 
       config: {
         googleMaps: {
-          // Google Maps API Key para Android (la misma que iOS).
-          apiKey: GOOGLE_MAPS_API_KEY,
+          // Google Maps API Key para Android — restringida por package
+          // name (com.guadalupego.app) + SHA-1 del firmado del APK.
+          apiKey: GOOGLE_MAPS_API_KEY_ANDROID,
         },
       },
 
-      // Icono adaptativo (Android 8+). Usamos icon-adaptive.png que es
-      // icon.png con 162px de padding naranja por cada lado, así el logo
-      // queda en el 66% interior (safe area) y no se corta cuando Android
-      // recorta el ícono al shape del dispositivo.
+      // Icono adaptativo (Android 8+). gpego-icon-adaptive.png contiene
+      // el icono oficial escalado al 88% del canvas para que todo el
+      // contenido caiga dentro de la safe zone que respeta Android.
+      // backgroundColor NARANJA para que cuando el launcher recorte al
+      // shape, lo que quede alrededor sea el mismo naranja del icono
+      // (sin bordes blancos parásitos).
       adaptiveIcon: {
-        foregroundImage: "./assets/images/icon-adaptive.png",
-        backgroundColor: "#E96928",
+        foregroundImage: "./assets/images/gpego-icon-adaptive.png",
+        backgroundColor: "#F97613",
       },
 
       predictiveBackGestureEnabled: false,
@@ -78,7 +99,7 @@ module.exports = {
     // ── Web (Expo Go / preview) ──────────────────────────────
     web: {
       output: "static",
-      favicon: "./assets/images/icon.png",
+      favicon: "./assets/images/gpego-icon.png",
     },
 
     // ── Plugins ─────────────────────────────────────────────
@@ -88,13 +109,16 @@ module.exports = {
       [
         "expo-splash-screen",
         {
-          // Splash con imagen 100% naranja sólida (sin contenido visible).
-          // El plugin expo-splash-screen REQUIERE una imagen, así que usamos
-          // un PNG naranja sólido para que se vea solo el fondo. Después
-          // welcome.tsx aparece con sus animaciones (puntitos + logo + slogan).
-          image: "./assets/images/splash-blank.png",
-          resizeMode: "cover",
-          backgroundColor: "#E96928",
+          // Splash nativo: el icono oficial (gpego-icon.png) centrado
+          // sobre el naranja del municipio. Android 12+ obliga a que el
+          // splash nativo sea un icono sobre un color sólido (no permite
+          // imagen completa); el diseño con la imagen oficial completa
+          // (gpego-splash.png) vive en welcome.tsx, que se monta justo
+          // después y respeta el mismo naranja → transición invisible.
+          image: "./assets/images/gpego-icon.png",
+          imageWidth: 200,
+          resizeMode: "contain",
+          backgroundColor: "#F97613",
         },
       ],
 
@@ -103,8 +127,8 @@ module.exports = {
       [
         "expo-notifications",
         {
-          icon: "./assets/images/icon.png",
-          color: "#E96928",
+          icon: "./assets/images/gpego-icon.png",
+          color: "#F97613",
           sounds: [],
         },
       ],

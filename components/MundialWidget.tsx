@@ -10,16 +10,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Animated,
-  FlatList,
-  Linking,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Animated, FlatList, Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from './Text';
 
 import {
   ESTADIO_BBVA,

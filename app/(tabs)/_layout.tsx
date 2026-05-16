@@ -1,8 +1,6 @@
 import React from 'react';
-import {
-  View, Text, StyleSheet,
-  Dimensions, TouchableOpacity, Image,
-} from 'react-native';
+import { View, StyleSheet, Dimensions, TouchableOpacity, Image } from 'react-native';
+import { Text } from '../../components/Text';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Drawer } from 'expo-router/drawer';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,7 +19,7 @@ function NotifDot() {
     <View style={{
       position: 'absolute', top: 4, right: 4,
       width: 8, height: 8, borderRadius: 4,
-      backgroundColor: '#E96928',
+      backgroundColor: '#F97613',
       borderWidth: 1.5, borderColor: '#fff',
     }} />
   );
@@ -45,7 +43,7 @@ function ProfileBtn({
       {isAuthenticated && fotoPerfil ? (
         <Image
           source={{ uri: fotoPerfil }}
-          style={{ width: 30, height: 30, borderRadius: 15, borderWidth: 2, borderColor: '#E96928' }}
+          style={{ width: 30, height: 30, borderRadius: 15, borderWidth: 2, borderColor: '#F97613' }}
         />
       ) : (
         <Ionicons name="person-outline" size={20} color={color} />
@@ -83,7 +81,7 @@ function BellBtn({ onPress, color, unread }: { onPress: () => void; color: strin
         <View style={{
           position: 'absolute', top: 4, right: 4,
           minWidth: 14, height: 14, borderRadius: 7,
-          backgroundColor: '#E96928',
+          backgroundColor: '#F97613',
           borderWidth: 1.5, borderColor: '#fff',
           justifyContent: 'center', alignItems: 'center',
           paddingHorizontal: 2,
@@ -119,7 +117,7 @@ export default function Layout() {
           drawerType: 'slide',
           drawerStyle: {
             width: width * 0.72,
-            backgroundColor: '#E96928',
+            backgroundColor: '#F97613',
           },
           overlayColor: colors.overlay,
           drawerItemStyle: { display: 'none' },
@@ -132,9 +130,11 @@ export default function Layout() {
 
               <View style={s.logoAbsolute} pointerEvents="none">
                 <View style={s.logoWrapper}>
-                  <View style={s.logoIconBg}>
-                    <Ionicons name="location" size={11} color="#fff" />
-                  </View>
+                  <Image
+                    source={require('../../assets/images/gpego-logo.png')}
+                    style={s.logoIcon}
+                    resizeMode="contain"
+                  />
                   <Text style={s.logoText}>
                     Guadalupe<Text style={s.logoAccent}>GO</Text>
                   </Text>
@@ -147,11 +147,11 @@ export default function Layout() {
                   activeOpacity={0.7}
                   style={s.menuBtn}
                 >
-                  <Ionicons name="menu-outline" size={26} color="#E96928" />
+                  <Ionicons name="menu-outline" size={26} color="#F97613" />
                 </TouchableOpacity>
 
                 <BellBtn
-                  color="#E96928"
+                  color="#F97613"
                   unread={isAuthenticated ? unread : 0}
                   onPress={() => router.push('/(stack)/notificaciones' as any)}
                 />
@@ -161,13 +161,13 @@ export default function Layout() {
                 <View style={s.actionsRow}>
                   <HeaderBtn
                     icon="settings-outline"
-                    color="#E96928"
+                    color="#F97613"
                     onPress={() => router.push('/(stack)/configuracion')}
                   />
                   <ProfileBtn
                     fotoPerfil={fotoPerfil}
                     isAuthenticated={isAuthenticated}
-                    color="#E96928"
+                    color="#F97613"
                     bg="transparent"
                     onPress={() => router.push('/(stack)/perfil')}
                   />
@@ -205,7 +205,7 @@ const makeStyles = (c: any, f: any, isDark: boolean, STATUS_BAR_H: number, HEADE
     },
     accentLine: {
       position: 'absolute', bottom: 0, left: 0, right: 0,
-      height: 2.5, backgroundColor: '#E96928', opacity: 0.85,
+      height: 2.5, backgroundColor: '#F97613', opacity: 0.85,
     },
     headerInner: {
       position: 'absolute',
@@ -233,18 +233,23 @@ const makeStyles = (c: any, f: any, isDark: boolean, STATUS_BAR_H: number, HEADE
     logoWrapper: {
       flexDirection: 'row', alignItems: 'center', gap: 7,
     },
-    logoIconBg: {
-      width: 26, height: 26, borderRadius: 8,
-      backgroundColor: '#E96928',
-      justifyContent: 'center', alignItems: 'center',
-      shadowColor: '#E96928',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.55, shadowRadius: 4, elevation: 4,
+    // Logo oficial del municipio (corona + G), mismo tamaño que el
+    // cuadrito anterior (26×26). Con resizeMode="contain" la imagen
+    // se ajusta proporcional dentro del cuadrado sin deformarse.
+    // SIN shadow: en iOS generaba un glow naranja brillante y el
+    // offset lo desplazaba hacia abajo. Quitarlo lo deja idéntico
+    // en iOS y Android. El marginTop negativo lo sube un par de
+    // píxeles para alinearlo visualmente con la base del texto
+    // "GuadalupeGO" (la corona del logo "pesa" hacia arriba).
+    logoIcon: {
+      width: 26,
+      height: 26,
+      marginTop: -2,
     },
     logoText: {
       fontSize: f.xl, fontWeight: '900',
       color: c.text, letterSpacing: -0.5,
     },
-    logoAccent: { color: '#E96928' },
+    logoAccent: { color: '#F97613' },
     actionsRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   });

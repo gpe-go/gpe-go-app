@@ -102,7 +102,7 @@ export function NotificacionesProvider({ children }: { children: React.ReactNode
           name: 'GuadalupeGO',
           importance: Notifications.AndroidImportance.MAX,
           vibrationPattern: [0, 250, 250, 250],
-          lightColor: '#E96928',
+          lightColor: '#F97613',
         });
       }
 

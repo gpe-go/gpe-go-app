@@ -1,23 +1,27 @@
 import { Stack } from "expo-router";
-import { Text } from 'react-native';
 import { ThemeProvider } from '../src/context/ThemeContext';
 import { AuthProvider } from '../src/context/AuthContext';
 import { FavoritosProvider } from '../src/context/FavoritosContext';
 import { NotificacionesProvider } from '../src/context/NotificacionesContext';
 import { OnboardingProvider } from '../src/context/OnboardingContext';
 import OnboardingSlides from '../components/OnboardingSlides';
+import { AlertHost } from '../components/Alert';
+import { useMuseoFonts } from '../src/fonts';
 import '../src/i18n/i18n';
 
-// Limitar el escalado de fuentes del sistema a 1.2x máximo
-// para que las letras grandes de accesibilidad no rompan los layouts.
-// Text.defaultProps no está tipado en @types/react-native pero es
-// la forma oficial de RN para establecer maxFontSizeMultiplier globalmente.
-// @ts-ignore
-if (!Text.defaultProps) Text.defaultProps = {};
-// @ts-ignore
-Text.defaultProps.maxFontSizeMultiplier = 1.2;
+// El maxFontSizeMultiplier=1.2 (limitar escalado de accesibilidad)
+// ahora vive como default prop dentro del wrapper Text/TextInput en
+// components/Text.tsx — defaultProps ya no funciona en function
+// components de React 19, así que es la forma correcta de hacerlo.
 
 export default function RootLayout() {
+  // Cargamos las 4 variantes de Museo. Mientras cargan (~50ms en cold
+  // start) el render usa la fontFamily del sistema como fallback. Para
+  // evitar el "flash" de texto sin tipografía, esperamos a `loaded`
+  // antes de renderizar el árbol.
+  const fontsLoaded = useMuseoFonts();
+  if (!fontsLoaded) return null;
+
   return (
     <OnboardingProvider>
       <ThemeProvider>
@@ -39,6 +43,7 @@ export default function RootLayout() {
                 <Stack.Screen name="lugar/[id]"        options={{ animation: 'slide_from_right' }} />
               </Stack>
               <OnboardingSlides />
+              <AlertHost />
             </FavoritosProvider>
           </NotificacionesProvider>
         </AuthProvider>

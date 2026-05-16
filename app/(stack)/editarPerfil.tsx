@@ -4,23 +4,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  ActivityIndicator,
-  Alert,
-  Animated,
-  Image,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Animated, Image, Modal, Platform, Pressable, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
+import { Alert } from '../../components/Alert';
+import { Text, TextInput } from '../../components/Text';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { editarPerfil, eliminarCuenta } from '../../src/api/api';
+import { editarPerfil, eliminarCuenta, getApiErrorMessage } from '../../src/api/api';
 import { useAuth } from '../../src/context/AuthContext';
 import { useTheme } from '../../src/context/ThemeContext';
 
@@ -58,7 +46,7 @@ export default function EditarPerfilScreen() {
   // ── Border animado
   const animatedBorderColor = focusAnim.interpolate({
     inputRange:  [0, 1],
-    outputRange: [colors.border, '#E96928'],
+    outputRange: [colors.border, '#F97613'],
   });
   const animatedShadowOpacity = focusAnim.interpolate({
     inputRange:  [0, 1],
@@ -68,7 +56,7 @@ export default function EditarPerfilScreen() {
   // ── Floating label — solo animación de color (siempre visible arriba del input)
   const labelColor = focusAnim.interpolate({
     inputRange:  [0, 1],
-    outputRange: [colors.text, '#E96928'],
+    outputRange: [colors.text, '#F97613'],
   });
 
   const handleNombreFocus = () =>
@@ -195,16 +183,30 @@ export default function EditarPerfilScreen() {
     setDeleting(true);
     try {
       const res = await eliminarCuenta();
-      if (!res.success) {
-        if (__DEV__) console.warn('[eliminarCuenta] servidor respondió con error:', res.error?.mensaje);
+
+      // Si el backend NO confirma el borrado, no mentimos al usuario:
+      // mostramos el error real y NO cerramos sesión. Antes seguíamos
+      // de largo aunque la API fallara, y la cuenta seguía activa en
+      // la BD (con sus reseñas) — el usuario veía "cuenta eliminada"
+      // pero en realidad su email seguía registrado.
+      if (!res?.success) {
+        setDeleting(false);
+        Alert.alert(
+          'Error',
+          res?.error?.mensaje ||
+            'No se pudo eliminar la cuenta. Inténtalo de nuevo más tarde.',
+        );
+        return;
       }
-    } catch (e) {
-      if (__DEV__) console.warn('[eliminarCuenta] error de red:', e);
-    } finally {
+
+      // Borrado confirmado por el backend — limpieza local y goodbye.
       await actualizarFoto(null);
       await logout();
       setDeleting(false);
       setGoodbyeModal(true);
+    } catch (e: any) {
+      setDeleting(false);
+      Alert.alert('Error', getApiErrorMessage(e, t));
     }
   };
 
@@ -285,7 +287,7 @@ export default function EditarPerfilScreen() {
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
         <Animated.View style={bannerAnimatedStyle}>
           <LinearGradient
-            colors={['#E96928', '#c4511a']}
+            colors={['#F97613', '#d85f0e']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={s.banner}
@@ -313,7 +315,7 @@ export default function EditarPerfilScreen() {
                   <Image source={{ uri: fotoDisplay }} style={s.avatarImg} />
                 ) : (
                   <View style={s.avatarCircle}>
-                    <Ionicons name="person" size={40} color="#E96928" />
+                    <Ionicons name="person" size={40} color="#F97613" />
                   </View>
                 )}
               </View>
@@ -321,7 +323,7 @@ export default function EditarPerfilScreen() {
 
             <View style={s.bannerTitleRow}>
               <View style={s.bannerIconWrap}>
-                <Ionicons name="create-outline" size={22} color="#E96928" />
+                <Ionicons name="create-outline" size={22} color="#F97613" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[s.bannerTitle, { fontSize: fonts['2xl'] }]}>
@@ -354,7 +356,7 @@ export default function EditarPerfilScreen() {
                 s.inputWrap,
                 {
                   borderColor:   animatedBorderColor,
-                  shadowColor:   '#E96928',
+                  shadowColor:   '#F97613',
                   shadowOpacity: animatedShadowOpacity,
                   shadowOffset:  { width: 0, height: 0 },
                   shadowRadius:  8,
@@ -363,7 +365,7 @@ export default function EditarPerfilScreen() {
               ]}
             >
               <View style={s.inputIcon}>
-                <Ionicons name="person-outline" size={18} color="#E96928" />
+                <Ionicons name="person-outline" size={18} color="#F97613" />
               </View>
               <TextInput
                 style={[s.input, { fontSize: fonts.base }]}
@@ -401,7 +403,7 @@ export default function EditarPerfilScreen() {
 
             <View style={[s.inputWrap, s.inputWrapDisabled]}>
               <View style={s.inputIcon}>
-                <Ionicons name="mail-outline" size={18} color="#E96928" />
+                <Ionicons name="mail-outline" size={18} color="#F97613" />
               </View>
               <TextInput
                 style={[s.input, { fontSize: fonts.base, color: colors.subtext }]}
@@ -488,7 +490,7 @@ export default function EditarPerfilScreen() {
             disabled={!haycambios || loading}
           >
             <LinearGradient
-              colors={['#E96928', '#c4511a']}
+              colors={['#F97613', '#d85f0e']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={s.applyBtnGradient}
@@ -722,7 +724,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       width: 3,
       height: 14,
       borderRadius: 2,
-      backgroundColor: '#E96928',
+      backgroundColor: '#F97613',
     },
 
     sectionLabel: {
@@ -760,8 +762,8 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       marginLeft: 12,
       marginRight: 10,
       backgroundColor: isDark
-        ? 'rgba(233,105,40,0.15)'
-        : 'rgba(233,105,40,0.1)',
+        ? 'rgba(249,118,19,0.15)'
+        : 'rgba(249,118,19,0.1)',
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -834,7 +836,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       borderRadius: 18,
       overflow: 'hidden',
       elevation: 5,
-      shadowColor: '#E96928',
+      shadowColor: '#F97613',
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.4,
       shadowRadius: 8,
@@ -901,8 +903,8 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       height: 72,
       borderRadius: 24,
       backgroundColor: isDark
-        ? 'rgba(233,105,40,0.12)'
-        : 'rgba(233,105,40,0.08)',
+        ? 'rgba(249,118,19,0.12)'
+        : 'rgba(249,118,19,0.08)',
       justifyContent: 'center',
       alignItems: 'center',
       marginBottom: 4,
@@ -924,7 +926,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       width: 56,
       height: 56,
       borderRadius: 28,
-      backgroundColor: '#E96928',
+      backgroundColor: '#F97613',
       justifyContent: 'center',
       alignItems: 'center',
       marginVertical: 4,

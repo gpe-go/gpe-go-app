@@ -3,18 +3,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Animated,
-  Image,
-  Platform,
-  Pressable,
-  ScrollView,
-  Share,
-  StatusBar,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Animated, Image, Platform, Pressable, ScrollView, Share, StatusBar, StyleSheet, View } from 'react-native';
+import { Text } from '../../components/Text';
 import { useTheme } from "../../src/context/ThemeContext";
 import { abrirEnMapa } from "../../src/utils/abrirMapa";
 
@@ -317,7 +307,7 @@ export default function DetalleEvento() {
                   <MaterialCommunityIcons
                     name="tag-outline"
                     size={15}
-                    color="#E96928"
+                    color="#F97613"
                   />
                   <Text style={[s.tagText, { fontSize: fonts.sm }]}>
                     {getCategoriaTexto(evento.categoria)}
@@ -344,7 +334,7 @@ export default function DetalleEvento() {
                 onPress={abrirMapa}
               >
                 <LinearGradient
-                  colors={["#E96928", "#C4511A"]}
+                  colors={["#F97613", "#D85F0E"]}
                   style={s.actionBtnGradient}
                 >
                   <Ionicons name="navigate" size={17} color="#fff" />
@@ -367,7 +357,7 @@ export default function DetalleEvento() {
                 <Ionicons
                   name="share-social-outline"
                   size={17}
-                  color="#E96928"
+                  color="#F97613"
                 />
                 <Text
                   style={[s.actionTextSecondary, { fontSize: fonts.sm }]}
@@ -396,13 +386,13 @@ export default function DetalleEvento() {
               <View
                 style={[
                   s.infoIconWrap,
-                  { backgroundColor: "rgba(233,105,40,0.12)" },
+                  { backgroundColor: "rgba(249,118,19,0.12)" },
                 ]}
               >
                 <MaterialCommunityIcons
                   name="calendar-month"
                   size={20}
-                  color="#E96928"
+                  color="#F97613"
                 />
               </View>
               <View style={s.infoTextWrapper}>
@@ -448,7 +438,7 @@ export default function DetalleEvento() {
                   },
                 ]}
               >
-                <Ionicons name="open-outline" size={16} color="#E96928" />
+                <Ionicons name="open-outline" size={16} color="#F97613" />
               </Pressable>
             </View>
 
@@ -602,7 +592,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
     },
 
     categoryBadge: {
-      backgroundColor: "#E96928",
+      backgroundColor: "#F97613",
       paddingHorizontal: 12,
       paddingVertical: 6,
       borderRadius: 999,
@@ -689,30 +679,30 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       paddingVertical: 7,
       borderRadius: 999,
       backgroundColor: isDark
-        ? "rgba(233,105,40,0.12)"
-        : "rgba(233,105,40,0.08)",
+        ? "rgba(249,118,19,0.12)"
+        : "rgba(249,118,19,0.08)",
       borderWidth: 1,
-      borderColor: "rgba(233,105,40,0.24)",
+      borderColor: "rgba(249,118,19,0.24)",
     },
 
     tagText: {
-      color: "#E96928",
+      color: "#F97613",
       fontWeight: "800",
     },
 
     priceBadge: {
       backgroundColor: isDark
-        ? "rgba(233,105,40,0.18)"
-        : "rgba(233,105,40,0.1)",
+        ? "rgba(249,118,19,0.18)"
+        : "rgba(249,118,19,0.1)",
       paddingHorizontal: 14,
       paddingVertical: 7,
       borderRadius: 999,
       borderWidth: 1,
-      borderColor: "rgba(233,105,40,0.42)",
+      borderColor: "rgba(249,118,19,0.42)",
     },
 
     priceText: {
-      color: "#E96928",
+      color: "#F97613",
       fontWeight: "800",
     },
 
@@ -726,7 +716,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       borderRadius: 16,
       overflow: "hidden",
       elevation: 4,
-      shadowColor: "#E96928",
+      shadowColor: "#F97613",
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.28,
       shadowRadius: 8,
@@ -744,13 +734,13 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       flex: 1,
       height: 52,
       borderWidth: 1.5,
-      borderColor: "#E96928",
+      borderColor: "#F97613",
       borderRadius: 16,
       flexDirection: "row",
       justifyContent: "center",
       alignItems: "center",
       gap: 6,
-      backgroundColor: isDark ? "rgba(233,105,40,0.08)" : c.card,
+      backgroundColor: isDark ? "rgba(249,118,19,0.08)" : c.card,
     },
 
     actionText: {
@@ -759,7 +749,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
     },
 
     actionTextSecondary: {
-      color: "#E96928",
+      color: "#F97613",
       fontWeight: "800",
     },
 
@@ -836,8 +826,8 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       justifyContent: "center",
       alignItems: "center",
       backgroundColor: isDark
-        ? "rgba(233,105,40,0.1)"
-        : "rgba(233,105,40,0.08)",
+        ? "rgba(249,118,19,0.1)"
+        : "rgba(249,118,19,0.08)",
     },
 
     separator: {

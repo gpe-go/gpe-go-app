@@ -3,22 +3,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Animated,
-  FlatList,
-  Image,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Animated, FlatList, Image, Pressable, RefreshControl, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
+import { Text, TextInput } from '../../components/Text';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useAnimatedPlaceholder } from '../../src/hooks/useAnimatedPlaceholder';
 import { useEventos } from '../../src/hooks/useEventos';
+import { useCategoriasEventos } from '../../src/hooks/useCategorias';
+import { resolverPresentacion } from '../../src/utils/categoriaPresentacion';
 
 const SUB_KEYS: Record<string, string> = {
   'Fútbol': 'sub_futbol',
@@ -34,11 +25,25 @@ const SUB_KEYS: Record<string, string> = {
   'Mundial 2026': 'sub_mundial',
 };
 
-const CATEGORIAS = [
-  { id: '1', value: 'Deporte', labelKey: 'cat_deporte', icon: 'soccer', color: '#E96928' },
-  { id: '2', value: 'Cultural', labelKey: 'cat_cultural', icon: 'palette', color: '#9C27B0' },
-  { id: '3', value: 'Gastronomía', labelKey: 'cat_gastronomia', icon: 'food', color: '#10B981' },
-  { id: '4', value: 'Sociales', labelKey: 'cat_sociales', icon: 'account-group', color: '#4A90E2' },
+// Tipo y fallback estático. Los chips reales se generan en el componente
+// principal desde `useCategoriasEventos()` (?modulo=categorias_eventos).
+// Si el backend regresa una lista vacía (todavía no se han creado en el
+// dashboard), usamos `CATEGORIAS_FALLBACK` para que la UI no quede sin
+// filtros — al momento que el municipio agregue categorías, salen
+// automáticamente y este fallback deja de mostrarse.
+type Categoria = {
+  id: string;
+  value: string;
+  labelKey: string | null;
+  icon: string;
+  color: string;
+};
+
+const CATEGORIAS_FALLBACK: Categoria[] = [
+  { id: '1', value: 'Deporte',     labelKey: 'cat_deporte',     icon: 'soccer',        color: '#F97613' },
+  { id: '2', value: 'Cultural',    labelKey: 'cat_cultural',    icon: 'palette',       color: '#9C27B0' },
+  { id: '3', value: 'Gastronomía', labelKey: 'cat_gastronomia', icon: 'food',          color: '#10B981' },
+  { id: '4', value: 'Sociales',    labelKey: 'cat_sociales',    icon: 'account-group', color: '#4A90E2' },
 ];
 
 function RefreshLogo({ refreshing, isDark }: { refreshing: boolean; isDark: boolean }) {
@@ -141,9 +146,9 @@ const rl = StyleSheet.create({
   },
 });
 
-const EventCard = React.memo(({ item, colors, fonts, onPress, t, isDark }: any) => {
+const EventCard = React.memo(({ item, colors, fonts, onPress, t, isDark, categorias }: any) => {
   const s = makeStyles(colors, fonts, isDark);
-  const catInfo = CATEGORIAS.find((c) => c.value === item.categoria);
+  const catInfo = (categorias as Categoria[]).find((c) => c.value === item.categoria);
 
   return (
     <Pressable
@@ -213,6 +218,31 @@ export default function EventosScreen() {
   const [search, setSearch] = useState('');
   const [activeCat, setActiveCat] = useState('Todas');
   const [refreshing, setRefreshing] = useState(false);
+
+  // ── Chips de categorías de eventos generados dinámicamente ─────────
+  // El backend expone ?modulo=categorias_eventos&action=listar. Cuando
+  // el dashboard agregue categorías, aparecen automáticamente. Mientras
+  // la lista esté vacía (estado inicial del backend), usamos un fallback
+  // estático para que la UI no quede sin filtros.
+  const { data: apiCategoriasEventos } = useCategoriasEventos();
+  const CATEGORIAS = useMemo<Categoria[]>(() => {
+    if (apiCategoriasEventos.length === 0) return CATEGORIAS_FALLBACK;
+    return apiCategoriasEventos.map((c) => {
+      const p = resolverPresentacion(c.nombre);
+      return {
+        id: String(c.id),
+        value: c.nombre,
+        labelKey: p.labelKey,
+        icon: p.icon,
+        color: p.color,
+      };
+    });
+  }, [apiCategoriasEventos]);
+  const labelDeCategoria = useCallback(
+    (cat: Pick<Categoria, 'labelKey' | 'value'>) =>
+      cat.labelKey ? t(cat.labelKey) : cat.value,
+    [t],
+  );
 
   // Radio 10 km · máx 40 eventos. Con búsqueda activa el hook consulta toda la BD.
   const { data: eventos, refresh: refreshEventos } = useEventos(
@@ -395,6 +425,7 @@ export default function EventosScreen() {
             fonts={fonts}
             t={t}
             isDark={isDark}
+            categorias={CATEGORIAS}
             onPress={() => irAlDetalle(item)}
           />
         )}
@@ -434,7 +465,7 @@ export default function EventosScreen() {
 
             <Animated.View style={bannerAnimatedStyle}>
               <LinearGradient
-                colors={['#E96928', '#C4511A']}
+                colors={['#F97613', '#D85F0E']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={s.banner}
@@ -444,7 +475,7 @@ export default function EventosScreen() {
 
                 <View style={s.bannerContent}>
                   <View style={s.bannerIconWrap}>
-                    <Ionicons name="calendar" size={22} color="#E96928" />
+                    <Ionicons name="calendar" size={22} color="#F97613" />
                   </View>
 
                   <View style={s.bannerTextWrap}>
@@ -531,7 +562,7 @@ export default function EventosScreen() {
                             <MaterialCommunityIcons
                               name="calendar-star"
                               size={16}
-                              color="#E96928"
+                              color="#F97613"
                             />
                           </View>
                           <View style={{ flex: 1 }}>
@@ -568,7 +599,7 @@ export default function EventosScreen() {
                 <Pressable
                   style={({ pressed }) => [
                     s.chip,
-                    activeCat === 'Todas' && { backgroundColor: '#E96928', borderColor: '#E96928' },
+                    activeCat === 'Todas' && { backgroundColor: '#F97613', borderColor: '#F97613' },
                     { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
                   ]}
                   onPress={() => setActiveCat('Todas')}
@@ -601,7 +632,7 @@ export default function EventosScreen() {
                         color={activa ? '#fff' : colors.subtext}
                       />
                       <Text style={[s.chipText, { fontSize: fonts.xs }, activa && s.chipTextActive]}>
-                        {t(cat.labelKey)}
+                        {labelDeCategoria(cat)}
                       </Text>
                     </Pressable>
                   );
@@ -617,7 +648,10 @@ export default function EventosScreen() {
                   <Text style={[s.sectionTitle, { fontSize: fonts.lg }]}>
                     {activeCat === 'Todas'
                       ? t('tab_events')
-                      : t(CATEGORIAS.find((c) => c.value === activeCat)?.labelKey ?? '')}
+                      : (() => {
+                          const c = CATEGORIAS.find((c) => c.value === activeCat);
+                          return c ? labelDeCategoria(c) : t('tab_events');
+                        })()}
                   </Text>
                   <View style={s.countBadge}>
                     <Text style={[s.countText, { fontSize: fonts.xs }]}>
@@ -655,7 +689,9 @@ export default function EventosScreen() {
                           <View style={s.hCardInfo}>
                             {catInfo && (
                               <View style={[s.hCardTag, { backgroundColor: catInfo.color + 'CC' }]}>
-                                <Text style={s.hCardTagText}>{t(catInfo.labelKey)}</Text>
+                                <Text style={s.hCardTagText}>
+                                  {catInfo.labelKey ? t(catInfo.labelKey) : catInfo.value}
+                                </Text>
                               </View>
                             )}
                             <Text style={s.hCardName} numberOfLines={2}>{item.titulo}</Text>
@@ -831,7 +867,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       width: 28,
       height: 28,
       borderRadius: 10,
-      backgroundColor: isDark ? 'rgba(233,105,40,0.12)' : 'rgba(233,105,40,0.08)',
+      backgroundColor: isDark ? 'rgba(249,118,19,0.12)' : 'rgba(249,118,19,0.08)',
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -982,7 +1018,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       width: 5,
       height: 18,
       borderRadius: 999,
-      backgroundColor: '#E96928',
+      backgroundColor: '#F97613',
     },
 
     sectionTitle: {
@@ -1021,7 +1057,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: 5,
-      backgroundColor: '#E96928',
+      backgroundColor: '#F97613',
       paddingHorizontal: 12,
       paddingVertical: 6,
       borderRadius: 999,
@@ -1182,7 +1218,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       width: 74,
       height: 74,
       borderRadius: 24,
-      backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(233,105,40,0.06)',
+      backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(249,118,19,0.06)',
       justifyContent: 'center',
       alignItems: 'center',
       marginBottom: 14,

@@ -1,15 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Animated,
-  Dimensions,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Animated, Dimensions, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from './Text';
 import { useTheme } from '../src/context/ThemeContext';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -126,7 +119,7 @@ export default function TooltipOverlay({
 
   const titleColor = isDark ? '#ffffff' : '#1a1a1a';
   const descColor = isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)';
-  const dotActiveColor = '#E96928';
+  const dotActiveColor = '#F97613';
   const dotInactiveColor = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.2)';
 
   return (
@@ -154,7 +147,7 @@ export default function TooltipOverlay({
         <Ionicons
           name={arrowDirection === 'down' ? 'chevron-down' : 'chevron-up'}
           size={32}
-          color="#E96928"
+          color="#F97613"
         />
       </Animated.View>
 
@@ -304,11 +297,11 @@ const s = StyleSheet.create({
   },
 
   gotItBtn: {
-    backgroundColor: '#E96928',
+    backgroundColor: '#F97613',
     borderRadius: 50,
     paddingVertical: 11,
     paddingHorizontal: 24,
-    shadowColor: '#E96928',
+    shadowColor: '#F97613',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 10,

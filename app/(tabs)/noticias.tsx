@@ -3,19 +3,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  ActivityIndicator,
-  Animated,
-  FlatList,
-  Image,
-  Platform,
-  Pressable,
-  RefreshControl,
-  StatusBar,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Animated, FlatList, Image, Platform, Pressable, RefreshControl, StatusBar, StyleSheet, View } from 'react-native';
+import { Text } from '../../components/Text';
 import { useTheme } from '../../src/context/ThemeContext';
 
 const BASE_MX = 'https://guadalupe.gob.mx';
@@ -120,13 +109,13 @@ function detectarCategoria(
   isLocal?: boolean
 ): { label: string; color: string; bg: string } {
   if (isLocal) {
-    return { label: 'Guadalupe', color: '#E96928', bg: 'rgba(233,105,40,0.12)' };
+    return { label: 'Guadalupe', color: '#F97613', bg: 'rgba(249,118,19,0.12)' };
   }
 
   const t = titulo.toLowerCase();
 
   if (t.includes('futbol') || t.includes('liga') || t.includes('mundial') || t.includes('deporte')) {
-    return { label: 'Deportes', color: '#E96928', bg: 'rgba(233,105,40,0.12)' };
+    return { label: 'Deportes', color: '#F97613', bg: 'rgba(249,118,19,0.12)' };
   }
 
   if (t.includes('turismo') || t.includes('festival') || t.includes('cultura') || t.includes('guadalupe')) {
@@ -417,7 +406,7 @@ export default function NoticiasScreen() {
     return (
       <View style={[s.container, s.loadingScreen]}>
         <LinearGradient
-          colors={['#E96928', '#c4511a']}
+          colors={['#F97613', '#d85f0e']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={s.loadingBanner}
@@ -426,7 +415,7 @@ export default function NoticiasScreen() {
           <View style={s.circle2} />
           <View style={s.bannerContent}>
             <View style={s.bannerIconWrap}>
-              <Ionicons name="newspaper" size={22} color="#E96928" />
+              <Ionicons name="newspaper" size={22} color="#F97613" />
             </View>
             <View>
               <Text style={[s.bannerTitle, { fontSize: fonts.xl }]}>{t('news_banner_title_text')}</Text>
@@ -436,7 +425,7 @@ export default function NoticiasScreen() {
         </LinearGradient>
 
         <View style={s.loadingCard}>
-          <ActivityIndicator size="large" color="#E96928" />
+          <ActivityIndicator size="large" color="#F97613" />
           <Text style={[s.loadingText, { fontSize: fonts.sm }]}>{t('news_loading')}</Text>
         </View>
       </View>
@@ -452,6 +441,11 @@ export default function NoticiasScreen() {
         contentContainerStyle={{ paddingBottom: 40 }}
         onEndReached={cargarMas}
         onEndReachedThreshold={0.3}
+        // ── Optimización de rendimiento ──────────────────────
+        removeClippedSubviews
+        initialNumToRender={6}
+        maxToRenderPerBatch={6}
+        windowSize={5}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -464,7 +458,7 @@ export default function NoticiasScreen() {
         ListEmptyComponent={
           <Animated.View style={[s.emptyWrap, emptyAnimatedStyle]}>
             <View style={s.emptyIconWrap}>
-              <Ionicons name="newspaper-outline" size={34} color="#E96928" />
+              <Ionicons name="newspaper-outline" size={34} color="#F97613" />
             </View>
             <Text style={[s.emptyTitle, { fontSize: fonts.lg }]}>{t('news_empty_title')}</Text>
             <Text style={[s.emptySub, { fontSize: fonts.sm }]}>{t('news_empty_sub')}</Text>
@@ -473,7 +467,7 @@ export default function NoticiasScreen() {
         ListFooterComponent={() =>
           loadingMore ? (
             <View style={s.footerLoader}>
-              <ActivityIndicator size="small" color="#E96928" />
+              <ActivityIndicator size="small" color="#F97613" />
               <Text style={[s.footerText, { fontSize: fonts.xs }]}>
                 {t('news_loading_more')}
               </Text>
@@ -492,7 +486,7 @@ export default function NoticiasScreen() {
             <RefreshLogo refreshing={refreshing} />
 
             <LinearGradient
-              colors={['#E96928', '#c4511a']}
+              colors={['#F97613', '#d85f0e']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={s.banner}
@@ -502,7 +496,7 @@ export default function NoticiasScreen() {
 
               <View style={s.bannerContent}>
                 <View style={s.bannerIconWrap}>
-                  <Ionicons name="newspaper" size={22} color="#E96928" />
+                  <Ionicons name="newspaper" size={22} color="#F97613" />
                 </View>
                 <View>
                   <Text style={[s.bannerTitle, { fontSize: fonts.xl }]}>{t('news_banner_title_text')}</Text>
@@ -548,7 +542,7 @@ export default function NoticiasScreen() {
                   {item.image ? (
                     <Image source={{ uri: item.image }} style={s.featuredImage} />
                   ) : (
-                    <LinearGradient colors={['#E96928', '#c4511a']} style={s.featuredImage}>
+                    <LinearGradient colors={['#F97613', '#d85f0e']} style={s.featuredImage}>
                       <Ionicons name="newspaper-outline" size={48} color="rgba(255,255,255,0.5)" />
                     </LinearGradient>
                   )}
@@ -610,7 +604,7 @@ export default function NoticiasScreen() {
                   {item.image ? (
                     <Image source={{ uri: item.image }} style={s.cardImage} />
                   ) : (
-                    <LinearGradient colors={['#E96928', '#c4511a']} style={s.cardImage}>
+                    <LinearGradient colors={['#F97613', '#d85f0e']} style={s.cardImage}>
                       <Ionicons
                         name="newspaper-outline"
                         size={28}
@@ -643,7 +637,7 @@ export default function NoticiasScreen() {
                       <Text style={[s.readMoreChipText, { fontSize: 10 }]}>
                         {t('news_read_full')}
                       </Text>
-                      <Ionicons name="arrow-forward" size={10} color="#E96928" />
+                      <Ionicons name="arrow-forward" size={10} color="#F97613" />
                     </View>
                   </View>
                 </View>
@@ -796,7 +790,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       width: 4,
       height: 18,
       borderRadius: 2,
-      backgroundColor: '#E96928',
+      backgroundColor: '#F97613',
     },
 
     sectionTitle: {
@@ -948,14 +942,14 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: 3,
-      backgroundColor: isDark ? 'rgba(233,105,40,0.15)' : 'rgba(233,105,40,0.1)',
+      backgroundColor: isDark ? 'rgba(249,118,19,0.15)' : 'rgba(249,118,19,0.1)',
       paddingHorizontal: 8,
       paddingVertical: 3,
       borderRadius: 8,
     },
 
     readMoreChipText: {
-      color: '#E96928',
+      color: '#F97613',
       fontWeight: '700',
     },
 
@@ -981,7 +975,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       width: 78,
       height: 78,
       borderRadius: 24,
-      backgroundColor: isDark ? 'rgba(233,105,40,0.15)' : 'rgba(233,105,40,0.10)',
+      backgroundColor: isDark ? 'rgba(249,118,19,0.15)' : 'rgba(249,118,19,0.10)',
       justifyContent: 'center',
       alignItems: 'center',
       marginBottom: 14,

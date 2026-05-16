@@ -3,26 +3,16 @@ import * as Location from 'expo-location';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Alert,
-  Animated,
-  FlatList,
-  Image,
-  Linking,
-  Platform,
-  Pressable,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Animated, FlatList, Image, Linking, Platform, Pressable, StatusBar, StyleSheet, View } from 'react-native';
+import { Alert } from '../../components/Alert';
+import { Text, TextInput } from '../../components/Text';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Lugar } from '../../src/context/FavoritosContext';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useAnimatedPlaceholder } from '../../src/hooks/useAnimatedPlaceholder';
 import { useLugares } from '../../src/hooks/useLugares';
+import { getImagenLugarSource } from '../../src/utils/imagenLugar';
 
 // ── Categorías por scope ───────────────────────────────────────────────────────
 const EXPLORAR_CATS  = ['Cerros', 'Parques', 'Pueblos Mágicos', 'Museos'];
@@ -312,7 +302,7 @@ export default function MapaCompletoScreen() {
                 <Ionicons
                   name="location"
                   size={place.id === selectedId ? 32 : 26}
-                  color={place.id === selectedId ? '#C4511A' : '#E96928'}
+                  color={place.id === selectedId ? '#D85F0E' : '#F97613'}
                 />
               </View>
             </Marker>
@@ -330,7 +320,7 @@ export default function MapaCompletoScreen() {
         </Pressable>
 
         <View style={[ms.titlePill, { backgroundColor: cardBg }]}>
-          <Ionicons name="map" size={16} color="#E96928" />
+          <Ionicons name="map" size={16} color="#F97613" />
           <Text style={[ms.titleText, { color: textCol, fontSize: fonts.base }]}>
             {t('map', { defaultValue: 'Mapa' })}
           </Text>
@@ -344,7 +334,7 @@ export default function MapaCompletoScreen() {
         ms.searchBar,
         { top: insets.top + 72, backgroundColor: cardBg },
       ]}>
-        <Ionicons name="search" size={18} color="#E96928" />
+        <Ionicons name="search" size={18} color="#F97613" />
         <TextInput
           placeholder=""
           placeholderTextColor="transparent"
@@ -419,19 +409,19 @@ export default function MapaCompletoScreen() {
                   ]}
                 >
                   <Image
-                    source={{ uri: item.imagen }}
+                    source={getImagenLugarSource(item.imagen)}
                     style={ms.resultCardImg}
                     resizeMode="cover"
                   />
                   <View style={ms.resultCardInfo}>
                     <Text
-                      style={[ms.resultCardName, { color: isSelected ? '#E96928' : textCol }]}
+                      style={[ms.resultCardName, { color: isSelected ? '#F97613' : textCol }]}
                       numberOfLines={1}
                     >
                       {item.nombre}
                     </Text>
                     <View style={ms.resultCardCatRow}>
-                      <Ionicons name="pricetag" size={9} color="#E96928" />
+                      <Ionicons name="pricetag" size={9} color="#F97613" />
                       <Text style={[ms.resultCardCat, { color: subCol }]} numberOfLines={1}>
                         {item.categoria}
                       </Text>
@@ -513,7 +503,7 @@ export default function MapaCompletoScreen() {
           style={({ pressed }) => [ms.fabBtn, { backgroundColor: cardBg, opacity: pressed ? 0.85 : 1 }]}
           onPress={centerOnUser}
         >
-          <MaterialCommunityIcons name="crosshairs-gps" size={24} color="#E96928" />
+          <MaterialCommunityIcons name="crosshairs-gps" size={24} color="#F97613" />
         </Pressable>
 
         <Pressable
@@ -563,7 +553,7 @@ const ms = StyleSheet.create({
     position: 'absolute', left: 16, right: 16,
     flexDirection: 'row', alignItems: 'center', gap: 10,
     borderRadius: 18, paddingHorizontal: 14, height: 52,
-    borderLeftWidth: 5, borderLeftColor: '#E96928',
+    borderLeftWidth: 5, borderLeftColor: '#F97613',
     elevation: 8, shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.15, shadowRadius: 8,
     zIndex: 15,
@@ -584,7 +574,7 @@ const ms = StyleSheet.create({
     paddingHorizontal: 16, marginBottom: 6,
   },
   resultsHeaderDot: {
-    width: 4, height: 16, borderRadius: 999, backgroundColor: '#E96928',
+    width: 4, height: 16, borderRadius: 999, backgroundColor: '#F97613',
   },
   resultsTitle: { fontWeight: '700' },
   resultsScroll: { paddingHorizontal: 14, paddingBottom: 8, gap: 10 },
@@ -596,7 +586,7 @@ const ms = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4,
   },
   resultCardSelected: {
-    borderColor: '#E96928', borderWidth: 2,
+    borderColor: '#F97613', borderWidth: 2,
   },
   resultCardImg: { width: '100%', height: 90 },
   resultCardInfo: { padding: 8, gap: 3 },
@@ -637,8 +627,8 @@ const ms = StyleSheet.create({
   },
   externalBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: '#E96928', paddingHorizontal: 22, paddingVertical: 14,
-    borderRadius: 16, elevation: 6, shadowColor: '#E96928',
+    backgroundColor: '#F97613', paddingHorizontal: 22, paddingVertical: 14,
+    borderRadius: 16, elevation: 6, shadowColor: '#F97613',
     shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8,
   },
   externalBtnText: { color: '#fff', fontWeight: '700' },
@@ -646,11 +636,11 @@ const ms = StyleSheet.create({
   // ── Marcadores ───────────────────────────────────────────
   userMarkerOuter: {
     width: 28, height: 28, borderRadius: 14,
-    backgroundColor: 'rgba(233,105,40,0.18)',
+    backgroundColor: 'rgba(249,118,19,0.18)',
     justifyContent: 'center', alignItems: 'center',
   },
   userMarkerInner: {
-    width: 16, height: 16, backgroundColor: '#E96928',
+    width: 16, height: 16, backgroundColor: '#F97613',
     borderRadius: 8, borderWidth: 3, borderColor: '#fff',
   },
   placeMarkerWrap: {
@@ -715,7 +705,7 @@ const ms = StyleSheet.create({
   },
   pinCardBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: '#E96928',
+    backgroundColor: '#F97613',
     borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8,
   },
   pinCardBtnText: {

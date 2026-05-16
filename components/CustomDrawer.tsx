@@ -1,8 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import {
-  View, Text, StyleSheet,
-  TouchableOpacity, ActivityIndicator,
-} from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
+import { Text } from './Text';
 import {
   DrawerContentComponentProps,
   DrawerContentScrollView,
@@ -146,16 +144,16 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
   };
 
   const itemActiveBg         = isDark ? '#1e1e1e' : '#fff';
-  const itemActiveLabelColor = '#E96928';
-  const itemActiveIconColor  = '#E96928';
-  const itemActiveIconBg     = isDark ? 'rgba(233,105,40,0.12)' : 'rgba(233,105,40,0.1)';
+  const itemActiveLabelColor = '#F97613';
+  const itemActiveIconColor  = '#F97613';
+  const itemActiveIconBg     = isDark ? 'rgba(249,118,19,0.12)' : 'rgba(249,118,19,0.1)';
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
 
       {/* ══ HERO ════════════════════════════════════════ */}
       <LinearGradient
-        colors={['#E96928', '#c4511a']}
+        colors={['#F97613', '#d85f0e']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.hero}
@@ -172,7 +170,7 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
 
         <View style={styles.cityRow}>
           <View style={styles.cityIconBg}>
-            <Ionicons name="location" size={20} color="#E96928" />
+            <Ionicons name="location" size={20} color="#F97613" />
           </View>
           <View>
             <Text style={[styles.cityName, { fontSize: fonts.xl }]}>
@@ -286,7 +284,7 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
                 <Ionicons
                   name="chevron-forward"
                   size={16}
-                  color="#E96928"
+                  color="#F97613"
                   style={{ marginLeft: 'auto' }}
                 />
               )}
@@ -301,9 +299,11 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
         <View style={styles.footerAccent} />
         <View style={styles.footerTop}>
           <View style={styles.footerLogoRow}>
-            <View style={styles.footerLogoIcon}>
-              <Ionicons name="location" size={12} color="#fff" />
-            </View>
+            <Image
+              source={require('../assets/images/gpego-logo.png')}
+              style={styles.footerLogoImg}
+              resizeMode="contain"
+            />
             <Text
               numberOfLines={1}
               allowFontScaling={false}
@@ -328,10 +328,10 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
   );
 }
 
-const ORANGE = '#E96928';
+const ORANGE = '#F97613';
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#c4511a' },
+  root: { flex: 1, backgroundColor: '#d85f0e' },
   hero: {
     paddingHorizontal: 22, paddingTop: 20, paddingBottom: 22, overflow: 'hidden',
   },
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
   climaErrorText: { color: 'rgba(255,255,255,0.5)' },
   scrollContent: {
     paddingTop: 12, paddingHorizontal: 12, paddingBottom: 20,
-    backgroundColor: '#E96928',
+    backgroundColor: '#F97613',
   },
   item: {
     flexDirection: 'row', alignItems: 'center',
@@ -416,11 +416,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
   },
   drawerBadgeText: {
-    color: '#E96928', fontWeight: '800',
+    color: '#F97613', fontWeight: '800',
   },
   footer: {
     paddingHorizontal: 20,
-    backgroundColor: '#c4511a',
+    backgroundColor: '#d85f0e',
   },
   footerAccent: {
     height: 1, borderRadius: 1,
@@ -428,10 +428,12 @@ const styles = StyleSheet.create({
   },
   footerTop:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
   footerLogoRow:    { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 },
-  footerLogoIcon:   {
-    width: 24, height: 24, borderRadius: 7,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    justifyContent: 'center', alignItems: 'center',
+  // Logo oficial pequeño del municipio en el footer del drawer.
+  // 24×24 con resizeMode="contain" en la <Image>. Sin shadow para
+  // evitar el glow naranja de iOS.
+  footerLogoImg: {
+    width: 24,
+    height: 24,
   },
   footerLogo:       { color: '#fff', fontWeight: '900', letterSpacing: -0.3 },
   footerLogoAccent: { color: 'rgba(255,255,255,0.5)' },

@@ -1,8 +1,6 @@
 import React, { useCallback, useState } from 'react';
-import {
-  View, Text, StyleSheet, Image, ScrollView,
-  Pressable, StatusBar, Platform, ActivityIndicator, Share,
-} from 'react-native';
+import { View, StyleSheet, Image, ScrollView, Pressable, StatusBar, Platform, ActivityIndicator, Share } from 'react-native';
+import { Text } from '../../components/Text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -12,6 +10,7 @@ import { useTheme } from '../../src/context/ThemeContext';
 import { useLugar } from '../../src/hooks/useLugar';
 import { useFavoritos } from '../../src/context/FavoritosContext';
 import { abrirEnMapa } from '../../src/utils/abrirMapa';
+import { getImagenLugarSource } from '../../src/utils/imagenLugar';
 import Reseñas from '../../components/Reseñas';
 
 const CATEGORIA_KEYS: Record<string, string> = {
@@ -74,7 +73,7 @@ export default function LugarDetalle() {
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
-        <ActivityIndicator size="large" color="#E96928" />
+        <ActivityIndicator size="large" color="#F97613" />
       </View>
     );
   }
@@ -88,7 +87,7 @@ export default function LugarDetalle() {
             {t('no_results')}
           </Text>
           <Pressable
-            style={{ backgroundColor: '#E96928', paddingVertical: 10, paddingHorizontal: 24, borderRadius: 20 }}
+            style={{ backgroundColor: '#F97613', paddingVertical: 10, paddingHorizontal: 24, borderRadius: 20 }}
             onPress={() => router.back()}
           >
             <Text style={{ color: '#fff', fontWeight: '700', fontSize: fonts.sm }}>{t('go_back')}</Text>
@@ -129,7 +128,7 @@ export default function LugarDetalle() {
 
         {/* ══ HERO ══ */}
         <View style={s.hero}>
-          <Image source={{ uri: lugar.imagen }} style={s.heroImage} />
+          <Image source={getImagenLugarSource(lugar.imagen)} style={s.heroImage} />
           <LinearGradient
             colors={['rgba(0,0,0,0.45)', 'transparent', 'rgba(0,0,0,0.65)']}
             style={StyleSheet.absoluteFillObject}
@@ -186,13 +185,13 @@ export default function LugarDetalle() {
 
           <View style={s.actionRow}>
             <Pressable style={s.actionBtn} onPress={abrirMapa}>
-              <LinearGradient colors={['#E96928', '#c4511a']} style={s.actionBtnGradient}>
+              <LinearGradient colors={['#F97613', '#d85f0e']} style={s.actionBtnGradient}>
                 <Ionicons name="navigate" size={17} color="#fff" />
                 <Text style={[s.actionText, { fontSize: fonts.sm }]}>{t('location')}</Text>
               </LinearGradient>
             </Pressable>
             <Pressable style={s.actionBtnSecondary} onPress={compartir}>
-              <Ionicons name="share-social-outline" size={17} color="#E96928" />
+              <Ionicons name="share-social-outline" size={17} color="#F97613" />
               <Text style={[s.actionTextSecondary, { fontSize: fonts.sm }]}>{t('share')}</Text>
             </Pressable>
           </View>
@@ -206,7 +205,7 @@ export default function LugarDetalle() {
           >
             <Ionicons
               name="information-circle-outline" size={16}
-              color={activeTab === 'info' ? '#E96928' : colors.subtext}
+              color={activeTab === 'info' ? '#F97613' : colors.subtext}
             />
             <Text style={[s.tabText, { fontSize: fonts.sm }, activeTab === 'info' && s.tabTextActive]}>
               {t('detail_info')}
@@ -218,7 +217,7 @@ export default function LugarDetalle() {
           >
             <Ionicons
               name="chatbubbles-outline" size={16}
-              color={activeTab === 'reseñas' ? '#E96928' : colors.subtext}
+              color={activeTab === 'reseñas' ? '#F97613' : colors.subtext}
             />
             <Text style={[s.tabText, { fontSize: fonts.sm }, activeTab === 'reseñas' && s.tabTextActive]}>
               {t('detail_reviews')}
@@ -231,15 +230,15 @@ export default function LugarDetalle() {
           <View style={s.detailsCard}>
 
             <View style={s.detailRow}>
-              <View style={[s.detailIconWrap, { backgroundColor: 'rgba(233,105,40,0.12)' }]}>
-                <MaterialCommunityIcons name="map-marker" size={20} color="#E96928" />
+              <View style={[s.detailIconWrap, { backgroundColor: 'rgba(249,118,19,0.12)' }]}>
+                <MaterialCommunityIcons name="map-marker" size={20} color="#F97613" />
               </View>
               <View style={s.detailInfo}>
                 <Text style={[s.detailLabel, { fontSize: fonts.xs }]}>{t('detail_location')}</Text>
                 <Text style={[s.detailValue, { fontSize: fonts.sm }]}>{lugar.ubicacion || t('location')}</Text>
               </View>
               <Pressable onPress={abrirMapa} style={s.detailAction}>
-                <Ionicons name="open-outline" size={16} color="#E96928" />
+                <Ionicons name="open-outline" size={16} color="#F97613" />
               </Pressable>
             </View>
 
@@ -311,7 +310,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) => StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
   },
   heroInfo:     { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 20, paddingBottom: 28 },
-  heroCatBadge: { alignSelf: 'flex-start', backgroundColor: '#E96928', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, marginBottom: 8 },
+  heroCatBadge: { alignSelf: 'flex-start', backgroundColor: '#F97613', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, marginBottom: 8 },
   heroCatText:  { color: '#fff', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   heroTitle:    { color: '#fff', fontWeight: '900', letterSpacing: -0.5, marginBottom: 6 },
   heroMeta:     { flexDirection: 'row', alignItems: 'center', gap: 4 },
@@ -327,20 +326,20 @@ const makeStyles = (c: any, f: any, isDark: boolean) => StyleSheet.create({
   metaRow:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 },
   ratingWrap: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   ratingVal:  { color: c.subtext, marginLeft: 5, fontWeight: '600' },
-  priceBadge: { backgroundColor: isDark ? 'rgba(233,105,40,0.2)' : 'rgba(233,105,40,0.1)', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 12, borderWidth: 1, borderColor: '#E96928' },
-  priceText:  { color: '#E96928', fontWeight: '800' },
+  priceBadge: { backgroundColor: isDark ? 'rgba(249,118,19,0.2)' : 'rgba(249,118,19,0.1)', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 12, borderWidth: 1, borderColor: '#F97613' },
+  priceText:  { color: '#F97613', fontWeight: '800' },
   actionRow:  { flexDirection: 'row', gap: 10 },
-  actionBtn:  { flex: 1, borderRadius: 14, overflow: 'hidden', elevation: 4, shadowColor: '#E96928', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.35, shadowRadius: 6 },
+  actionBtn:  { flex: 1, borderRadius: 14, overflow: 'hidden', elevation: 4, shadowColor: '#F97613', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.35, shadowRadius: 6 },
   actionBtnGradient:  { height: 50, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 },
-  actionBtnSecondary: { flex: 1, height: 50, borderWidth: 2, borderColor: '#E96928', borderRadius: 14, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 },
+  actionBtnSecondary: { flex: 1, height: 50, borderWidth: 2, borderColor: '#F97613', borderRadius: 14, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 },
   actionText:          { color: '#fff', fontWeight: '700' },
-  actionTextSecondary: { color: '#E96928', fontWeight: '700' },
+  actionTextSecondary: { color: '#F97613', fontWeight: '700' },
 
   tabs:          { flexDirection: 'row', marginHorizontal: 20, marginTop: 14, marginBottom: 4, backgroundColor: c.inputBackground, borderRadius: 16, padding: 4, borderWidth: 1, borderColor: c.border },
   tab:           { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 13 },
   tabActive:     { backgroundColor: c.card, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 3 },
   tabText:       { color: c.subtext, fontWeight: '600' },
-  tabTextActive: { color: '#E96928', fontWeight: '700' },
+  tabTextActive: { color: '#F97613', fontWeight: '700' },
 
   detailsCard:    { backgroundColor: c.card, marginHorizontal: 20, marginTop: 12, borderRadius: 22, padding: 6, borderWidth: 1, borderColor: c.border, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: isDark ? 0.3 : 0.07, shadowRadius: 6 },
   detailRow:      { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 14 },

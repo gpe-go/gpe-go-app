@@ -1,7 +1,7 @@
 // ─── Paleta base GuadalupeGO ───────────────────────────
-const ORANGE        = '#E96928';
-const ORANGE_DARK   = '#c4511a';
-const ORANGE_DEEPER = '#9c3a10';
+const ORANGE        = '#F97613';
+const ORANGE_DARK   = '#d85f0e';
+const ORANGE_DEEPER = '#b14a0a';
 
 // ─── Colors (para expo-router / sistema) ──────────────
 export const Colors = {
@@ -48,7 +48,7 @@ export const LightTheme = {
   primary:        ORANGE,          // naranja GuadalupeGO
   primaryDark:    ORANGE_DARK,     // naranja oscuro (hover/pressed)
   primaryDeeper:  ORANGE_DEEPER,   // naranja más oscuro (gradientes)
-  primaryLight:   'rgba(233,105,40,0.1)', // fondo tintado naranja
+  primaryLight:   'rgba(249,118,19,0.1)', // fondo tintado naranja
 
   // UI
   border:         '#E5E7EB',       // bordes sutiles
@@ -83,7 +83,7 @@ export const DarkTheme = {
   primary:        ORANGE,
   primaryDark:    ORANGE_DARK,
   primaryDeeper:  ORANGE_DEEPER,
-  primaryLight:   'rgba(233,105,40,0.15)', // más visible en dark
+  primaryLight:   'rgba(249,118,19,0.15)', // más visible en dark
 
   // UI
   border:         '#2A2A2A',       // bordes sutiles en dark

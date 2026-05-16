@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, useRef, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Alert } from 'react-native';
+import { Alert } from '../../components/Alert';
 import { Lugar } from '../types/lugar';
 import { useAuth } from './AuthContext';
 import i18n from '../i18n/i18n';

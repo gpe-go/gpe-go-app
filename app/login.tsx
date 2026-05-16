@@ -1,20 +1,12 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import { View, Pressable, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { Alert } from '../components/Alert';
+import { Text, TextInput } from '../components/Text';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTranslation } from 'react-i18next';
-import { solicitarCodigo, verificarCodigo } from '../src/api/api';
+import { solicitarCodigo, verificarCodigo, getApiErrorMessage } from '../src/api/api';
 
 type Step = 'email' | 'codigo';
 
@@ -48,8 +40,7 @@ export default function Login() {
         Alert.alert('Error', res.error?.mensaje || t('login_error_send_code'));
       }
     } catch (error: any) {
-      const msg = error.response?.data?.error?.mensaje || t('login_error_connection');
-      Alert.alert('Error', msg);
+      Alert.alert('Error', getApiErrorMessage(error, t));
     } finally {
       setLoading(false);
     }
@@ -73,8 +64,7 @@ export default function Login() {
         Alert.alert('Error', res.error?.mensaje || t('login_error_wrong_code'));
       }
     } catch (error: any) {
-      const msg = error.response?.data?.error?.mensaje || t('login_error_connection');
-      Alert.alert('Error', msg);
+      Alert.alert('Error', getApiErrorMessage(error, t));
     } finally {
       setLoading(false);
     }
@@ -92,7 +82,7 @@ export default function Login() {
             <Ionicons name="location" size={20} color="white" />
           </View>
           <Text style={styles.logoText}>
-            Guadalupe<Text style={{ color: '#E96928' }}>GO</Text>
+            Guadalupe<Text style={{ color: '#F97613' }}>GO</Text>
           </Text>
         </View>
 
@@ -190,7 +180,7 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   orangeIconBg: {
-    backgroundColor: '#E96928',
+    backgroundColor: '#F97613',
     padding: 6,
     borderRadius: 8,
     marginRight: 10,
@@ -233,7 +223,7 @@ const styles = StyleSheet.create({
     color: '#1E293B',
   },
   button: {
-    backgroundColor: '#E96928',
+    backgroundColor: '#F97613',
     borderRadius: 12,
     height: 50,
     justifyContent: 'center',
@@ -249,7 +239,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   linkText: {
-    color: '#E96928',
+    color: '#F97613',
     textAlign: 'center',
     fontSize: 14,
     fontWeight: '600',

@@ -1,4 +1,5 @@
-import { Text, type TextProps, StyleSheet } from 'react-native';
+import { type TextProps, StyleSheet } from 'react-native';
+import { Text } from './Text';
 
 export type ThemedTextProps = TextProps & {
   type?: 'default' | 'title' | 'defaultSemiBold' | 'subtitle' | 'link';
@@ -46,6 +47,6 @@ const styles = StyleSheet.create({
   link: {
     lineHeight: 30,
     fontSize: 16,
-    color: '#E96928',
+    color: '#F97613',
   },
 });
