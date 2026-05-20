@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { subirFotoPerfil } from '../api/api';
 
 export type Usuario = {
   id?: string | number;
@@ -16,7 +17,13 @@ interface AuthContextValue {
   login: (token: string, u: Usuario) => Promise<void>;
   logout: () => Promise<void>;
   actualizarUsuario: (cambios: Partial<Usuario>) => Promise<void>;
-  actualizarFoto: (uri: string | null) => Promise<void>;
+  /**
+   * Actualiza la foto de perfil. Si se pasa `base64`, la imagen se sube
+   * al backend (S3) y se guarda la URL pública devuelta — así la foto
+   * persiste en la cuenta del usuario y se ve en cualquier dispositivo.
+   * Si solo se pasa `uri`, se guarda local (modo offline).
+   */
+  actualizarFoto: (uri: string | null, base64?: string | null) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue>({} as AuthContextValue);
@@ -97,12 +104,86 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const actualizarFoto = useCallback(async (uri: string | null) => {
-    setFotoPerfil(uri);
-    const key = fotoKey(usuarioRef.current?.id);
-    if (uri) await AsyncStorage.setItem(key, uri);
-    else     await AsyncStorage.removeItem(key);
-  }, []);
+  const actualizarFoto = useCallback(
+    async (uri: string | null, base64?: string | null) => {
+      const userId = usuarioRef.current?.id;
+      const key = fotoKey(userId);
+
+      // 1. Optimistic UI: muestra el URI local inmediatamente para que
+      //    el usuario vea la foto sin esperar la subida.
+      setFotoPerfil(uri);
+
+      // 2. Si NO hay base64 o NO hay usuario, modo legacy (solo local).
+      if (!uri) {
+        await AsyncStorage.removeItem(key);
+        return;
+      }
+      if (!base64 || !userId) {
+        await AsyncStorage.setItem(key, uri);
+        return;
+      }
+
+      // 3. Subir a S3 vía backend. El servidor regresa la URL pública.
+      //    Si falla la subida, conservamos el URI local — la foto se
+      //    seguirá viendo en este dispositivo aunque no en otros.
+      try {
+        // El backend PHP hace base64_decode() sobre lo que recibe en
+        // `imagen`. Si le mandamos el prefijo `data:image/jpeg;base64,`,
+        // la decodificación falla y el servidor regresa 500. Por eso
+        // enviamos SOLO la parte base64 limpia.
+        const limpio = base64.startsWith('data:')
+          ? (base64.split(',')[1] ?? base64)
+          : base64;
+
+        if (__DEV__) {
+          // Aproximado: base64 ~ bytes * 4/3. Útil para verificar que
+          // la compresión está dejando el payload en kilobytes y no en MB.
+          const kb = Math.round((limpio.length * 0.75) / 1024);
+          console.log(`[AuthContext] Subiendo foto (${kb} KB)`);
+        }
+
+        const res = await subirFotoPerfil(limpio);
+        const remoteUrl: string | undefined =
+          res?.data?.url ?? res?.data?.foto_url ?? res?.url;
+
+        if (res?.success && remoteUrl) {
+          // Reemplaza el URI local por la URL remota — la foto ya vive
+          // en S3 y cualquier dispositivo verá esta misma URL al login.
+          setFotoPerfil(remoteUrl);
+          await AsyncStorage.setItem(key, remoteUrl);
+
+          // Refleja también en el `usuario` cacheado para que el próximo
+          // arranque de la app la muestre sin extra fetch.
+          setUsuario((prev) => {
+            if (!prev) return prev;
+            const updated = { ...prev, foto_url: remoteUrl };
+            AsyncStorage.setItem('usuario', JSON.stringify(updated));
+            return updated;
+          });
+          return;
+        }
+
+        // Backend no devolvió URL → degradar a guardado local.
+        await AsyncStorage.setItem(key, uri);
+      } catch (e: any) {
+        if (__DEV__) {
+          const status = e?.response?.status;
+          if (status === 500) {
+            console.warn(
+              '[AuthContext] Backend devolvió 500 al subir foto. ' +
+              'El payload (base64 puro) es chico y válido — esto es un ' +
+              'error del servidor (revisar logs PHP de subir_foto / S3).',
+            );
+          } else {
+            console.warn('[AuthContext] Error subiendo foto:', e?.message ?? e);
+          }
+        }
+        // No bloqueamos al usuario: la foto se conserva en el dispositivo.
+        await AsyncStorage.setItem(key, uri);
+      }
+    },
+    [],
+  );
 
   return (
     <AuthContext.Provider value={{

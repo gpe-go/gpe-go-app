@@ -609,5 +609,12 @@
   "about_database": "Base de données",
   "settings_about_sub": "Équipe, crédits et partenaires institutionnels",
   "about_itnl_angela_role": "Cheffe du programme d’Ingénierie en Systèmes Informatiques et Conseillère de Projet",
-  "about_itnl_marta_role": "Enseignante de l’ITNL et Conseillère de Projet"
+  "about_itnl_marta_role": "Enseignante de l’ITNL et Conseillère de Projet",
+  "weather_humidity": "Humidité",
+  "weather_wind": "Vent",
+  "cat_industria": "Industrie et fabrication",
+  "cat_gobierno": "Gouvernement et institutions",
+  "cat_turisticos": "Sites touristiques",
+  "cat_salud": "Santé et pharmacies",
+  "cat_transporte": "Transport et logistique"
 }

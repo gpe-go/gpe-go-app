@@ -609,5 +609,12 @@
   "about_database": "데이터베이스",
   "settings_about_sub": "팀, 크레딧 및 기관 파트너",
   "about_itnl_angela_role": "컴퓨터 시스템 공학과 학과장 및 프로젝트 자문",
-  "about_itnl_marta_role": "ITNL 교수 및 프로젝트 자문"
+  "about_itnl_marta_role": "ITNL 교수 및 프로젝트 자문",
+  "weather_humidity": "습도",
+  "weather_wind": "바람",
+  "cat_industria": "산업 및 제조",
+  "cat_gobierno": "정부 및 기관",
+  "cat_turisticos": "관광 명소",
+  "cat_salud": "건강 및 약국",
+  "cat_transporte": "교통 및 물류"
 }

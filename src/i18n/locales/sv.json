@@ -609,5 +609,12 @@
   "about_database": "Databas",
   "settings_about_sub": "Team, krediter och institutionella partners",
   "about_itnl_angela_role": "Programansvarig för Datateknik och projektrådgivare",
-  "about_itnl_marta_role": "ITNL-lärare och projektrådgivare"
+  "about_itnl_marta_role": "ITNL-lärare och projektrådgivare",
+  "weather_humidity": "Luftfuktighet",
+  "weather_wind": "Vind",
+  "cat_industria": "Industri och tillverkning",
+  "cat_gobierno": "Regering och institutioner",
+  "cat_turisticos": "Turistmål",
+  "cat_salud": "Hälsa och apotek",
+  "cat_transporte": "Transport och logistik"
 }

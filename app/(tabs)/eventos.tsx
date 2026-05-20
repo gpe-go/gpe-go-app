@@ -112,7 +112,11 @@ function RefreshLogo({ refreshing, isDark }: { refreshing: boolean; isDark: bool
             },
           ]}
         >
-          <Ionicons name="location" size={18} color={isDark ? '#d1d5db' : '#9ca3af'} />
+          <Image
+            source={require('../../assets/images/logosinnadaoficial.png')}
+            style={{ width: 24, height: 24, tintColor: isDark ? '#d1d5db' : '#9ca3af' }}
+            resizeMode="contain"
+          />
         </View>
       </Animated.View>
       <Text style={[rl.label, { color: isDark ? '#9ca3af' : '#a1a1aa' }]}>GuadalupeGO</Text>
@@ -465,7 +469,7 @@ export default function EventosScreen() {
 
             <Animated.View style={bannerAnimatedStyle}>
               <LinearGradient
-                colors={['#F97613', '#D85F0E']}
+                colors={['#F97613', '#F97613']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={s.banner}

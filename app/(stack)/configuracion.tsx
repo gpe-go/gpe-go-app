@@ -149,7 +149,7 @@ export default function ConfiguracionScreen() {
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
         <Animated.View style={fadeSlide(bannerAnim, 24)}>
           <LinearGradient
-            colors={['#F97613', '#d85f0e']}
+            colors={['#F97613', '#F97613']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={s.banner}

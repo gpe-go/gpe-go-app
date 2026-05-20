@@ -4,7 +4,7 @@ import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Animated, ImageBackground, Keyboard, Pressable, RefreshControl, StatusBar, StyleSheet, View } from 'react-native';
+import { Animated, Image, ImageBackground, Keyboard, Platform, Pressable, RefreshControl, StatusBar, StyleSheet, View } from 'react-native';
 import { Text, TextInput } from '../../components/Text';
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { useOnboarding } from "../../src/context/OnboardingContext";
@@ -111,7 +111,11 @@ function RefreshLogo({ refreshing }: { refreshing: boolean }) {
         style={[rl.iconWrap, { transform: [{ rotate: spin }, { scale: pulseAnim }] }]}
       >
         <View style={rl.iconBg}>
-          <Ionicons name="location" size={18} color="#bbb" />
+          <Image
+            source={require('../../assets/images/logosinnadaoficial.png')}
+            style={rl.iconImg}
+            resizeMode="contain"
+          />
         </View>
       </Animated.View>
       <Text style={rl.label}>GuadalupeGO</Text>
@@ -138,6 +142,14 @@ const rl = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  // tintColor convierte el PNG colorido del logo en una silueta gris
+  // (igual que el ícono original de pin). Así la animación de carga
+  // conserva el mismo look discreto.
+  iconImg: {
+    width: 24,
+    height: 24,
+    tintColor: "#9ca3af",
+  },
   label: {
     fontSize: 13,
     fontWeight: "700",
@@ -156,8 +168,9 @@ type LugarLite = {
 export default function HomeScreen() {
   const router = useRouter();
 
-  // ── Sección Mundial: visible hasta el 1 Jul 2026, luego desaparece automáticamente
-  const mostrarMundial = new Date() < new Date('2026-07-01T00:00:00-06:00');
+  // ── Sección Mundial: visible hasta el 20 Jul 2026 (el torneo termina
+  //    el 19 jul), luego desaparece automáticamente.
+  const mostrarMundial = new Date() < new Date('2026-07-20T00:00:00-06:00');
   const { t } = useTranslation();
   const { colors, fonts, isDark } = useTheme();
   const s = makeStyles(colors, fonts, isDark);
@@ -930,9 +943,9 @@ export default function HomeScreen() {
 
         {/* ── Mundial 2026 ─────────────────────────────────────────────── */}
         {/*
-         * 🗑️  CLEANUP — después del 1 Jul 2026
+         * 🗑️  CLEANUP — después del 20 Jul 2026
          * ─────────────────────────────────────────────────────────────────
-         * Cuando pase el 1 de julio de 2026 este bloque dejará de renderizar
+         * Cuando pase el 20 de julio de 2026 este bloque dejará de renderizar
          * automáticamente gracias a la condición de fecha de abajo.
          * Para limpiar el proyecto por completo puedes borrar:
          *   • components/MundialWidget.tsx
@@ -1001,7 +1014,7 @@ export default function HomeScreen() {
             opacity: pressed ? 0.8 : 1,
           })}
         >
-          <Ionicons name="globe-outline" size={14} color={isDark ? colors.text : "#444"} />
+          <Ionicons name="globe-outline" size={Platform.OS === 'ios' ? 14 : 12} color={isDark ? colors.text : "#444"} />
           <View style={s.langDivider} />
           {/* Code text with slide + fade transition */}
           <Animated.Text
@@ -1043,7 +1056,12 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
 
     scrollContent: {
       paddingBottom: 24,
-      paddingTop: 6,
+      // 6 px de paddingTop dejaba una línea blanca residual en iOS
+      // entre el orange line y el banner; en Android no se notaba.
+      ...Platform.select({
+        ios:     { paddingTop: 0 },
+        default: { paddingTop: 6 },
+      }),
     },
 
     headerShell: {
@@ -1056,7 +1074,15 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       paddingHorizontal: 20,
       paddingTop: 10,
       paddingBottom: 28,
-      marginTop: 8,
+      // En iOS el `marginTop: 8` dejaba un hueco blanco visible entre el
+      // orange line del header y el banner salmón → daba sensación de
+      // "cortado". En Android la misma medida no se notaba. Quitamos el
+      // gap solo en iOS para que el banner toque el orange line y se
+      // vea continuo como en Android.
+      ...Platform.select({
+        ios:     { marginTop: 0 },
+        default: { marginTop: 8 },
+      }),
       borderBottomLeftRadius: 32,
       borderBottomRightRadius: 32,
     },
@@ -1388,6 +1414,10 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
     },
 
     // ── Floating language chip ───────────────────────────────────────────────
+    // Tamaño condicional por plataforma. iOS conserva los valores
+    // originales (se ve bien en San Francisco). Android usa una versión
+    // ~20 % más compacta porque Samsung Sans / Roboto miden más alto y
+    // ancho, y el chip terminaba tapando la mano 👋 del banner.
     langChip: {
       position: "absolute",
       top: 4,
@@ -1395,11 +1425,11 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       zIndex: 1000,
       flexDirection: "row",
       alignItems: "center",
-      gap: 6,
+      ...Platform.select({
+        ios:     { gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 22 },
+        default: { gap: 4, paddingHorizontal: 9,  paddingVertical: 5, borderRadius: 18 },
+      }),
       backgroundColor: isDark ? "rgba(30,30,30,0.92)" : "rgba(255,255,255,0.96)",
-      borderRadius: 22,
-      paddingHorizontal: 12,
-      paddingVertical: 7,
       borderWidth: 1,
       borderColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.07)",
       shadowColor: "#000",
@@ -1410,11 +1440,17 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
     },
     langDivider: {
       width: 1,
-      height: 13,
+      ...Platform.select({
+        ios:     { height: 13 },
+        default: { height: 11 },
+      }),
       backgroundColor: isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.15)",
     },
     langCode: {
-      fontSize: 12,
+      ...Platform.select({
+        ios:     { fontSize: 12 },
+        default: { fontSize: 11 },
+      }),
       fontWeight: "800",
       color: isDark ? "#e5e5e5" : "#222",
       letterSpacing: 0.6,

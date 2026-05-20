@@ -609,5 +609,12 @@
   "about_database": "قاعدة البيانات",
   "settings_about_sub": "الفريق والاعتمادات والشركاء المؤسسيون",
   "about_itnl_angela_role": "رئيسة قسم هندسة نظم الحاسوب ومستشارة المشروع",
-  "about_itnl_marta_role": "عضو هيئة تدريس في ITNL ومستشارة المشروع"
+  "about_itnl_marta_role": "عضو هيئة تدريس في ITNL ومستشارة المشروع",
+  "weather_humidity": "الرطوبة",
+  "weather_wind": "الرياح",
+  "cat_industria": "الصناعة والتصنيع",
+  "cat_gobierno": "الحكومة والمؤسسات",
+  "cat_turisticos": "المواقع السياحية",
+  "cat_salud": "الصحة والصيدليات",
+  "cat_transporte": "النقل واللوجستيات"
 }

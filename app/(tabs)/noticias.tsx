@@ -202,7 +202,11 @@ function RefreshLogo({ refreshing }: { refreshing: boolean }) {
     <View style={rl.container}>
       <Animated.View style={{ transform: [{ rotate }, { scale: pulseAnim }] }}>
         <View style={rl.iconBg}>
-          <Ionicons name="location" size={18} color="#bbb" />
+          <Image
+            source={require('../../assets/images/logosinnadaoficial.png')}
+            style={rl.iconImg}
+            resizeMode="contain"
+          />
         </View>
       </Animated.View>
       <Text style={rl.label}>GuadalupeGO</Text>
@@ -225,6 +229,7 @@ const rl = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  iconImg: { width: 24, height: 24, tintColor: '#9ca3af' },
   label: {
     fontSize: 13,
     fontWeight: '700',
@@ -344,15 +349,24 @@ export default function NoticiasScreen() {
   }, [loadingMore, agotado, page, todas]);
 
   const irAlDetalle = (item: any) => {
+    // El router de Expo solo acepta strings/numbers en params, así que el
+    // array de imágenes se serializa como JSON y se parsea en el destino.
+    const imagenes: string[] = Array.isArray(item.images) && item.images.length > 0
+      ? item.images
+      : item.image
+        ? [item.image]
+        : [];
     router.push({
       pathname: '/(stack)/detalleNoticia',
       params: {
         title: item.title,
         description: item.description,
         image: item.image,
+        images: JSON.stringify(imagenes),
         content: item.description,
         url: item.link,
-        date: formatearFechaSeguro(item.pubDate)
+        date: formatearFechaSeguro(item.pubDate),
+        source: item.source ?? '',
       },
     });
   };
@@ -406,7 +420,7 @@ export default function NoticiasScreen() {
     return (
       <View style={[s.container, s.loadingScreen]}>
         <LinearGradient
-          colors={['#F97613', '#d85f0e']}
+          colors={['#F97613', '#F97613']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={s.loadingBanner}
@@ -486,7 +500,7 @@ export default function NoticiasScreen() {
             <RefreshLogo refreshing={refreshing} />
 
             <LinearGradient
-              colors={['#F97613', '#d85f0e']}
+              colors={['#F97613', '#F97613']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={s.banner}

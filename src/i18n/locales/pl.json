@@ -609,5 +609,12 @@
   "about_database": "Baza danych",
   "settings_about_sub": "Zespół, podziękowania i partnerzy instytucjonalni",
   "about_itnl_angela_role": "Kierowniczka kierunku Inżynieria Systemów Komputerowych i Doradczyni Projektu",
-  "about_itnl_marta_role": "Wykładowczyni ITNL i Doradczyni Projektu"
+  "about_itnl_marta_role": "Wykładowczyni ITNL i Doradczyni Projektu",
+  "weather_humidity": "Wilgotność",
+  "weather_wind": "Wiatr",
+  "cat_industria": "Przemysł i produkcja",
+  "cat_gobierno": "Rząd i instytucje",
+  "cat_turisticos": "Atrakcje turystyczne",
+  "cat_salud": "Zdrowie i apteki",
+  "cat_transporte": "Transport i logistyka"
 }

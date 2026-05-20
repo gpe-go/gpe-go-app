@@ -207,12 +207,17 @@ export default function DetalleNoticiaScreen() {
           </Pressable>
 
           <View style={s.brandWrap}>
-            <View style={s.brandIcon}>
-              <Ionicons name="location" size={18} color="#fff" />
-            </View>
+            <Image
+              source={require('../../assets/images/LOGOS G1 (1)_page-0001.png')}
+              style={s.brandIcon}
+              resizeMode="contain"
+            />
             <View>
               <Text style={[s.brandTitle, { fontSize: fonts.xl }]}>GuadalupeGO</Text>
-              <Text style={[s.brandSub, { fontSize: fonts.sm }]}>{t('app_tagline')}</Text>
+              <Text style={[s.brandSub, { fontSize: fonts.sm }]}>
+                <Text style={{ color: '#2D4551', fontWeight: '800' }}>Seamos</Text>
+                <Text style={{ color: '#F97613', fontWeight: '800' }}>Grandes</Text>
+              </Text>
             </View>
           </View>
         </View>
@@ -447,12 +452,8 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
     },
 
     brandIcon: {
-      width: 34,
-      height: 34,
-      borderRadius: 12,
-      backgroundColor: "#F97613",
-      alignItems: "center",
-      justifyContent: "center",
+      width: 44,
+      height: 44,
     },
 
     brandTitle: {

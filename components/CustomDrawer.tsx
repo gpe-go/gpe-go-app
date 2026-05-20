@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, StyleSheet, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { Animated, Easing, Platform, View, StyleSheet, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { Text } from './Text';
 import {
   DrawerContentComponentProps,
@@ -35,6 +35,165 @@ function getClimaInfo(code: number): { descKey: string; icon: string } {
   return                               { descKey: 'weather_variable',      icon: 'cloudy-outline'       };
 }
 
+/**
+ * Icono del clima con animación específica según el tipo.
+ *  - Soleado     → rotación lenta continua (los rayos giran)
+ *  - Parc. nubl. → pulso suave de escala
+ *  - Nubl./Niebla→ flotación horizontal lenta
+ *  - Llovizna    → bob vertical sutil
+ *  - Lluvia      → bob vertical más marcado
+ *  - Tormenta    → flash de opacidad + leve shake horizontal
+ *  - Nieve       → rotación lenta + bob
+ *
+ * Usa native driver para que los 60fps salgan sin pasar por el JS thread
+ * (la app puede estar haciendo otros trabajos cuando el drawer está
+ * abierto, así nunca se nota un jank).
+ */
+function WeatherAnimatedIcon({
+  code,
+  size = 28,
+  color = '#fff',
+}: {
+  code: number;
+  size?: number;
+  color?: string;
+}) {
+  const anim = useRef(new Animated.Value(0)).current;
+
+  // Tipo de animación derivado del código de Open-Meteo
+  const tipo =
+    code === 0
+      ? 'sun'
+      : code <= 2
+      ? 'partly'
+      : code === 3
+      ? 'cloud'
+      : code >= 45 && code <= 48
+      ? 'fog'
+      : code >= 51 && code <= 67
+      ? 'drizzle'
+      : code >= 71 && code <= 77
+      ? 'snow'
+      : code >= 80 && code <= 82
+      ? 'rain'
+      : code >= 95 && code <= 99
+      ? 'storm'
+      : 'cloud';
+
+  // Icono Ionicons asociado
+  const iconName: any =
+    tipo === 'sun'      ? 'sunny'
+    : tipo === 'partly' ? 'partly-sunny'
+    : tipo === 'cloud'  ? 'cloud'
+    : tipo === 'fog'    ? 'cloud'
+    : tipo === 'drizzle'? 'rainy'
+    : tipo === 'snow'   ? 'snow'
+    : tipo === 'rain'   ? 'rainy'
+    : tipo === 'storm'  ? 'thunderstorm'
+    : 'cloudy';
+
+  // Duración + curva por tipo (algunos loops, otros sequence)
+  useEffect(() => {
+    anim.setValue(0);
+    let loop: Animated.CompositeAnimation;
+
+    if (tipo === 'sun') {
+      loop = Animated.loop(
+        Animated.timing(anim, {
+          toValue: 1,
+          duration: 6000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+      );
+    } else if (tipo === 'partly') {
+      loop = Animated.loop(
+        Animated.sequence([
+          Animated.timing(anim, { toValue: 1, duration: 1400, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+          Animated.timing(anim, { toValue: 0, duration: 1400, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+        ]),
+      );
+    } else if (tipo === 'storm') {
+      // Flash + shake: 0→1 rápido (flash), 1→0.6 rebote, 0.6→0 calma
+      loop = Animated.loop(
+        Animated.sequence([
+          Animated.timing(anim, { toValue: 1,   duration: 120,  useNativeDriver: true }),
+          Animated.timing(anim, { toValue: 0.6, duration: 120,  useNativeDriver: true }),
+          Animated.timing(anim, { toValue: 0,   duration: 1800, useNativeDriver: true }),
+        ]),
+      );
+    } else {
+      // cloud / fog / drizzle / rain / snow → loop suave en seno
+      loop = Animated.loop(
+        Animated.sequence([
+          Animated.timing(anim, { toValue: 1, duration: 1500, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+          Animated.timing(anim, { toValue: 0, duration: 1500, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        ]),
+      );
+    }
+
+    loop.start();
+    return () => loop.stop();
+  }, [tipo, anim]);
+
+  // Estilo transformado en base al tipo
+  let transform: any[] = [];
+  let opacity: any = 1;
+
+  if (tipo === 'sun') {
+    transform = [
+      {
+        rotate: anim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }),
+      },
+    ];
+  } else if (tipo === 'partly') {
+    transform = [
+      {
+        scale: anim.interpolate({ inputRange: [0, 1], outputRange: [0.95, 1.08] }),
+      },
+    ];
+  } else if (tipo === 'cloud' || tipo === 'fog') {
+    transform = [
+      {
+        translateX: anim.interpolate({ inputRange: [0, 1], outputRange: [-3, 3] }),
+      },
+    ];
+    if (tipo === 'fog') opacity = 0.7;
+  } else if (tipo === 'drizzle' || tipo === 'rain') {
+    transform = [
+      {
+        translateY: anim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, tipo === 'rain' ? 4 : 2],
+        }),
+      },
+    ];
+  } else if (tipo === 'snow') {
+    transform = [
+      {
+        rotate: anim.interpolate({ inputRange: [0, 1], outputRange: ['-6deg', '6deg'] }),
+      },
+      {
+        translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [-1, 2] }),
+      },
+    ];
+  } else if (tipo === 'storm') {
+    // El flash sube la opacidad del relámpago + un mini shake horizontal
+    opacity = anim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.75, 1, 0.9] });
+    transform = [
+      {
+        translateX: anim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, -1.5, 1.5] }),
+      },
+    ];
+  }
+
+  return (
+    <Animated.View style={{ opacity, transform }}>
+      <Ionicons name={iconName} size={size} color={color} />
+    </Animated.View>
+  );
+}
+
 function getSaludoIcon(): string {
   const h = new Date().getHours();
   if (h >= 5  && h < 12) return 'sunny-outline';
@@ -53,6 +212,8 @@ type Clima = {
   temp: number; sensacion: number;
   humedad: number; viento: number;
   descKey: string; icon: string; ciudad: string;
+  /** Código original de Open-Meteo — necesario para el icono animado. */
+  code: number;
 };
 
 export default function CustomDrawer(props: DrawerContentComponentProps) {
@@ -124,6 +285,7 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
         descKey:   info.descKey,
         icon:      info.icon,
         ciudad,
+        code:      c.weather_code,
       });
     } catch {
       setClima(null);
@@ -153,7 +315,7 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
 
       {/* ══ HERO ════════════════════════════════════════ */}
       <LinearGradient
-        colors={['#F97613', '#d85f0e']}
+        colors={['#F97613', '#F97613']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.hero}
@@ -193,7 +355,7 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
           <View style={styles.climaCard}>
             <View style={styles.climaTop}>
               <View style={styles.climaIconWrap}>
-                <Ionicons name={clima.icon as any} size={28} color="#fff" />
+                <WeatherAnimatedIcon code={clima.code} size={32} color="#fff" />
               </View>
               <View style={styles.climaTempBlock}>
                 <Text style={[styles.climaTemp, { fontSize: fonts['2xl'] ?? 28 }]}>
@@ -204,25 +366,42 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
                 </Text>
               </View>
             </View>
-            <View style={styles.climaDetails}>
-              <View style={styles.climaDetailItem}>
-                <Ionicons name="thermometer-outline" size={13} color="rgba(255,255,255,0.7)" />
-                <Text style={[styles.climaDetailText, { fontSize: fonts.xs }]}>
-                  {t('weather_feels_like')} {clima.sensacion}°{useFahrenheit ? 'F' : 'C'}
+
+            {/* Stats en 3 columnas con icono + valor + label apilados.
+                Antes era una sola fila con dots → la columna de
+                "Sens. 37°C" quedaba apretada al cuadrar con flex:1. */}
+            <View style={styles.climaStatsRow}>
+              <View style={styles.climaStat}>
+                <Ionicons name="thermometer-outline" size={14} color="rgba(255,255,255,0.85)" />
+                <Text style={[styles.climaStatValue, { fontSize: fonts.sm }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} allowFontScaling={false}>
+                  {clima.sensacion}°{useFahrenheit ? 'F' : 'C'}
+                </Text>
+                <Text style={[styles.climaStatLabel, { fontSize: fonts.xs }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} allowFontScaling={false}>
+                  {t('weather_feels_like')}
                 </Text>
               </View>
-              <View style={styles.climaDetailDot} />
-              <View style={styles.climaDetailItem}>
-                <Ionicons name="water-outline" size={13} color="rgba(255,255,255,0.7)" />
-                <Text style={[styles.climaDetailText, { fontSize: fonts.xs }]}>
+
+              <View style={styles.climaStatDivider} />
+
+              <View style={styles.climaStat}>
+                <Ionicons name="water-outline" size={14} color="rgba(255,255,255,0.85)" />
+                <Text style={[styles.climaStatValue, { fontSize: fonts.sm }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} allowFontScaling={false}>
                   {clima.humedad}%
                 </Text>
+                <Text style={[styles.climaStatLabel, { fontSize: fonts.xs }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} allowFontScaling={false}>
+                  {t('weather_humidity', { defaultValue: 'Humedad' })}
+                </Text>
               </View>
-              <View style={styles.climaDetailDot} />
-              <View style={styles.climaDetailItem}>
-                <Ionicons name="speedometer-outline" size={13} color="rgba(255,255,255,0.7)" />
-                <Text style={[styles.climaDetailText, { fontSize: fonts.xs }]}>
+
+              <View style={styles.climaStatDivider} />
+
+              <View style={styles.climaStat}>
+                <Ionicons name="speedometer-outline" size={14} color="rgba(255,255,255,0.85)" />
+                <Text style={[styles.climaStatValue, { fontSize: fonts.sm }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} allowFontScaling={false}>
                   {clima.viento} km/h
+                </Text>
+                <Text style={[styles.climaStatLabel, { fontSize: fonts.xs }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} allowFontScaling={false}>
+                  {t('weather_wind', { defaultValue: 'Viento' })}
                 </Text>
               </View>
             </View>
@@ -236,6 +415,10 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
           </View>
         )}
       </LinearGradient>
+
+      {/* Línea divisoria — separa el bloque del clima del menú,
+          espejo simétrico de la que tenemos arriba del footer. */}
+      <View style={styles.headerDivider} />
 
       {/* ══ MENU ITEMS ══════════════════════════════════ */}
       <DrawerContentScrollView
@@ -331,9 +514,9 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
 const ORANGE = '#F97613';
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#d85f0e' },
+  root: { flex: 1, backgroundColor: '#F97613' },
   hero: {
-    paddingHorizontal: 22, paddingTop: 20, paddingBottom: 22, overflow: 'hidden',
+    paddingHorizontal: 22, paddingTop: 20, paddingBottom: 10, overflow: 'hidden',
   },
   circle1: {
     position: 'absolute', width: 160, height: 160, borderRadius: 80,
@@ -367,6 +550,7 @@ const styles = StyleSheet.create({
   climaTempBlock: { flex: 1 },
   climaTemp:      { color: '#fff', fontWeight: '900', letterSpacing: -1 },
   climaDesc:      { color: 'rgba(255,255,255,0.75)', marginTop: 2, fontWeight: '500' },
+  // Layout viejo (conservado por compatibilidad de algunos snapshots).
   climaDetails: {
     flexDirection: 'row', alignItems: 'center',
     borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.15)',
@@ -375,6 +559,39 @@ const styles = StyleSheet.create({
   climaDetailItem: { flexDirection: 'row', alignItems: 'center', gap: 4, flex: 1, justifyContent: 'center' },
   climaDetailText: { color: 'rgba(255,255,255,0.8)', fontWeight: '500' },
   climaDetailDot:  { width: 3, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.3)' },
+
+  // Stats 3 columnas — el layout actual del widget.
+  climaStatsRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.18)',
+    paddingTop: 12,
+    marginTop: 2,
+  },
+  climaStat: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    gap: 3,
+    paddingHorizontal: 4,
+  },
+  climaStatValue: {
+    color: '#fff',
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  climaStatLabel: {
+    color: 'rgba(255,255,255,0.62)',
+    fontWeight: '500',
+    textTransform: 'lowercase',
+  },
+  climaStatDivider: {
+    width: 1,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    marginHorizontal: 2,
+    alignSelf: 'stretch',
+  },
   climaLoading: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     backgroundColor: 'rgba(0,0,0,0.15)', borderRadius: 14, padding: 12,
@@ -385,23 +602,55 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.15)', borderRadius: 14, padding: 12,
   },
   climaErrorText: { color: 'rgba(255,255,255,0.5)' },
-  scrollContent: {
-    paddingTop: 12, paddingHorizontal: 12, paddingBottom: 20,
-    backgroundColor: '#F97613',
-  },
-  item: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingVertical: 12, paddingHorizontal: 14,
-    borderRadius: 14, marginBottom: 3, position: 'relative',
-  },
-  activeBar: {
-    position: 'absolute', left: 0, top: 10, bottom: 10,
-    width: 3.5, borderRadius: 2, backgroundColor: ORANGE,
-  },
-  itemIconWrap: {
-    width: 34, height: 34, borderRadius: 10,
-    justifyContent: 'center', alignItems: 'center', marginRight: 13,
-  },
+  // Diseño por plataforma:
+  //   • iOS  → spacing fijo, los 7 items ya caben bien.
+  //   • Android → `flexGrow: 1` + `justifyContent: 'space-evenly'` en el
+  //     contentContainer del ScrollView para que los items se distribuyan
+  //     verticalmente y llenen TODO el espacio disponible. Así "Contacto"
+  //     queda visible y no se nota un hueco vacío abajo. El padding de
+  //     cada item es ligeramente más compacto para que en pantallas muy
+  //     cortas siga cabiendo sin scrollear.
+  scrollContent: Platform.select({
+    ios: { paddingTop: 12, paddingHorizontal: 12, paddingBottom: 20, backgroundColor: '#F97613' },
+    default: {
+      flexGrow: 1,
+      justifyContent: 'space-evenly',
+      paddingTop: 6, paddingHorizontal: 12, paddingBottom: 12,
+      backgroundColor: '#F97613',
+    },
+  }) as any,
+  item: Platform.select({
+    ios: {
+      flexDirection: 'row', alignItems: 'center',
+      paddingVertical: 12, paddingHorizontal: 14,
+      borderRadius: 14, marginBottom: 3, position: 'relative',
+    },
+    default: {
+      flexDirection: 'row', alignItems: 'center',
+      paddingVertical: 10, paddingHorizontal: 14,
+      borderRadius: 14, position: 'relative',
+    },
+  }) as any,
+  activeBar: Platform.select({
+    ios: {
+      position: 'absolute', left: 0, top: 10, bottom: 10,
+      width: 3.5, borderRadius: 2, backgroundColor: ORANGE,
+    },
+    default: {
+      position: 'absolute', left: 0, top: 8, bottom: 8,
+      width: 3.5, borderRadius: 2, backgroundColor: ORANGE,
+    },
+  }) as any,
+  itemIconWrap: Platform.select({
+    ios: {
+      width: 34, height: 34, borderRadius: 10,
+      justifyContent: 'center', alignItems: 'center', marginRight: 13,
+    },
+    default: {
+      width: 32, height: 32, borderRadius: 10,
+      justifyContent: 'center', alignItems: 'center', marginRight: 12,
+    },
+  }) as any,
   itemIconWrapInactive: { backgroundColor: 'rgba(255,255,255,0.12)' },
   itemLabel: { fontWeight: '600' },
   drawerSeparator: {
@@ -418,13 +667,25 @@ const styles = StyleSheet.create({
   drawerBadgeText: {
     color: '#F97613', fontWeight: '800',
   },
+  // Misma estética que `footerAccent` para que la simetría del drawer
+  // sea consistente arriba y abajo del menú.
+  headerDivider: {
+    height: 1.5,
+    borderRadius: 1,
+    backgroundColor: 'rgba(255,255,255,0.85)',
+    marginHorizontal: 20,
+    marginTop: 0,
+    marginBottom: 6,
+  },
   footer: {
     paddingHorizontal: 20,
-    backgroundColor: '#d85f0e',
+    paddingTop: 14,
+    backgroundColor: '#F97613',
   },
   footerAccent: {
-    height: 1, borderRadius: 1,
-    backgroundColor: 'rgba(255,255,255,0.2)', marginBottom: 14,
+    height: 1.5, borderRadius: 1,
+    backgroundColor: 'rgba(255,255,255,0.85)',
+    marginBottom: 16,
   },
   footerTop:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
   footerLogoRow:    { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 },
@@ -434,6 +695,10 @@ const styles = StyleSheet.create({
   footerLogoImg: {
     width: 24,
     height: 24,
+    // Nudge: el PNG del logo tiene un poco de whitespace abajo-izquierda,
+    // así que lo levantamos y movemos a la derecha para alinearlo
+    // visualmente con el baseline del texto "GuadalupeGO".
+    transform: [{ translateY: -3 }, { translateX: 6 }],
   },
   footerLogo:       { color: '#fff', fontWeight: '900', letterSpacing: -0.3 },
   footerLogoAccent: { color: 'rgba(255,255,255,0.5)' },

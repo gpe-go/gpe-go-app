@@ -2,21 +2,34 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Linking from "expo-linking";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Animated, Image, Platform, Pressable, ScrollView, Share, StatusBar, StyleSheet, View } from 'react-native';
-import { Text } from '../../components/Text';
+import {
+  Animated,
+  Dimensions,
+  Image,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  Platform,
+  Pressable,
+  ScrollView,
+  Share,
+  StatusBar,
+  StyleSheet,
+  View,
+} from "react-native";
+import { Text } from "../../components/Text";
 import { useTheme } from "../../src/context/ThemeContext";
+
+const HERO_HEIGHT = 320;
+const SCREEN_W = Dimensions.get("window").width;
+const FALLBACK_IMG = require("../../assets/images/GPE GO.png");
 
 function formatearFechaSeguro(fecha?: string | string[]) {
   const valor = Array.isArray(fecha) ? fecha[0] : fecha;
   const limpio = String(valor ?? "").replace(/\s+/g, " ").trim();
-
-  if (!limpio) return "Fecha no disponible";
-  if (limpio.toLowerCase() === "invalid date") return "Fecha no disponible";
-
+  if (!limpio || limpio.toLowerCase() === "invalid date") return "Fecha no disponible";
   const parsed = new Date(limpio);
-
   if (!isNaN(parsed.getTime())) {
     return parsed.toLocaleDateString("es-MX", {
       day: "numeric",
@@ -24,8 +37,26 @@ function formatearFechaSeguro(fecha?: string | string[]) {
       year: "numeric",
     });
   }
-
   return limpio;
+}
+
+function hostnameDe(url?: string): string {
+  if (!url) return "";
+  try {
+    const u = new URL(url);
+    return u.hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+}
+
+// Cuenta caracteres no-whitespace para mostrar un metadato útil
+// ("≈ X min de lectura") sin necesidad de full HTML parsing.
+function minutosDeLectura(...textos: string[]): number {
+  const total = textos.join(" ").replace(/\s+/g, " ").trim();
+  const palabras = total ? total.split(" ").length : 0;
+  // ~220 palabras por minuto lectura promedio
+  return Math.max(1, Math.round(palabras / 220));
 }
 
 export default function DetalleNoticiaScreen() {
@@ -34,17 +65,16 @@ export default function DetalleNoticiaScreen() {
   const s = makeStyles(colors, fonts, isDark);
   const router = useRouter();
 
-  // StatusBar — light-content translucent mientras está activa, restaura al salir
   useFocusEffect(
     useCallback(() => {
-      StatusBar.setBarStyle('light-content', true);
-      if (Platform.OS === 'android') {
-        StatusBar.setBackgroundColor('transparent');
+      StatusBar.setBarStyle("light-content", true);
+      if (Platform.OS === "android") {
+        StatusBar.setBackgroundColor("transparent");
         StatusBar.setTranslucent(true);
       }
       return () => {
-        StatusBar.setBarStyle(isDark ? 'light-content' : 'dark-content', true);
-        if (Platform.OS === 'android') {
+        StatusBar.setBarStyle(isDark ? "light-content" : "dark-content", true);
+        if (Platform.OS === "android") {
           StatusBar.setBackgroundColor(colors.background);
           StatusBar.setTranslucent(false);
         }
@@ -52,102 +82,117 @@ export default function DetalleNoticiaScreen() {
     }, [isDark, colors.background])
   );
 
-  const { title, description, image, content, url, date } = useLocalSearchParams();
+  const params = useLocalSearchParams();
+  const title = String(params.title ?? "");
+  const description = String(params.description ?? "");
+  const content = String(params.content ?? "");
+  const url = String(params.url ?? "");
+  const date = params.date;
+  const source = String(params.source ?? "");
 
-  const fechaFormateada = formatearFechaSeguro(date);
+  // El array de imágenes llega serializado por router (params solo aceptan
+  // strings). Si está vacío o no se pudo parsear, caemos a `image` único.
+  const imagenes: string[] = useMemo(() => {
+    const raw = params.images;
+    if (typeof raw === "string" && raw.length > 0) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed.filter((u) => typeof u === "string" && u.length > 0);
+      } catch {}
+    }
+    const single = String(params.image ?? "").trim();
+    return single ? [single] : [];
+  }, [params.images, params.image]);
+
+  const tieneMultiples = imagenes.length > 1;
+
+  const fechaFormateada = formatearFechaSeguro(date as string);
+  const lectura = minutosDeLectura(title, description, content);
+  const dominio = hostnameDe(url);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const translateYAnim = useRef(new Animated.Value(26)).current;
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 420,
-        useNativeDriver: true,
-      }),
-      Animated.timing(translateYAnim, {
-        toValue: 0,
-        duration: 420,
-        useNativeDriver: true,
-      }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 420, useNativeDriver: true }),
+      Animated.timing(translateYAnim, { toValue: 0, duration: 420, useNativeDriver: true }),
     ]).start();
   }, [fadeAnim, translateYAnim]);
+
+  const [paginaActual, setPaginaActual] = useState(0);
+  const onScrollHero = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const x = e.nativeEvent.contentOffset.x;
+    const idx = Math.round(x / SCREEN_W);
+    if (idx !== paginaActual) setPaginaActual(idx);
+  };
 
   const compartir = async () => {
     try {
       await Share.share({
         message: `${title}\n\n${description}\n\nVía GuadalupeGO: ${url}`,
-        title: String(title ?? ""),
+        title,
       });
     } catch {}
   };
 
   const abrirFuente = async () => {
-    const enlace = String(url ?? "").trim();
-    if (!enlace) return;
-    await Linking.openURL(enlace);
+    if (!url.trim()) return;
+    await Linking.openURL(url.trim());
   };
 
-  const tieneContenidoSecundario =
-    !!content && String(content).trim().length > 0 && String(content).trim() !== String(description ?? "").trim();
+  // `description` y `content` actualmente vienen del mismo campo del
+  // backend; mostramos `content` solo si aporta texto adicional, no como
+  // duplicado.
+  const hayContenidoExtra =
+    !!content && content.trim().length > 0 && content.trim() !== description.trim();
 
-  const isLoading = !title;
-
-  if (isLoading) {
-    return (
-      <View style={s.wrapper}>
-
-        <View style={s.skeletonHero} />
-
-        <View style={s.skeletonMainCard}>
-          <View style={s.skeletonDate} />
-          <View style={s.skeletonTitle1} />
-          <View style={s.skeletonTitle2} />
-
-          <View style={s.skeletonActionRow}>
-            <View style={s.skeletonActionPrimary} />
-            <View style={s.skeletonActionSecondary} />
-          </View>
-        </View>
-
-        <View style={s.skeletonContentCard}>
-          <View style={s.skeletonParagraph1} />
-          <View style={s.skeletonParagraph2} />
-          <View style={s.skeletonParagraph3} />
-          <View style={s.skeletonFullBtn} />
-        </View>
-      </View>
-    );
+  if (!title) {
+    return <SkeletonNoticia s={s} />;
   }
 
   return (
     <View style={s.wrapper}>
-
       <ScrollView showsVerticalScrollIndicator={false}>
+        {/* ── Hero / Carrusel ─────────────────────────────────── */}
         <View style={s.hero}>
-          {image ? (
-            <Image source={{ uri: image as string }} style={s.heroImage} />
-          ) : (
-            <LinearGradient colors={["#F97613", "#d85f0e"]} style={s.heroImage}>
-              <Ionicons name="newspaper-outline" size={64} color="rgba(255,255,255,0.4)" />
+          {imagenes.length === 0 ? (
+            <LinearGradient colors={["#F97613", "#d85f0e"]} style={s.heroSlide}>
+              <Image source={FALLBACK_IMG} style={s.heroFallback} resizeMode="contain" />
             </LinearGradient>
+          ) : (
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              scrollEnabled={tieneMultiples}
+              onScroll={onScrollHero}
+              scrollEventThrottle={16}
+            >
+              {imagenes.map((uri, i) => (
+                <Image
+                  key={`${i}-${uri}`}
+                  source={{ uri }}
+                  style={[s.heroSlide, { width: SCREEN_W }]}
+                  resizeMode="cover"
+                />
+              ))}
+            </ScrollView>
           )}
 
           <LinearGradient
-            colors={["rgba(0,0,0,0.5)", "transparent", "rgba(0,0,0,0.55)"]}
+            colors={["rgba(0,0,0,0.55)", "transparent", "rgba(0,0,0,0.65)"]}
             style={StyleSheet.absoluteFillObject}
+            pointerEvents="none"
           />
 
           <Pressable
             style={({ pressed }) => [
               s.backBtn,
-              {
-                opacity: pressed ? 0.9 : 1,
-                transform: [{ scale: pressed ? 0.96 : 1 }],
-              },
+              { opacity: pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.96 : 1 }] },
             ]}
             onPress={() => router.back()}
+            hitSlop={8}
           >
             <Ionicons name="arrow-back" size={20} color="#fff" />
           </Pressable>
@@ -155,12 +200,10 @@ export default function DetalleNoticiaScreen() {
           <Pressable
             style={({ pressed }) => [
               s.shareHeroBtn,
-              {
-                opacity: pressed ? 0.9 : 1,
-                transform: [{ scale: pressed ? 0.96 : 1 }],
-              },
+              { opacity: pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.96 : 1 }] },
             ]}
             onPress={compartir}
+            hitSlop={8}
           >
             <Ionicons name="share-social-outline" size={20} color="#fff" />
           </Pressable>
@@ -168,113 +211,121 @@ export default function DetalleNoticiaScreen() {
           <View style={s.heroBadgeRow}>
             <View style={s.newsBadge}>
               <View style={s.newsDot} />
-              <Text style={[s.newsBadgeText, { fontSize: fonts.xs }]}>{t('news_badge')}</Text>
+              <Text style={[s.newsBadgeText, { fontSize: fonts.xs }]}>{t("news_badge")}</Text>
             </View>
+            {tieneMultiples && (
+              <View style={s.counterBadge}>
+                <Ionicons name="images-outline" size={11} color="#fff" />
+                <Text style={[s.counterBadgeText, { fontSize: fonts.xs }]}>
+                  {paginaActual + 1}/{imagenes.length}
+                </Text>
+              </View>
+            )}
           </View>
+
+          {tieneMultiples && (
+            <View style={s.dotsRow} pointerEvents="none">
+              {imagenes.map((_, i) => (
+                <View
+                  key={i}
+                  style={[s.dot, i === paginaActual && s.dotActive]}
+                />
+              ))}
+            </View>
+          )}
         </View>
 
+        {/* ── Contenido ──────────────────────────────────────── */}
         <Animated.View
-          style={[
-            s.animatedContent,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: translateYAnim }],
-            },
-          ]}
+          style={[s.animated, { opacity: fadeAnim, transform: [{ translateY: translateYAnim }] }]}
         >
           <View style={s.mainCard}>
-            <View style={s.dateRow}>
-              <Ionicons name="calendar-outline" size={14} color="#F97613" />
-              <Text style={[s.date, { fontSize: fonts.xs }]} numberOfLines={1}>
-                {fechaFormateada}
-              </Text>
+            {/* meta row: fecha + tiempo de lectura + fuente */}
+            <View style={s.metaRow}>
+              <View style={s.metaPill}>
+                <Ionicons name="calendar-outline" size={12} color="#F97613" />
+                <Text style={[s.metaPillText, { fontSize: fonts.xs }]} numberOfLines={1}>
+                  {fechaFormateada}
+                </Text>
+              </View>
+              <View style={s.metaPill}>
+                <Ionicons name="time-outline" size={12} color="#F97613" />
+                <Text style={[s.metaPillText, { fontSize: fonts.xs }]}>
+                  {lectura} {t("news_read_min", { defaultValue: "min" })}
+                </Text>
+              </View>
+              {!!(source || dominio) && (
+                <View style={s.metaPill}>
+                  <Ionicons name="link-outline" size={12} color="#F97613" />
+                  <Text style={[s.metaPillText, { fontSize: fonts.xs }]} numberOfLines={1}>
+                    {source || dominio}
+                  </Text>
+                </View>
+              )}
             </View>
 
             <Text style={[s.title, { fontSize: fonts["2xl"] }]}>{title}</Text>
 
-            <View style={s.actionRow}>
-              <Pressable
-                style={({ pressed }) => [
-                  s.actionBtn,
-                  {
-                    opacity: pressed ? 0.88 : 1,
-                    transform: [{ scale: pressed ? 0.98 : 1 }],
-                  },
-                ]}
-                onPress={abrirFuente}
-              >
-                <LinearGradient colors={["#F97613", "#d85f0e"]} style={s.actionBtnGradient}>
-                  <Ionicons name="open-outline" size={16} color="#fff" />
-                  <Text style={[s.actionBtnText, { fontSize: fonts.sm }]}>{t('news_source')}</Text>
-                </LinearGradient>
-              </Pressable>
+            {!!description && (
+              <Text style={[s.lead, { fontSize: fonts.base }]}>
+                {description}
+              </Text>
+            )}
 
-              <Pressable
-                style={({ pressed }) => [
-                  s.shareBtn,
-                  {
-                    opacity: pressed ? 0.88 : 1,
-                    transform: [{ scale: pressed ? 0.98 : 1 }],
-                  },
-                ]}
-                onPress={compartir}
-              >
-                <Ionicons name="share-social-outline" size={16} color="#F97613" />
-                <Text style={[s.shareBtnText, { fontSize: fonts.sm }]}>{t("share")}</Text>
-              </Pressable>
-            </View>
+            {hayContenidoExtra && (
+              <>
+                <View style={s.softDivider} />
+                <Text style={[s.body, { fontSize: fonts.sm }]}>{content}</Text>
+              </>
+            )}
           </View>
 
-          <View style={s.contentCard}>
-            {description ? (
-              <View style={s.descBlock}>
-                <View style={s.descAccent} />
-                <Text style={[s.description, { fontSize: fonts.base }]}>{description}</Text>
-              </View>
-            ) : null}
-
-            {tieneContenidoSecundario ? (
-              <>
-                <View style={s.divider}>
-                  <View style={s.dividerLine} />
-                  <View style={s.dividerIcon}>
-                    <Ionicons name="newspaper-outline" size={14} color={colors.subtext} />
-                  </View>
-                  <View style={s.dividerLine} />
-                </View>
-
-                <Text style={[s.contentText, { fontSize: fonts.sm }]}>{content}</Text>
-              </>
-            ) : null}
-
+          {/* ── CTA único: leer la nota completa en su fuente ──── */}
+          <View style={s.ctaWrap}>
             <Pressable
               style={({ pressed }) => [
-                s.fullBtn,
-                {
-                  opacity: pressed ? 0.88 : 1,
-                  transform: [{ scale: pressed ? 0.98 : 1 }],
-                },
+                s.ctaPrimary,
+                { opacity: pressed ? 0.92 : 1, transform: [{ scale: pressed ? 0.985 : 1 }] },
               ]}
               onPress={abrirFuente}
             >
-              <LinearGradient colors={["#F97613", "#d85f0e"]} style={s.fullBtnGradient}>
+              <LinearGradient colors={["#F97613", "#d85f0e"]} style={s.ctaPrimaryInner}>
                 <Ionicons name="globe-outline" size={18} color="#fff" />
-                <Text style={[s.fullBtnText, { fontSize: fonts.base }]}>{t('news_view_full_article')}</Text>
+                <Text style={[s.ctaPrimaryText, { fontSize: fonts.base }]}>
+                  {t("news_view_full_article")}
+                </Text>
                 <Ionicons name="arrow-forward" size={16} color="#fff" />
               </LinearGradient>
             </Pressable>
 
-            <View style={s.footer}>
-              <View style={s.footerLogoRow}>
-                <View style={s.footerLogoIcon}>
-                  <Ionicons name="location" size={10} color="#fff" />
-                </View>
-                <Text style={[s.footerLogo, { fontSize: fonts.sm }]}>
-                  Guadalupe<Text style={{ color: "#F97613" }}>GO</Text>
-                </Text>
-              </View>
-              <Text style={[s.footerSub, { fontSize: fonts.xs }]}>{t('app_tagline')}</Text>
+            <Pressable
+              style={({ pressed }) => [
+                s.ctaGhost,
+                { opacity: pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.985 : 1 }] },
+              ]}
+              onPress={compartir}
+            >
+              <Ionicons name="share-social-outline" size={18} color="#F97613" />
+              <Text style={[s.ctaGhostText, { fontSize: fonts.sm }]}>{t("share")}</Text>
+            </Pressable>
+          </View>
+
+          {/* ── Footer marca ─────────────────────────────────── */}
+          <View style={s.brandFooter}>
+            <View style={s.brandRow}>
+              <Image
+                source={require("../../assets/images/logosinnadaoficial.png")}
+                style={s.brandIcon}
+                resizeMode="contain"
+              />
+              <Text style={[s.brandTitle, { fontSize: fonts.sm }]}>
+                Guadalupe<Text style={{ color: "#F97613" }}>GO</Text>
+              </Text>
             </View>
+            <Text style={[s.brandSub, { fontSize: fonts.xs }]}>
+              <Text style={{ color: "#2D4551", fontWeight: "800" }}>Seamos</Text>
+              <Text style={{ color: "#F97613", fontWeight: "800" }}>Grandes</Text>
+            </Text>
           </View>
         </Animated.View>
       </ScrollView>
@@ -282,29 +333,45 @@ export default function DetalleNoticiaScreen() {
   );
 }
 
+function SkeletonNoticia({ s }: { s: any }) {
+  return (
+    <View style={s.wrapper}>
+      <View style={s.skeletonHero} />
+      <View style={s.mainCard}>
+        <View style={s.skeletonMeta} />
+        <View style={s.skeletonTitle1} />
+        <View style={s.skeletonTitle2} />
+        <View style={s.skeletonLead} />
+        <View style={s.skeletonLead2} />
+      </View>
+      <View style={s.ctaWrap}>
+        <View style={s.skeletonCta} />
+      </View>
+    </View>
+  );
+}
+
 const makeStyles = (c: any, f: any, isDark: boolean) =>
   StyleSheet.create({
-    wrapper: {
-      flex: 1,
-      backgroundColor: c.background,
-    },
+    wrapper: { flex: 1, backgroundColor: c.background },
+    animated: { flex: 1 },
 
-    animatedContent: {
-      flex: 1,
-    },
-
+    // ── Hero
     hero: {
       width: "100%",
-      height: 280,
+      height: HERO_HEIGHT,
+      backgroundColor: isDark ? "#111" : "#ddd",
+    },
+    heroSlide: {
+      width: SCREEN_W,
+      height: HERO_HEIGHT,
       justifyContent: "center",
       alignItems: "center",
     },
-
-    heroImage: {
-      width: "100%",
-      height: "100%",
-      justifyContent: "center",
-      alignItems: "center",
+    heroFallback: {
+      width: 120,
+      height: 120,
+      opacity: 0.6,
     },
 
     backBtn: {
@@ -318,7 +385,7 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       justifyContent: "center",
       alignItems: "center",
       borderWidth: 1,
-      borderColor: "rgba(255,255,255,0.15)",
+      borderColor: "rgba(255,255,255,0.18)",
     },
 
     shareHeroBtn: {
@@ -332,14 +399,16 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       justifyContent: "center",
       alignItems: "center",
       borderWidth: 1,
-      borderColor: "rgba(255,255,255,0.15)",
+      borderColor: "rgba(255,255,255,0.18)",
     },
 
     heroBadgeRow: {
       position: "absolute",
-      bottom: 18,
+      bottom: 22,
       left: 18,
+      right: 18,
       flexDirection: "row",
+      justifyContent: "space-between",
       gap: 8,
     },
 
@@ -347,34 +416,57 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       flexDirection: "row",
       alignItems: "center",
       gap: 6,
-      backgroundColor: "rgba(0,0,0,0.5)",
+      backgroundColor: "rgba(0,0,0,0.55)",
       paddingHorizontal: 10,
       paddingVertical: 5,
       borderRadius: 12,
       borderWidth: 1,
       borderColor: "rgba(255,255,255,0.15)",
     },
+    newsDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: "#4ADE80" },
+    newsBadgeText: { color: "#fff", fontWeight: "700" },
 
-    newsDot: {
-      width: 7,
-      height: 7,
-      borderRadius: 4,
-      backgroundColor: "#4ADE80",
+    counterBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
+      backgroundColor: "rgba(0,0,0,0.55)",
+      paddingHorizontal: 9,
+      paddingVertical: 5,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: "rgba(255,255,255,0.15)",
+    },
+    counterBadgeText: { color: "#fff", fontWeight: "700" },
+
+    dotsRow: {
+      position: "absolute",
+      bottom: 8,
+      width: "100%",
+      flexDirection: "row",
+      justifyContent: "center",
+      gap: 5,
+    },
+    dot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: "rgba(255,255,255,0.4)",
+    },
+    dotActive: {
+      width: 18,
+      backgroundColor: "#fff",
     },
 
-    newsBadgeText: {
-      color: "#fff",
-      fontWeight: "600",
-    },
-
+    // ── Tarjeta principal de contenido
     mainCard: {
       backgroundColor: c.card,
-      marginTop: -22,
+      marginTop: -24,
       borderTopLeftRadius: 30,
       borderTopRightRadius: 30,
       paddingHorizontal: 22,
-      paddingTop: 24,
-      paddingBottom: 20,
+      paddingTop: 22,
+      paddingBottom: 22,
       borderWidth: 1,
       borderColor: c.border,
       elevation: 4,
@@ -384,16 +476,27 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       shadowRadius: 8,
     },
 
-    dateRow: {
+    metaRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+      marginBottom: 14,
+    },
+    metaPill: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 6,
-      marginBottom: 12,
+      gap: 5,
+      backgroundColor: isDark ? "rgba(249,118,19,0.12)" : "#FFF3E8",
+      borderWidth: 1,
+      borderColor: isDark ? "rgba(249,118,19,0.25)" : "#FFD4B3",
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 999,
+      maxWidth: "100%",
     },
-
-    date: {
+    metaPillText: {
       color: "#F97613",
-      fontWeight: "600",
+      fontWeight: "700",
       textTransform: "capitalize",
     },
 
@@ -401,123 +504,36 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       fontWeight: "900",
       color: c.text,
       letterSpacing: -0.5,
-      lineHeight: f["2xl"] * 1.25,
-      marginBottom: 18,
+      lineHeight: f["2xl"] * 1.22,
+      marginBottom: 14,
     },
 
-    actionRow: {
-      flexDirection: "row",
-      gap: 10,
-    },
-
-    actionBtn: {
-      flex: 1,
-      borderRadius: 14,
-      overflow: "hidden",
-      elevation: 4,
-      shadowColor: "#F97613",
-      shadowOffset: { width: 0, height: 3 },
-      shadowOpacity: 0.35,
-      shadowRadius: 6,
-    },
-
-    actionBtnGradient: {
-      height: 48,
-      flexDirection: "row",
-      justifyContent: "center",
-      alignItems: "center",
-      gap: 6,
-    },
-
-    actionBtnText: {
-      color: "#fff",
-      fontWeight: "700",
-    },
-
-    shareBtn: {
-      height: 48,
-      borderWidth: 2,
-      borderColor: "#F97613",
-      borderRadius: 14,
-      flexDirection: "row",
-      justifyContent: "center",
-      alignItems: "center",
-      gap: 6,
-      paddingHorizontal: 16,
-      backgroundColor: "transparent",
-    },
-
-    shareBtnText: {
-      color: "#F97613",
-      fontWeight: "700",
-    },
-
-    contentCard: {
-      backgroundColor: c.card,
-      marginHorizontal: 16,
-      marginTop: 12,
-      borderRadius: 24,
-      padding: 20,
-      borderWidth: 1,
-      borderColor: c.border,
-      elevation: 2,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: isDark ? 0.3 : 0.07,
-      shadowRadius: 6,
-      marginBottom: 16,
-    },
-
-    descBlock: {
-      flexDirection: "row",
-      gap: 14,
-      marginBottom: 20,
-    },
-
-    descAccent: {
-      width: 4,
-      borderRadius: 2,
-      backgroundColor: "#F97613",
-    },
-
-    description: {
-      flex: 1,
+    lead: {
       color: c.text,
       lineHeight: f.base * 1.7,
       fontWeight: "500",
     },
 
-    divider: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 10,
-      marginBottom: 16,
-    },
-
-    dividerLine: {
-      flex: 1,
+    softDivider: {
       height: 1,
       backgroundColor: c.border,
+      marginVertical: 16,
+      opacity: 0.6,
     },
 
-    dividerIcon: {
-      width: 28,
-      height: 28,
-      borderRadius: 8,
-      backgroundColor: c.inputBackground,
-      justifyContent: "center",
-      alignItems: "center",
-      borderWidth: 1,
-      borderColor: c.border,
-    },
-
-    contentText: {
+    body: {
       color: c.subtext,
       lineHeight: f.sm * 1.75,
-      marginBottom: 24,
     },
 
-    fullBtn: {
+    // ── CTA
+    ctaWrap: {
+      paddingHorizontal: 16,
+      marginTop: 14,
+      gap: 10,
+    },
+
+    ctaPrimary: {
       borderRadius: 16,
       overflow: "hidden",
       elevation: 5,
@@ -525,78 +541,62 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.35,
       shadowRadius: 8,
-      marginBottom: 24,
     },
-
-    fullBtnGradient: {
+    ctaPrimaryInner: {
       height: 54,
       flexDirection: "row",
       justifyContent: "center",
       alignItems: "center",
-      gap: 8,
+      gap: 10,
     },
+    ctaPrimaryText: { color: "#fff", fontWeight: "800" },
 
-    fullBtnText: {
-      color: "#fff",
-      fontWeight: "800",
-    },
-
-    footer: {
-      alignItems: "center",
-      gap: 4,
-      paddingTop: 4,
-    },
-
-    footerLogoRow: {
+    ctaGhost: {
+      height: 48,
+      borderRadius: 14,
+      borderWidth: 2,
+      borderColor: "#F97613",
       flexDirection: "row",
       alignItems: "center",
-      gap: 6,
-    },
-
-    footerLogoIcon: {
-      width: 18,
-      height: 18,
-      borderRadius: 5,
-      backgroundColor: "#F97613",
       justifyContent: "center",
+      gap: 8,
+      backgroundColor: "transparent",
+    },
+    ctaGhostText: { color: "#F97613", fontWeight: "700" },
+
+    // ── Footer marca
+    brandFooter: {
       alignItems: "center",
+      paddingTop: 24,
+      paddingBottom: 36,
+      gap: 4,
     },
-
-    footerLogo: {
-      fontWeight: "800",
-      color: c.text,
+    brandRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
     },
-
-    footerSub: {
-      color: c.subtext,
+    brandIcon: {
+      width: 17,
+      height: 22,
+      transform: [{ translateY: -3 }],
     },
+    brandTitle: { fontWeight: "800", color: c.text },
+    brandSub: { color: c.subtext },
 
+    // ── Skeleton
     skeletonHero: {
       width: "100%",
-      height: 280,
+      height: HERO_HEIGHT,
       backgroundColor: isDark ? "#1b1b1b" : "#e9e9e9",
     },
-
-    skeletonMainCard: {
-      backgroundColor: c.card,
-      marginTop: -22,
-      borderTopLeftRadius: 30,
-      borderTopRightRadius: 30,
-      paddingHorizontal: 22,
-      paddingTop: 24,
-      paddingBottom: 20,
-      borderWidth: 1,
-      borderColor: c.border,
-    },
-
-    skeletonDate: {
-      width: 120,
-      height: 12,
-      borderRadius: 6,
+    skeletonMeta: {
+      width: 180,
+      height: 22,
+      borderRadius: 999,
       backgroundColor: isDark ? "#2a2a2a" : "#ececec",
       marginBottom: 16,
     },
-
     skeletonTitle1: {
       width: "88%",
       height: 22,
@@ -604,69 +604,27 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       backgroundColor: isDark ? "#2a2a2a" : "#ececec",
       marginBottom: 10,
     },
-
     skeletonTitle2: {
       width: "72%",
       height: 22,
       borderRadius: 8,
       backgroundColor: isDark ? "#2a2a2a" : "#ececec",
-      marginBottom: 20,
+      marginBottom: 18,
     },
-
-    skeletonActionRow: {
-      flexDirection: "row",
-      gap: 10,
-    },
-
-    skeletonActionPrimary: {
-      flex: 1,
-      height: 48,
-      borderRadius: 14,
-      backgroundColor: isDark ? "#2a2a2a" : "#ececec",
-    },
-
-    skeletonActionSecondary: {
-      width: 120,
-      height: 48,
-      borderRadius: 14,
-      backgroundColor: isDark ? "#2a2a2a" : "#ececec",
-    },
-
-    skeletonContentCard: {
-      backgroundColor: c.card,
-      marginHorizontal: 16,
-      marginTop: 12,
-      borderRadius: 24,
-      padding: 20,
-      borderWidth: 1,
-      borderColor: c.border,
-    },
-
-    skeletonParagraph1: {
+    skeletonLead: {
       width: "100%",
       height: 16,
       borderRadius: 8,
       backgroundColor: isDark ? "#2a2a2a" : "#ececec",
-      marginBottom: 12,
+      marginBottom: 10,
     },
-
-    skeletonParagraph2: {
-      width: "92%",
+    skeletonLead2: {
+      width: "84%",
       height: 16,
       borderRadius: 8,
       backgroundColor: isDark ? "#2a2a2a" : "#ececec",
-      marginBottom: 12,
     },
-
-    skeletonParagraph3: {
-      width: "76%",
-      height: 16,
-      borderRadius: 8,
-      backgroundColor: isDark ? "#2a2a2a" : "#ececec",
-      marginBottom: 24,
-    },
-
-    skeletonFullBtn: {
+    skeletonCta: {
       width: "100%",
       height: 54,
       borderRadius: 16,

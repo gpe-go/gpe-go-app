@@ -62,6 +62,20 @@ module.exports = {
       infoPlist: {
         NSLocationWhenInUseUsageDescription:
           "GuadalupeGo usa tu ubicación para mostrar restaurantes, lugares turísticos y eventos cercanos.",
+        // CRÍTICO: sin estas claves, iOS hace CRASH (no solo deniega) en
+        // cuanto la app intenta abrir cámara o galería. La app las usa
+        // para la foto de perfil (expo-image-picker). En Expo Go no se
+        // notan porque Expo Go declara sus propios permisos, pero en un
+        // build nativo (EAS / Xcode) son obligatorias.
+        NSCameraUsageDescription:
+          "GuadalupeGo usa la cámara para que puedas tomar tu foto de perfil.",
+        NSPhotoLibraryUsageDescription:
+          "GuadalupeGo accede a tu galería para que elijas tu foto de perfil.",
+        NSPhotoLibraryAddUsageDescription:
+          "GuadalupeGo puede guardar imágenes en tu galería.",
+        // Evita la pregunta de "export compliance / encryption" en cada
+        // subida a TestFlight / App Store. La app no usa cifrado no exento.
+        ITSAppUsesNonExemptEncryption: false,
       },
     },
 

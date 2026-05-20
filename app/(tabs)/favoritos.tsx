@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Animated, FlatList, Image, Modal, Platform, Pressable, StatusBar, StyleSheet, View } from 'react-native';
@@ -299,6 +299,13 @@ function EmptyStateCard({
   colors,
   fonts,
   isDark,
+  // Controlan si el card se desvanece al presionar. true (default) para
+  // botones que NAVEGAN fuera de la pantalla (ej. "Explorar"); false
+  // para botones que abren un modal en la misma pantalla (ej. "Iniciar
+  // sesión") — ahí NO debemos fade out, porque al cancelar el modal el
+  // card debe seguir visible.
+  primaryFadeOut = true,
+  secondaryFadeOut = true,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
@@ -311,17 +318,55 @@ function EmptyStateCard({
   colors: any;
   fonts: any;
   isDark: boolean;
+  primaryFadeOut?: boolean;
+  secondaryFadeOut?: boolean;
 }) {
   const s = makeStyles(colors, fonts);
-  const cardAnim = useRef(new Animated.Value(0)).current;
+  const cardAnim      = useRef(new Animated.Value(0)).current;
+  const primaryAnim   = useRef(new Animated.Value(0)).current;
+  const secondaryAnim = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    Animated.timing(cardAnim, {
-      toValue: 1,
-      duration: 360,
-      useNativeDriver: true,
-    }).start();
-  }, [cardAnim]);
+  // Cascada de animaciones de entrada:
+  //  1. Card aparece (fade + slide desde abajo) — 360 ms
+  //  2. Botón primario "pop in" (fade + scale) — empieza a 200 ms
+  //  3. Texto secundario fade in — empieza a 350 ms
+  // Cada elemento tiene SU propia transición en vez de heredar la del
+  // card, así el ojo del usuario va siguiendo la jerarquía visual.
+  // Reproducimos la entrada cada vez que la pantalla recibe FOCO (no
+  // solo al montar). Antes usábamos useEffect → corría una sola vez;
+  // pero como `salirCon` deja cardAnim en 0 al navegar y el tab NO se
+  // re-monta al volver, el card quedaba invisible al regresar. Con
+  // useFocusEffect reseteamos a 0 y relanzamos la cascada en cada
+  // entrada a Favoritos.
+  useFocusEffect(
+    useCallback(() => {
+      cardAnim.setValue(0);
+      primaryAnim.setValue(0);
+      secondaryAnim.setValue(0);
+      Animated.stagger(150, [
+        Animated.timing(cardAnim,      { toValue: 1, duration: 360, useNativeDriver: true }),
+        Animated.spring(primaryAnim,   { toValue: 1, tension: 90, friction: 8, useNativeDriver: true }),
+        Animated.timing(secondaryAnim, { toValue: 1, duration: 320, useNativeDriver: true }),
+      ]).start();
+    }, [cardAnim, primaryAnim, secondaryAnim]),
+  );
+
+  // Transición de SALIDA: como navegar a Inicio es un cambio de tab
+  // (instantáneo, sin animación nativa), animamos el card hacia afuera
+  // (fade + scale down) ANTES de navegar. Da la sensación de transición
+  // suave en vez de un corte seco. El navigate corre en el callback de
+  // .start() cuando la animación termina (~220 ms).
+  const salirCon = useCallback(
+    (accion?: () => void) => {
+      if (!accion) return;
+      Animated.timing(cardAnim, {
+        toValue: 0,
+        duration: 220,
+        useNativeDriver: true,
+      }).start(() => accion());
+    },
+    [cardAnim],
+  );
 
   return (
     <Animated.View
@@ -334,6 +379,12 @@ function EmptyStateCard({
               translateY: cardAnim.interpolate({
                 inputRange: [0, 1],
                 outputRange: [26, 0],
+              }),
+            },
+            {
+              scale: cardAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0.96, 1],
               }),
             },
           ],
@@ -355,42 +406,76 @@ function EmptyStateCard({
         {subtitle}
       </Text>
 
-      <Pressable
-        style={({ pressed }) => [
-          s.emptyPrimaryBtn,
-          {
-            opacity: pressed ? 0.9 : 1,
-            transform: [{ scale: pressed ? 0.985 : 1 }],
-          },
-        ]}
-        onPress={onPrimaryPress}
+      <Animated.View
+        style={{
+          opacity: primaryAnim,
+          transform: [
+            {
+              scale: primaryAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0.85, 1],
+              }),
+            },
+            {
+              translateY: primaryAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [10, 0],
+              }),
+            },
+          ],
+        }}
       >
-        <LinearGradient
-          colors={['#F97613', '#D85F0E']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={s.emptyPrimaryBtnGradient}
+        <Pressable
+          style={({ pressed }) => [
+            s.emptyPrimaryBtn,
+            {
+              opacity: pressed ? 0.9 : 1,
+              transform: [{ scale: pressed ? 0.985 : 1 }],
+            },
+          ]}
+          onPress={() => (primaryFadeOut ? salirCon(onPrimaryPress) : onPrimaryPress())}
         >
-          <Ionicons name={primaryIcon} size={19} color="#fff" />
-          <Text style={[s.emptyPrimaryBtnText, { fontSize: fonts.base }]}>
-            {primaryText}
-          </Text>
-        </LinearGradient>
-      </Pressable>
+          <LinearGradient
+            colors={['#F97613', '#D85F0E']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={s.emptyPrimaryBtnGradient}
+          >
+            <Ionicons name={primaryIcon} size={19} color="#fff" />
+            <Text style={[s.emptyPrimaryBtnText, { fontSize: fonts.base }]}>
+              {primaryText}
+            </Text>
+          </LinearGradient>
+        </Pressable>
+      </Animated.View>
 
       {!!secondaryText && !!onSecondaryPress && (
-        <Pressable
-          style={({ pressed }) => ({
-            marginTop: 12,
-            opacity: pressed ? 0.72 : 1,
-            transform: [{ scale: pressed ? 0.985 : 1 }],
-          })}
-          onPress={onSecondaryPress}
+        <Animated.View
+          style={{
+            opacity: secondaryAnim,
+            transform: [
+              {
+                translateY: secondaryAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [8, 0],
+                }),
+              },
+            ],
+          }}
         >
-          <Text style={[s.emptySecondaryText, { fontSize: fonts.sm }]}>
-            {secondaryText}
-          </Text>
-        </Pressable>
+          <Pressable
+            style={({ pressed }) => ({
+              marginTop: 12,
+              opacity: pressed ? 0.72 : 1,
+              transform: [{ scale: pressed ? 0.985 : 1 }],
+            })}
+            onPress={() => (secondaryFadeOut ? salirCon(onSecondaryPress) : onSecondaryPress?.())}
+          >
+            <Text style={[s.emptySecondaryText, { fontSize: fonts.sm }]}>
+              {secondaryText}
+            </Text>
+          </Pressable>
+        </Animated.View>
       )}
     </Animated.View>
   );
@@ -477,7 +562,11 @@ export default function FavoritosScreen() {
                   subtitle={t('favorites_login_sub')}
                   primaryText={t('login_title')}
                   primaryIcon="person-outline"
+                  // "Iniciar sesión" abre un modal en la misma pantalla,
+                  // NO navega → no desvanecer el card (si no, al cancelar
+                  // el modal quedaría invisible).
                   onPrimaryPress={() => setLoginModal(true)}
+                  primaryFadeOut={false}
                   secondaryText={t('fav_explore_no_account')}
                   onSecondaryPress={irAlInicio}
                   colors={colors}
@@ -850,7 +939,11 @@ const makeStyles = (c: any, f: any) =>
       flexDirection: 'row',
       justifyContent: 'center',
       alignItems: 'center',
-      gap: 10,
+      gap: 12,
+      // Padding lateral generoso: el botón se auto-ajusta al contenido,
+      // así que sin esto el icono y "Iniciar sesión" quedaban pegados a
+      // los bordes de la pastilla. 36px da aire a los lados.
+      paddingHorizontal: 36,
     },
     emptyPrimaryBtnText: {
       color: '#fff',

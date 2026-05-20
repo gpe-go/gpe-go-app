@@ -110,7 +110,11 @@ function RefreshLogo({ refreshing, isDark }: { refreshing: boolean; isDark: bool
             { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#EDEDED' },
           ]}
         >
-          <Ionicons name="location" size={18} color={isDark ? '#d1d5db' : '#9ca3af'} />
+          <Image
+            source={require('../../assets/images/logosinnadaoficial.png')}
+            style={{ width: 24, height: 24, tintColor: isDark ? '#d1d5db' : '#9ca3af' }}
+            resizeMode="contain"
+          />
         </View>
       </Animated.View>
       <Text style={[rl.label, { color: isDark ? '#9ca3af' : '#a1a1aa' }]}>GuadalupeGO</Text>
@@ -368,7 +372,7 @@ const DirectorioHeader = React.memo(
 
         <Animated.View style={bannerAnimatedStyle}>
           <LinearGradient
-            colors={['#F97613', '#D85F0E']}
+            colors={['#F97613', '#F97613']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={s.banner}
@@ -729,13 +733,18 @@ export default function DirectorioScreen() {
   const [subcategoriaActiva, setSubcategoriaActiva] = useState<string | null>(null);
 
   // ── Chips de categorías generados dinámicamente desde el backend ──
-  // (?modulo=categorias&action=listar). Si la respuesta aún no llega,
-  // `apiCategorias` queda vacío y los chips se renderizan en cuanto
-  // termine el fetch — el resto de la pantalla sigue siendo funcional.
+  // (?modulo=categorias&action=listar). Excluimos las turísticas porque
+  // Directorio es de comercios/servicios — lo turístico vive en
+  // Explorar. La misma lista de exclusión que usa `excluirTuristicas`
+  // garantiza que chip y filtro de lugares estén alineados.
   const { data: apiCategorias } = useCategorias();
-  const CATEGORIAS = useMemo<Categoria[]>(
-    () =>
-      apiCategorias.map((c) => {
+  const CATEGORIAS = useMemo<Categoria[]>(() => {
+    const TURIST = new Set(['sitios turisticos', 'cerros', 'parques', 'pueblos magicos', 'museos']);
+    const norm = (s: string) =>
+      s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+    return apiCategorias
+      .filter((c) => !TURIST.has(norm(c.nombre)))
+      .map((c) => {
         const p = resolverPresentacion(c.nombre);
         return {
           id: String(c.id),
@@ -744,9 +753,8 @@ export default function DirectorioScreen() {
           icon: p.icon,
           color: p.color,
         };
-      }),
-    [apiCategorias],
-  );
+      });
+  }, [apiCategorias]);
   const labelDeCategoria = useCallback(
     (cat: Pick<Categoria, 'labelKey' | 'value'>) =>
       cat.labelKey ? t(cat.labelKey) : cat.value,

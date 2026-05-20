@@ -609,5 +609,12 @@
   "about_database": "База даних",
   "settings_about_sub": "Команда, подяки та інституційні партнери",
   "about_itnl_angela_role": "Завідувачка кафедри інженерії комп’ютерних систем і консультантка проєкту",
-  "about_itnl_marta_role": "Викладачка ITNL і консультантка проєкту"
+  "about_itnl_marta_role": "Викладачка ITNL і консультантка проєкту",
+  "weather_humidity": "Вологість",
+  "weather_wind": "Вітер",
+  "cat_industria": "Промисловість і виробництво",
+  "cat_gobierno": "Уряд та установи",
+  "cat_turisticos": "Туристичні місця",
+  "cat_salud": "Здоров’я та аптеки",
+  "cat_transporte": "Транспорт і логістика"
 }

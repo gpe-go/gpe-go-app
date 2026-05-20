@@ -278,7 +278,7 @@ export default function RegistrarNegocioScreen() {
         }}
       >
         <LinearGradient
-          colors={['#F97613', '#D85F0E']}
+          colors={['#F97613', '#F97613']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={s.banner}

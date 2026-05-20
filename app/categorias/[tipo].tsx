@@ -1,16 +1,73 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Animated, FlatList, Image, Platform, Pressable, StatusBar, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Animated, FlatList, Image, Platform, Pressable, RefreshControl, StatusBar, StyleSheet, View } from 'react-native';
 import { Text } from '../../components/Text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFavoritos } from '../../src/context/FavoritosContext';
 import { useTheme } from '../../src/context/ThemeContext';
-import { useLugares } from '../../src/hooks/useLugares';
+import { getLugares } from '../../src/api/api';
+import { getFotoLugarCached } from '../../src/hooks/fotosCache';
+import { mapLugar } from '../../src/mappers/lugaresMapper';
+import { Lugar } from '../../src/types/lugar';
+import { useUbicacion } from '../../src/hooks/useUbicacion';
 import { CARD_CATEGORIAS, filtrarPorCategorias, rotarLugares } from '../../src/hooks/filtrosLugares';
 import { getImagenLugarSource } from '../../src/utils/imagenLugar';
+
+// Logo animado de carga (gira + pulsa) — mismo patrón que en las
+// tabs principales (Inicio, Noticias, Eventos, etc.). Se monta arriba
+// de la lista y solo es visible mientras `refreshing` es true.
+function RefreshLogo({ refreshing, isDark }: { refreshing: boolean; isDark: boolean }) {
+  const spinAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (!refreshing) return;
+    const spin = Animated.loop(
+      Animated.timing(spinAnim, { toValue: 1, duration: 900, useNativeDriver: true }),
+    );
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.18, duration: 450, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1,    duration: 450, useNativeDriver: true }),
+      ]),
+    );
+    spin.start();
+    pulse.start();
+    return () => {
+      spin.stop();
+      pulse.stop();
+      spinAnim.setValue(0);
+      pulseAnim.setValue(1);
+    };
+  }, [refreshing, spinAnim, pulseAnim]);
+
+  const rotate = spinAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+  if (!refreshing) return null;
+
+  return (
+    <View style={rl.container}>
+      <Animated.View style={{ transform: [{ rotate }, { scale: pulseAnim }] }}>
+        <View style={[rl.iconBg, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#EDEDED' }]}>
+          <Image
+            source={require('../../assets/images/logosinnadaoficial.png')}
+            style={{ width: 24, height: 24, tintColor: isDark ? '#d1d5db' : '#9ca3af' }}
+            resizeMode="contain"
+          />
+        </View>
+      </Animated.View>
+      <Text style={[rl.label, { color: isDark ? '#9ca3af' : '#a1a1aa' }]}>GuadalupeGO</Text>
+    </View>
+  );
+}
+
+const rl = StyleSheet.create({
+  container: { alignItems: 'center', justifyContent: 'center', paddingVertical: 14, gap: 8 },
+  iconBg: { width: 42, height: 42, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  label: { fontSize: 13, fontWeight: '700', letterSpacing: 0.3 },
+});
 
 const CATEGORIA_KEYS: Record<string, string> = {
   'Naturaleza & Aventura': 'cat_nature',
@@ -48,48 +105,118 @@ export default function Categoria() {
   const categoriaKey = CATEGORIA_KEYS[rawNombre];
   const titulo = categoriaKey ? t(categoriaKey) : rawNombre;
 
-  // Límites por Gantt card — cuando la BD esté poblada se respetará este tope.
-  const GANTT_LIMITS: Record<string, number> = {
-    'explorar':              20,
-    'Fin de semana':         20,
-    'Naturaleza & Aventura': 20,
-    'pueblos Magicos':       20,
-    'tours':                 20,
-    'cultura':               20,
-    'compras':               40,
-    'servicios':             40,
-  };
-  const limite = idCategoria ? 40 : (GANTT_LIMITS[rawNombre] ?? 20);
+  // ── Paginación / infinite scroll ─────────────────────────────
+  // Antes el screen llamaba a useLugares() que traía un solo bloque
+  // fijo (20 o 40). El usuario llegaba al final y no había forma de
+  // ver más. Ahora pedimos el backend en páginas: cada vez que la
+  // FlatList llega al final disparamos `cargarMas()` que pide la
+  // siguiente página y la APPENDA al estado, sin repetir IDs.
+  const PAGE_SIZE = 20;
+  const { coords } = useUbicacion();
 
-  // Todos los datos vienen de la API (gpe-go-api).
-  // - Categorías del directorio (ID numérico): filtra por id_categoria + radio 15 km.
-  // - Categorías Gantt (nombre string): trae los `limite` lugares más cercanos sin filtro de cat.
-  const { data: lugaresRaw = [], loading } = useLugares(
-    idCategoria,
-    undefined,
-    { radio_km: 15, limite },
-  ) as { data?: any[]; loading: boolean };
+  const [items, setItems]               = useState<Lugar[]>([]);
+  const [pagina, setPagina]             = useState(1);
+  const [loading, setLoading]           = useState(true);
+  const [loadingMore, setLoadingMore]   = useState(false);
+  const [refreshing, setRefreshing]     = useState(false);
+  const [hayMas, setHayMas]             = useState(true);
 
-  // ── Filtro por card del home ─────────────────────────────────
-  // Las cards del home (Explorar, Naturaleza, Cultura, Compras, etc)
-  // mandan un `nombre` que mapea a un subconjunto de categorías
-  // permitidas. Antes todas las cards mostraban los mismos lugares
-  // porque no se filtraba por categoría — ahora cada card respeta
-  // su lista. Para categorías del directorio (id numérico) NO se
-  // aplica el filtro por nombre; ya viene filtrado del backend.
-  // ── Rotación ─────────────────────────────────────────────────
-  // rotarLugares mezcla la lista para que cada visita/refresh el
-  // usuario vea lugares distintos al frente. Lo memoizamos por
-  // referencia de lugaresRaw — solo re-mezcla cuando cambia el
-  // dataset (no en cada re-render).
-  const lugares = useMemo(() => {
-    if (idCategoria) return rotarLugares(lugaresRaw);
-    const permitidas = CARD_CATEGORIAS[rawNombre];
-    const filtrados = permitidas
-      ? filtrarPorCategorias(lugaresRaw as any, permitidas)
-      : lugaresRaw;
-    return rotarLugares(filtrados);
-  }, [lugaresRaw, idCategoria, rawNombre]);
+  // Set de IDs vistos para dedupe entre páginas — el backend a veces
+  // regresa el mismo lugar en páginas consecutivas si hay paginación
+  // basada en orden no estable (proximidad cambia con GPS).
+  const vistosRef = useRef<Set<string>>(new Set());
+
+  // Si la card es slug-based (Pueblos Mágicos, Naturaleza, etc.) el
+  // backend no sabe del filtro, así que filtramos en cliente. Para
+  // categorías por ID (directorio) NO filtramos en cliente.
+  const filtroPermitido = useMemo(
+    () => (idCategoria ? null : CARD_CATEGORIAS[rawNombre] ?? null),
+    [idCategoria, rawNombre],
+  );
+
+  const cargarPagina = useCallback(
+    async (pg: number, reset: boolean) => {
+      const params: Record<string, any> = { pagina: pg, por_pagina: PAGE_SIZE };
+      if (idCategoria) params.id_categoria = idCategoria;
+      if (coords) {
+        params.lat = coords.lat;
+        params.lng = coords.lng;
+        params.radio_km = 15;
+      }
+
+      try {
+        const res = await getLugares(params);
+        const raws: any[] = res?.success ? (res.data?.lugares ?? []) : [];
+
+        // Trae fotos en paralelo (cacheadas en memoria por id).
+        const mapeados: Lugar[] = await Promise.all(
+          raws.map(async (raw) => {
+            const url = await getFotoLugarCached(raw.id);
+            return mapLugar(raw, url ?? undefined);
+          }),
+        );
+
+        // Dedupe + filtro de slug-card si aplica.
+        let frescos = mapeados.filter((l) => !vistosRef.current.has(l.id));
+        if (filtroPermitido) {
+          frescos = filtrarPorCategorias(frescos as any, filtroPermitido) as Lugar[];
+        }
+        frescos.forEach((l) => vistosRef.current.add(l.id));
+
+        if (reset) {
+          vistosRef.current = new Set(frescos.map((l) => l.id));
+          // Rotamos solo la primera carga para mantener la sensación de
+          // contenido fresco; al cargar más NO rotamos para que los
+          // resultados nuevos aparezcan en orden estable abajo.
+          setItems(rotarLugares(frescos));
+        } else {
+          setItems((prev) => [...prev, ...frescos]);
+        }
+
+        // Si el backend ya no entregó la página completa, no hay más.
+        setHayMas(raws.length === PAGE_SIZE);
+      } catch {
+        setHayMas(false);
+      }
+    },
+    [idCategoria, coords, filtroPermitido],
+  );
+
+  // Carga inicial / cuando cambia la categoría
+  useEffect(() => {
+    let activo = true;
+    (async () => {
+      setLoading(true);
+      vistosRef.current.clear();
+      await cargarPagina(1, true);
+      if (activo) {
+        setPagina(1);
+        setLoading(false);
+      }
+    })();
+    return () => { activo = false; };
+  }, [cargarPagina]);
+
+  const cargarMas = useCallback(async () => {
+    if (loadingMore || loading || refreshing || !hayMas) return;
+    setLoadingMore(true);
+    const sig = pagina + 1;
+    await cargarPagina(sig, false);
+    setPagina(sig);
+    setLoadingMore(false);
+  }, [loadingMore, loading, refreshing, hayMas, pagina, cargarPagina]);
+
+  const refrescar = useCallback(async () => {
+    setRefreshing(true);
+    vistosRef.current.clear();
+    await cargarPagina(1, true);
+    setPagina(1);
+    setHayMas(true);
+    setRefreshing(false);
+  }, [cargarPagina]);
+
+  // Alias para que el resto del JSX siga usando `lugares`.
+  const lugares = items;
 
   const s = makeStyles(colors, fonts, isDark);
 
@@ -184,7 +311,7 @@ export default function Categoria() {
     <SafeAreaView style={s.safe} edges={['top']}>
       <Animated.View style={bannerAnimatedStyle}>
         <LinearGradient
-          colors={['#F97613', '#d85f0e']}
+          colors={['#F97613', '#F97613']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={s.banner}
@@ -232,6 +359,40 @@ export default function Categoria() {
           keyExtractor={(item, index) => String(item?.id ?? index)}
           contentContainerStyle={[s.list, lugares.length === 0 && { flexGrow: 1 }]}
           showsVerticalScrollIndicator={false}
+          // Infinite scroll: dispara `cargarMas` cuando el usuario se acerca
+          // al final. Threshold de 0.6 = pide la página siguiente cuando aún
+          // quedan 60 % del viewport por ver, para que la carga sea invisible.
+          onEndReached={cargarMas}
+          onEndReachedThreshold={0.6}
+          // Spinner del sistema en `transparent` para que NO se vea — la
+          // animación visible es el `RefreshLogo` propio que renderiza el
+          // logo girando + "GuadalupeGO".
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={refrescar}
+              tintColor="transparent"
+              colors={["transparent"]}
+              progressBackgroundColor="transparent"
+            />
+          }
+          ListHeaderComponent={<RefreshLogo refreshing={refreshing} isDark={isDark} />}
+          ListFooterComponent={
+            loadingMore ? (
+              <View style={s.footerLoader}>
+                <ActivityIndicator size="small" color="#F97613" />
+                <Text style={[s.footerLoaderText, { fontSize: fonts.xs }]}>
+                  {t('loading')}
+                </Text>
+              </View>
+            ) : !hayMas && lugares.length > 0 ? (
+              <View style={s.footerLoader}>
+                <Text style={[s.footerLoaderText, { fontSize: fonts.xs }]}>
+                  {t('no_more_results', { defaultValue: 'Eso es todo por ahora' })}
+                </Text>
+              </View>
+            ) : null
+          }
           ListEmptyComponent={
             loading ? (
               <View style={s.loadingWrap}>
@@ -605,6 +766,18 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
     },
 
     loadingText: {
+      color: c.subtext,
+      fontWeight: '600',
+    },
+
+    footerLoader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      paddingVertical: 22,
+    },
+    footerLoaderText: {
       color: c.subtext,
       fontWeight: '600',
     },

@@ -609,5 +609,12 @@
   "about_database": "データベース",
   "settings_about_sub": "チーム、クレジット、提携機関",
   "about_itnl_angela_role": "コンピュータシステム工学科 学科長 兼 プロジェクトアドバイザー",
-  "about_itnl_marta_role": "ITNL 教員 兼 プロジェクトアドバイザー"
+  "about_itnl_marta_role": "ITNL 教員 兼 プロジェクトアドバイザー",
+  "weather_humidity": "湿度",
+  "weather_wind": "風",
+  "cat_industria": "産業・製造",
+  "cat_gobierno": "行政・機関",
+  "cat_turisticos": "観光地",
+  "cat_salud": "健康・薬局",
+  "cat_transporte": "交通・物流"
 }

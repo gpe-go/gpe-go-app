@@ -609,5 +609,12 @@
   "about_database": "Datenbank",
   "settings_about_sub": "Team, Credits und institutionelle Partner",
   "about_itnl_angela_role": "Leiterin des Studiengangs Informatiktechnik und Projektbetreuerin",
-  "about_itnl_marta_role": "Dozentin am ITNL und Projektbetreuerin"
+  "about_itnl_marta_role": "Dozentin am ITNL und Projektbetreuerin",
+  "weather_humidity": "Luftfeuchte",
+  "weather_wind": "Wind",
+  "cat_industria": "Industrie und Fertigung",
+  "cat_gobierno": "Regierung und Institutionen",
+  "cat_turisticos": "Sehenswürdigkeiten",
+  "cat_salud": "Gesundheit und Apotheken",
+  "cat_transporte": "Transport und Logistik"
 }

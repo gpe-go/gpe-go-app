@@ -595,5 +595,12 @@
   "about_database": "Base de datos",
   "settings_about_sub": "Equipo, créditos y aliados institucionales",
   "about_itnl_angela_role": "Jefa de la Carrera de Ingeniería en Sistemas Computacionales y Asesora de Proyecto",
-  "about_itnl_marta_role": "Docente del ITNL y Asesora de Proyecto"
+  "about_itnl_marta_role": "Docente del ITNL y Asesora de Proyecto",
+  "weather_humidity": "Humedad",
+  "weather_wind": "Viento",
+  "cat_industria": "Industria y manufactura",
+  "cat_gobierno": "Gobierno e instituciones",
+  "cat_turisticos": "Sitios turísticos",
+  "cat_salud": "Salud y farmacias",
+  "cat_transporte": "Transporte y logística"
 }

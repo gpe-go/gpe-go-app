@@ -609,5 +609,12 @@
   "about_database": "Banco de dados",
   "settings_about_sub": "Equipe, créditos e parceiros institucionais",
   "about_itnl_angela_role": "Chefe do curso de Engenharia em Sistemas Computacionais e Assessora de Projeto",
-  "about_itnl_marta_role": "Docente do ITNL e Assessora de Projeto"
+  "about_itnl_marta_role": "Docente do ITNL e Assessora de Projeto",
+  "weather_humidity": "Umidade",
+  "weather_wind": "Vento",
+  "cat_industria": "Indústria e manufatura",
+  "cat_gobierno": "Governo e instituições",
+  "cat_turisticos": "Pontos turísticos",
+  "cat_salud": "Saúde e farmácias",
+  "cat_transporte": "Transporte e logística"
 }

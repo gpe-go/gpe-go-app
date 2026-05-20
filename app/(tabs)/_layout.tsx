@@ -114,7 +114,13 @@ export default function Layout() {
         drawerContent={(props) => <CustomDrawer {...props} />}
         screenOptions={{
           headerShown: true,
-          drawerType: 'slide',
+          // `front` desliza el drawer SOBRE el contenido y siempre vuelve a
+          // su posición al soltar — `slide` tenía gestos parciales que
+          // dejaban el panel a medio camino sin auto-cerrar.
+          drawerType: 'front',
+          swipeEnabled: true,
+          swipeEdgeWidth: 60,
+          swipeMinDistance: 30,
           drawerStyle: {
             width: width * 0.72,
             backgroundColor: '#F97613',
@@ -245,6 +251,7 @@ const makeStyles = (c: any, f: any, isDark: boolean, STATUS_BAR_H: number, HEADE
       width: 26,
       height: 26,
       marginTop: -2,
+      transform: [{ translateY: -3 }, { translateX: 6 }],
     },
     logoText: {
       fontSize: f.xl, fontWeight: '900',

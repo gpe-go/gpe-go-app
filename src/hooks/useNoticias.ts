@@ -17,16 +17,19 @@ export const useNoticias = (busqueda?: string) => {
         if (res.success && res.data?.eventos?.length > 0) {
           const noticiasConFotos = await Promise.all(
             res.data.eventos.map(async (raw: any) => {
-              let imagen: string | undefined;
+              let imagenes: string[] = [];
               try {
                 const fotosRes = await getFotosEvento(raw.id);
-                if (fotosRes.success && Array.isArray(fotosRes.data) && fotosRes.data.length > 0) {
-                  imagen = fotosRes.data[0].url;
+                if (fotosRes.success && Array.isArray(fotosRes.data)) {
+                  imagenes = fotosRes.data
+                    .map((f: any) => f?.url)
+                    .filter((u: any): u is string => typeof u === 'string' && u.length > 0);
                 }
               } catch {
-                // If photo fetch fails, use placeholder
+                // Sin conexión → seguimos con array vacío y el fallback al
+                // logo GPE GO entra al renderizar.
               }
-              return mapNoticia(raw, imagen);
+              return mapNoticia(raw, imagenes[0], imagenes);
             })
           );
           setData(noticiasConFotos);

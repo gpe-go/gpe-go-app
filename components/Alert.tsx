@@ -18,7 +18,7 @@
 // ============================================================
 
 import * as React from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { Text } from './Text';
 
 export type AlertButtonStyle = 'default' | 'cancel' | 'destructive';
@@ -71,36 +71,73 @@ export const Alert = {
 };
 
 // ── Componente que renderiza el modal ───────────────────────
+//
+// Arquitectura: mantenemos el <Modal> SIEMPRE montado (con `visible`
+// controlado por estado). Cuando el usuario presiona un botón:
+//   1. visible=false → Modal inicia su animación de cierre.
+//   2. Esperamos a que la animación termine:
+//        - iOS: vía `onDismiss` (callback nativo, súper preciso).
+//        - Android: vía setTimeout (~250ms) porque allí no hay onDismiss.
+//   3. Recién entonces invocamos `onPress` y limpiamos `cfg`.
+//
+// ¿Por qué? Si llamábamos `onPress` antes de que el Modal terminara su
+// animación, en iOS el ImagePicker (otro modal NATIVO) intentaba
+// presentarse desde el view controller del Modal aún en transición y
+// fallaba silenciosamente — galería/cámara no abrían. Con este flujo
+// la presentación ya tiene el stack de view controllers limpio.
+const ANIM_HIDE_MS = 220;
+
 export function AlertHost() {
-  const [cfg, setCfg] = React.useState<AlertConfig | null>(null);
+  const [cfg, setCfg]         = React.useState<AlertConfig | null>(null);
+  const [visible, setVisible] = React.useState(false);
+  const pendingCbRef          = React.useRef<(() => void) | null>(null);
 
   React.useEffect(() => {
-    listener = setCfg;
-    return () => {
-      listener = null;
+    listener = (newCfg) => {
+      if (newCfg) {
+        setCfg(newCfg);
+        setVisible(true);
+      }
     };
+    return () => { listener = null; };
   }, []);
 
-  if (!cfg) return null;
+  const finalizar = React.useCallback(() => {
+    setCfg(null);
+    const cb = pendingCbRef.current;
+    pendingCbRef.current = null;
+    // Diferimos el cb una tick adicional para asegurar que el unmount
+    // del Modal ya terminó de procesarse antes de que el cb intente
+    // abrir otra superficie nativa (ImagePicker, mapas, etc.).
+    if (cb) requestAnimationFrame(cb);
+  }, []);
 
   const dismiss = (btn?: AlertButton) => {
-    setCfg(null);
-    btn?.onPress?.();
-    if (!btn) cfg.options?.onDismiss?.();
+    pendingCbRef.current = btn?.onPress ?? (!btn ? (cfg?.options?.onDismiss ?? null) : null);
+    setVisible(false);
+    // En Android, Modal NO expone `onDismiss`. Esperamos manualmente la
+    // duración de la animación. En iOS el callback `onDismiss` se hace
+    // cargo (ver prop más abajo) y este setTimeout actúa como fallback.
+    if (Platform.OS !== 'ios') {
+      setTimeout(finalizar, ANIM_HIDE_MS);
+    }
   };
 
   const onBackdropPress = () => {
-    if (cfg.options?.cancelable !== false) {
+    if (cfg?.options?.cancelable !== false) {
       dismiss();
     }
   };
 
+  if (!cfg) return null;
+
   return (
     <Modal
       transparent
-      visible
+      visible={visible}
       animationType="fade"
       onRequestClose={() => dismiss()}
+      onDismiss={Platform.OS === 'ios' ? finalizar : undefined}
     >
       <Pressable style={styles.backdrop} onPress={onBackdropPress}>
         <Pressable style={styles.card} onPress={() => { /* swallow */ }}>

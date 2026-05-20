@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { editarPerfil, eliminarCuenta, getApiErrorMessage } from '../../src/api/api';
 import { useAuth } from '../../src/context/AuthContext';
 import { useTheme } from '../../src/context/ThemeContext';
+import { comprimirYDataUrl } from '../../src/utils/imagenBase64';
 
 export default function EditarPerfilScreen() {
   const { colors, fonts, isDark } = useTheme();
@@ -108,46 +109,47 @@ export default function EditarPerfilScreen() {
     }
   }, [countdown, goodbyeModal, router]);
 
+  const abrirCamara = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert(t('profile_permission_gallery'));
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled) {
+      setPendingPhoto({ uri: result.assets[0].uri });
+    }
+  };
+
+  const abrirGaleria = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert(t('profile_permission_gallery'));
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: 'images',
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled) {
+      setPendingPhoto({ uri: result.assets[0].uri });
+    }
+  };
+
+  // Volvemos al Alert custom (tipografía Museo). Ahora `AlertHost` espera
+  // a que el Modal termine su animación de cierre antes de invocar
+  // `onPress`, así el picker nativo se presenta sin conflicto en iOS.
   const cambiarFoto = () => {
-    Alert.alert(t('photo_title'), '', [
-      {
-        text: t('photo_option_camera'),
-        onPress: async () => {
-          const { status } = await ImagePicker.requestCameraPermissionsAsync();
-          if (status !== 'granted') {
-            Alert.alert(t('profile_permission_gallery'));
-            return;
-          }
-          const result = await ImagePicker.launchCameraAsync({
-            allowsEditing: true,
-            aspect: [1, 1],
-            quality: 0.8,
-          });
-          if (!result.canceled) {
-            setPendingPhoto({ uri: result.assets[0].uri });
-          }
-        },
-      },
-      {
-        text: t('photo_option_gallery'),
-        onPress: async () => {
-          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-          if (status !== 'granted') {
-            Alert.alert(t('profile_permission_gallery'));
-            return;
-          }
-          const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: 'images',
-            allowsEditing: true,
-            aspect: [1, 1],
-            quality: 0.8,
-          });
-          if (!result.canceled) {
-            setPendingPhoto({ uri: result.assets[0].uri });
-          }
-        },
-      },
-      { text: t('profile_cancel'), style: 'cancel' },
+    Alert.alert(t('photo_title'), undefined, [
+      { text: t('photo_option_camera'),  onPress: abrirCamara },
+      { text: t('photo_option_gallery'), onPress: abrirGaleria },
+      { text: t('profile_cancel'),       style: 'cancel' },
     ]);
   };
 
@@ -218,9 +220,13 @@ export default function EditarPerfilScreen() {
 
     setLoading(true);
     try {
-      // Foto: solo guardado local, sin servidor
+      // Foto: comprimimos + convertimos a base64 AHORA (al aplicar)
+      // en lugar de en el momento del picker, para que el picker cierre
+      // rápido. La compresión (800px, JPEG 0.6) baja la imagen de
+      // varios MB a ~60-150 KB, lo que el backend acepta sin 500.
       if (pendingPhoto) {
-        await actualizarFoto(pendingPhoto.uri);
+        const dataUrl = await comprimirYDataUrl(pendingPhoto.uri);
+        await actualizarFoto(pendingPhoto.uri, dataUrl);
         setPendingPhoto(null);
       }
 
@@ -287,7 +293,7 @@ export default function EditarPerfilScreen() {
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
         <Animated.View style={bannerAnimatedStyle}>
           <LinearGradient
-            colors={['#F97613', '#d85f0e']}
+            colors={['#F97613', '#F97613']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={s.banner}

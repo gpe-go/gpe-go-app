@@ -14,6 +14,7 @@ import { useNotificaciones } from '../../src/context/NotificacionesContext';
 import { useAuth } from '../../src/context/AuthContext';
 import { useTheme } from '../../src/context/ThemeContext';
 import { signInWithGoogle, signInWithApple, SocialAuthNotConfigured } from '../../src/auth/socialAuth';
+import { comprimirYDataUrl } from '../../src/utils/imagenBase64';
 
 type Step = 'login' | 'registro' | 'codigo';
 
@@ -166,7 +167,13 @@ function ScreenShell({
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        // En Android `behavior="height"` competía con el adjustResize
+        // nativo del manifest → la vista se redimensionaba dos veces y
+        // al cerrar el teclado quedaba un cuadro blanco residual tapando
+        // los botones de social login. Pasándolo a `undefined` dejamos
+        // que el SO maneje el teclado solo (su default ya es correcto
+        // en Expo) y el problema desaparece. iOS mantiene "padding".
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={0}
       >
         <ScrollView
@@ -223,7 +230,7 @@ function AuthBanner({
   return (
     <Animated.View style={animatedStyle}>
       <LinearGradient
-        colors={['#F97613', '#D85F0E']}
+        colors={['#F97613', '#F97613']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={s.banner}
@@ -273,9 +280,11 @@ function AppInfoFooter({
   return (
     <View style={styles.appInfo}>
       <View style={styles.appInfoLogoRow}>
-        <View style={styles.appInfoIconWrap}>
-          <Ionicons name="location" size={10} color="#fff" />
-        </View>
+        <Image
+          source={require('../../assets/images/logosinnadaoficial.png')}
+          style={styles.appInfoIconWrap}
+          resizeMode="contain"
+        />
         <Text
           style={[
             styles.appInfoLogo,
@@ -398,14 +407,6 @@ export default function PerfilScreen() {
     prevAuthRef.current = isAuthenticated;
   }, [isAuthenticated, usuario, step, topAnim, cardsAnim, cardAnim]);
 
-  const cambiarFoto = () => {
-    Alert.alert(t('profile_photo'), '', [
-      { text: ` ${t('profile_camera')}`, onPress: tomarFoto },
-      { text: ` ${t('profile_gallery')}`, onPress: seleccionarDeGaleria },
-      { text: t('profile_cancel'), style: 'cancel' },
-    ]);
-  };
-
   const seleccionarDeGaleria = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
@@ -420,7 +421,13 @@ export default function PerfilScreen() {
       quality: 0.8,
     });
 
-    if (!result.canceled) actualizarFoto(result.assets[0].uri);
+    if (!result.canceled) {
+      const uri = result.assets[0].uri;
+      // Comprime ANTES de subir: el backend rechazaba fotos de varios
+      // MB con 500. Reescala a 800px y JPEG 0.6 → ~60-150 KB.
+      const dataUrl = await comprimirYDataUrl(uri);
+      actualizarFoto(uri, dataUrl);
+    }
   };
 
   const tomarFoto = async () => {
@@ -435,7 +442,22 @@ export default function PerfilScreen() {
       quality: 0.8,
     });
 
-    if (!result.canceled) actualizarFoto(result.assets[0].uri);
+    if (!result.canceled) {
+      const uri = result.assets[0].uri;
+      const dataUrl = await comprimirYDataUrl(uri);
+      actualizarFoto(uri, dataUrl);
+    }
+  };
+
+  // Volvemos al Alert custom (tipografía Museo). Ahora `AlertHost` espera
+  // a que el Modal termine su animación de cierre antes de invocar
+  // `onPress`, así el picker nativo se presenta sin conflicto en iOS.
+  const cambiarFoto = () => {
+    Alert.alert(t('profile_photo'), undefined, [
+      { text: t('profile_camera'),  onPress: tomarFoto },
+      { text: t('profile_gallery'), onPress: seleccionarDeGaleria },
+      { text: t('profile_cancel'),  style: 'cancel' },
+    ]);
   };
 
   const handleSolicitarCodigo = async () => {
@@ -588,7 +610,7 @@ export default function PerfilScreen() {
           }}
         >
           <LinearGradient
-            colors={['#F97613', '#D85F0E']}
+            colors={['#F97613', '#F97613']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={s.bannerLogged}
@@ -816,23 +838,16 @@ export default function PerfilScreen() {
               onPress={handleVerificarCodigo}
               disabled={loading}
             >
-              <LinearGradient
-                colors={['#F97613', '#D85F0E']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={s.loginBtnGradient}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <>
-                    <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
-                    <Text style={[s.loginBtnText, { fontSize: fonts.md }]}>
-                      {t('confirm')}
-                    </Text>
-                  </>
-                )}
-              </LinearGradient>
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <>
+                  <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
+                  <Text style={[s.loginBtnText, { fontSize: fonts.md }]}>
+                    {t('confirm')}
+                  </Text>
+                </>
+              )}
             </Pressable>
 
             <Pressable
@@ -926,23 +941,16 @@ export default function PerfilScreen() {
               onPress={handleRegistro}
               disabled={loading}
             >
-              <LinearGradient
-                colors={['#F97613', '#D85F0E']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={s.loginBtnGradient}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <>
-                    <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
-                    <Text style={[s.loginBtnText, { fontSize: fonts.md }]}>
-                      {t('profile_create_account')}
-                    </Text>
-                  </>
-                )}
-              </LinearGradient>
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <>
+                  <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
+                  <Text style={[s.loginBtnText, { fontSize: fonts.md }]}>
+                    {t('profile_create_account')}
+                  </Text>
+                </>
+              )}
             </Pressable>
           </View>
 
@@ -1005,23 +1013,16 @@ export default function PerfilScreen() {
             onPress={handleSolicitarCodigo}
             disabled={loading}
           >
-            <LinearGradient
-              colors={['#F97613', '#D85F0E']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={s.loginBtnGradient}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <>
-                  <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
-                  <Text style={[s.loginBtnText, { fontSize: fonts.md }]}>
-                    {t('confirm')}
-                  </Text>
-                </>
-              )}
-            </LinearGradient>
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <>
+                <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
+                <Text style={[s.loginBtnText, { fontSize: fonts.md }]}>
+                  {t('confirm')}
+                </Text>
+              </>
+            )}
           </Pressable>
 
           <Pressable
@@ -1310,12 +1311,11 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   appInfoIconWrap: {
-    width: 18,
-    height: 18,
-    borderRadius: 5,
-    backgroundColor: '#F97613',
-    justifyContent: 'center',
-    alignItems: 'center',
+    // Mismo aspect ratio + tamaño que en detalleNoticia para mantener
+    // consistencia de marca en toda la app.
+    width: 17,
+    height: 22,
+    transform: [{ translateY: -3 }, { translateX: 3 }],
   },
   appInfoLogo: {
     fontWeight: '800',
@@ -1459,21 +1459,24 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       color: c.text,
       fontWeight: '500',
     },
+    // Botón Confirmar — color sólido naranja sin LinearGradient.
+    // Decisión: el gradient subtle (F97613 → D85F0E) era casi
+    // imperceptible en un botón de 58px y causaba bugs persistentes en
+    // Android Expo Go (el contenido se perdía después de logout).
+    // Solid color = 100% confiable en todas las plataformas.
     loginBtn: {
+      height: 58,
       borderRadius: 18,
-      overflow: 'hidden',
+      backgroundColor: '#F97613',
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: 8,
       elevation: 5,
       shadowColor: '#F97613',
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.35,
       shadowRadius: 8,
-    },
-    loginBtnGradient: {
-      height: 58,
-      flexDirection: 'row',
-      justifyContent: 'center',
-      alignItems: 'center',
-      gap: 8,
     },
     loginBtnText: {
       color: '#fff',

@@ -609,5 +609,12 @@
   "about_database": "Bazë e të dhënave",
   "settings_about_sub": "Ekipi, kreditë dhe partnerët institucionalë",
   "about_itnl_angela_role": "Drejtuese e Programit të Inxhinierisë së Sistemeve Kompjuterike dhe Këshilltare e Projektit",
-  "about_itnl_marta_role": "Pedagoge në ITNL dhe Këshilltare e Projektit"
+  "about_itnl_marta_role": "Pedagoge në ITNL dhe Këshilltare e Projektit",
+  "weather_humidity": "Lagështia",
+  "weather_wind": "Era",
+  "cat_industria": "Industria dhe prodhimi",
+  "cat_gobierno": "Qeveria dhe institucionet",
+  "cat_turisticos": "Vende turistike",
+  "cat_salud": "Shëndeti dhe farmacitë",
+  "cat_transporte": "Transporti dhe logjistika"
 }

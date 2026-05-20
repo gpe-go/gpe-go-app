@@ -609,5 +609,12 @@
   "about_database": "Databasis",
   "settings_about_sub": "Span, krediete en institusionele vennote",
   "about_itnl_angela_role": "Hoof van die Rekenaarstelsel-ingenieurswese-program en Projekraadgewer",
-  "about_itnl_marta_role": "ITNL-dosent en Projekraadgewer"
+  "about_itnl_marta_role": "ITNL-dosent en Projekraadgewer",
+  "weather_humidity": "Humiditeit",
+  "weather_wind": "Wind",
+  "cat_industria": "Nywerheid en vervaardiging",
+  "cat_gobierno": "Regering en instellings",
+  "cat_turisticos": "Toeristebestemmings",
+  "cat_salud": "Gesondheid en apteke",
+  "cat_transporte": "Vervoer en logistiek"
 }

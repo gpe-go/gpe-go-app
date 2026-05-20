@@ -595,5 +595,12 @@
   "about_database": "Database",
   "settings_about_sub": "Team, credits and institutional partners",
   "about_itnl_angela_role": "Head of the Computer Systems Engineering program and Project Advisor",
-  "about_itnl_marta_role": "ITNL Faculty Member and Project Advisor"
+  "about_itnl_marta_role": "ITNL Faculty Member and Project Advisor",
+  "weather_humidity": "Humidity",
+  "weather_wind": "Wind",
+  "cat_industria": "Industry & manufacturing",
+  "cat_gobierno": "Government & institutions",
+  "cat_turisticos": "Tourist sites",
+  "cat_salud": "Health & pharmacies",
+  "cat_transporte": "Transportation & logistics"
 }

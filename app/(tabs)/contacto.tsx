@@ -396,7 +396,7 @@ export default function ContactoScreen() {
       {/* ══ BANNER ══════════════════════════════════════ */}
       <AnimatedSection delay={0}>
         <LinearGradient
-          colors={['#F97613', '#d85f0e']}
+          colors={['#F97613', '#F97613']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={s.banner}

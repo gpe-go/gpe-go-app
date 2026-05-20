@@ -609,5 +609,12 @@
   "about_database": "Database",
   "settings_about_sub": "Team, credits en institutionele partners",
   "about_itnl_angela_role": "Hoofd van de opleiding Computer Systems Engineering en Projectadviseur",
-  "about_itnl_marta_role": "ITNL-docent en Projectadviseur"
+  "about_itnl_marta_role": "ITNL-docent en Projectadviseur",
+  "weather_humidity": "Vochtigheid",
+  "weather_wind": "Wind",
+  "cat_industria": "Industrie en productie",
+  "cat_gobierno": "Overheid en instellingen",
+  "cat_turisticos": "Toeristische plaatsen",
+  "cat_salud": "Gezondheid en apotheken",
+  "cat_transporte": "Transport en logistiek"
 }
