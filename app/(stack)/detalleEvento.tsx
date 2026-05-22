@@ -3,10 +3,10 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Animated, Image, Platform, Pressable, ScrollView, Share, StatusBar, StyleSheet, View } from 'react-native';
+import { Animated, Image, Linking, Platform, Pressable, ScrollView, Share, StatusBar, StyleSheet, View } from 'react-native';
+import { Alert } from '../../components/Alert';
 import { Text } from '../../components/Text';
 import { useTheme } from "../../src/context/ThemeContext";
-import { abrirEnMapa } from "../../src/utils/abrirMapa";
 
 const CAT_KEYS: Record<string, string> = {
   Deporte: "cat_deporte",
@@ -138,8 +138,26 @@ export default function DetalleEvento() {
     return costo;
   };
 
+  // Muestra el diálogo para elegir entre Google Maps y Apple Maps (este
+  // último solo en iOS), igual que en Contacto. Busca por el LUGAR del
+  // evento (no por el título), que es la dirección real; si no hay lugar
+  // cae al título como último recurso.
   const abrirMapa = () => {
-    abrirEnMapa(`${evento.titulo || ""} ${evento.lugar || ""}`);
+    const q = encodeURIComponent((evento.lugar || evento.titulo || "").trim());
+    const googleUrl = `https://www.google.com/maps/search/?api=1&query=${q}`;
+    const appleUrl = `https://maps.apple.com/?q=${q}`;
+
+    const opciones: { text: string; onPress: () => void }[] = [
+      { text: 'Google Maps', onPress: () => Linking.openURL(googleUrl).catch(() => {}) },
+    ];
+    if (Platform.OS === 'ios') {
+      opciones.unshift({ text: 'Apple Maps', onPress: () => Linking.openURL(appleUrl).catch(() => {}) });
+    }
+
+    Alert.alert(t('open_in_maps'), t('choose_maps_app'), [
+      ...opciones,
+      { text: t('cancel'), style: 'cancel' },
+    ]);
   };
 
   const compartir = async () => {
@@ -491,34 +509,8 @@ export default function DetalleEvento() {
                 </Text>
               </View>
             </View>
-
-            {!!evento.sub && (
-              <>
-                <View style={s.separator} />
-                <View style={s.infoRow}>
-                  <View
-                    style={[
-                      s.infoIconWrap,
-                      { backgroundColor: "rgba(245,190,65,0.14)" },
-                    ]}
-                  >
-                    <MaterialCommunityIcons
-                      name="star-four-points-outline"
-                      size={20}
-                      color="#F5BE41"
-                    />
-                  </View>
-                  <View style={s.infoTextWrapper}>
-                    <Text style={[s.infoLabel, { fontSize: fonts.xs }]}>
-                      {t("event_detail_type", { defaultValue: "Tipo" })}
-                    </Text>
-                    <Text style={[s.infoText, { fontSize: fonts.sm }]}>
-                      {getSubTexto(evento.sub)}
-                    </Text>
-                  </View>
-                </View>
-              </>
-            )}
+            {/* El bloque "Tipo" (evento.sub) se removió: mostraba el mismo
+                valor que la Categoría (duplicado). */}
           </View>
         </Animated.View>
 

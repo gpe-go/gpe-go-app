@@ -1,7 +1,7 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Animated, FlatList, Image, Platform, Pressable, RefreshControl, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
@@ -33,25 +33,8 @@ type Categoria = {
   color: string;
 };
 
-// Mapa: categoría padre → valores exactos que agrupa (para el filtro)
-const CATEGORIA_GRUPOS: Record<string, string[]> = {
-  Hoteles:   ['Hoteles', 'Moteles'],
-  Servicios: ['Agua y Drenaje', 'Energía Eléctrica', 'Gas'],
-};
-
-// Subcategorías visuales por categoría padre
-type Subcat = { value: string; labelKey: string; icon: string };
-const SUBCATEGORIAS: Record<string, Subcat[]> = {
-  Hoteles: [
-    { value: 'Hoteles',  labelKey: 'sub_hoteles', icon: 'office-building' },
-    { value: 'Moteles',  labelKey: 'sub_moteles', icon: 'bed' },
-  ],
-  Servicios: [
-    { value: 'Agua y Drenaje',      labelKey: 'sub_agua', icon: 'water'          },
-    { value: 'Energía Eléctrica',   labelKey: 'sub_luz',  icon: 'lightning-bolt' },
-    { value: 'Gas',                 labelKey: 'sub_gas',  icon: 'fire'           },
-  ],
-};
+// El dashboard eliminó las subcategorías: Directorio ahora filtra solo
+// por CATEGORÍA. Se removieron CATEGORIA_GRUPOS y SUBCATEGORIAS.
 
 function RefreshLogo({ refreshing, isDark }: { refreshing: boolean; isDark: boolean }) {
   const spinAnim = useRef(new Animated.Value(0)).current;
@@ -150,9 +133,9 @@ type HeaderProps = {
   colors: any;
   fonts: any;
   refreshing: boolean;
+  cargando: boolean;
   search: string;
   categoriaActiva: string | null;
-  subcategoriaActiva: string | null;
   filteredData: Lugar[];
   horizontalData: Lugar[];
   todosData: Lugar[];
@@ -161,7 +144,6 @@ type HeaderProps = {
   onSearch: (text: string) => void;
   onLimpiar: () => void;
   onCategoria: (cat: string) => void;
-  onSubcategoria: (sub: string) => void;
   onUbicacion: () => void;
   onSelectItem: (item: Lugar) => void;
   onIrAlDetalle: (item: Lugar) => void;
@@ -181,9 +163,9 @@ const DirectorioHeader = React.memo(
     colors,
     fonts,
     refreshing,
+    cargando,
     search,
     categoriaActiva,
-    subcategoriaActiva,
     filteredData,
     horizontalData,
     todosData,
@@ -192,7 +174,6 @@ const DirectorioHeader = React.memo(
     onSearch,
     onLimpiar,
     onCategoria,
-    onSubcategoria,
     onUbicacion,
     onSelectItem,
     onIrAlDetalle,
@@ -207,7 +188,6 @@ const DirectorioHeader = React.memo(
     const bannerAnim = useRef(new Animated.Value(0)).current;
     const mapAnim = useRef(new Animated.Value(0)).current;
     const catAnim = useRef(new Animated.Value(0)).current;
-    const subcatAnim = useRef(new Animated.Value(0)).current;
     const listAnim = useRef(new Animated.Value(0)).current;
 
     // Ref al ScrollView de chips para restaurar posición tras remount
@@ -224,8 +204,6 @@ const DirectorioHeader = React.memo(
       }
     }, [chipScrollX]);
 
-    // Subcategorías disponibles para la categoría activa
-    const subcats = categoriaActiva ? (SUBCATEGORIAS[categoriaActiva] ?? []) : [];
     const catInfo = categoriaActiva ? categorias.find((c) => c.value === categoriaActiva) : null;
 
     // Lugares aleatorios de directorio para el placeholder animado (se eligen una vez al cargar)
@@ -283,21 +261,6 @@ const DirectorioHeader = React.memo(
       ]).start();
     }, [bannerAnim, mapAnim, catAnim, listAnim]);
 
-    // Animación de entrada de subcategorías cuando aparecen
-    useEffect(() => {
-      if (subcats.length > 0) {
-        subcatAnim.setValue(0);
-        Animated.spring(subcatAnim, {
-          toValue: 1,
-          tension: 60,
-          friction: 9,
-          useNativeDriver: true,
-        }).start();
-      } else {
-        subcatAnim.setValue(0);
-      }
-    }, [categoriaActiva, subcatAnim, subcats.length]);
-
     const bannerAnimatedStyle = {
       opacity: bannerAnim,
       transform: [
@@ -341,24 +304,6 @@ const DirectorioHeader = React.memo(
           translateY: listAnim.interpolate({
             inputRange: [0, 1],
             outputRange: [18, 0],
-          }),
-        },
-      ],
-    };
-
-    const subcatAnimatedStyle = {
-      opacity: subcatAnim,
-      transform: [
-        {
-          translateY: subcatAnim.interpolate({
-            inputRange: [0, 1],
-            outputRange: [-10, 0],
-          }),
-        },
-        {
-          scaleY: subcatAnim.interpolate({
-            inputRange: [0, 1],
-            outputRange: [0.7, 1],
           }),
         },
       ],
@@ -587,65 +532,33 @@ const DirectorioHeader = React.memo(
           </ScrollView>
         </Animated.View>
 
-        {/* ── Subcategorías (aparecen solo si la cat activa las tiene) ── */}
-        {subcats.length > 0 && (
-          <Animated.View style={[subcatAnimatedStyle, { overflow: 'hidden' }]}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={s.subchipScroll}
-            >
-              {subcats.map((sub) => {
-                const activa = subcategoriaActiva === sub.value;
-                return (
-                  <Pressable
-                    key={sub.value}
-                    onPress={() => onSubcategoria(sub.value)}
-                    style={({ pressed }) => [
-                      s.subchip,
-                      activa && {
-                        backgroundColor: catInfo?.color ?? '#4A90E2',
-                        borderColor: catInfo?.color ?? '#4A90E2',
-                      },
-                      { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
-                    ]}
-                  >
-                    <MaterialCommunityIcons
-                      name={sub.icon as any}
-                      size={13}
-                      color={activa ? '#fff' : (catInfo?.color ?? '#4A90E2')}
-                    />
-                    <Text style={[s.subchipText, { fontSize: fonts.xs }, activa && s.chipTextActive]}>
-                      {t(sub.labelKey)}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          </Animated.View>
-        )}
-
         {/* ── Scroll horizontal de resultados ────────────── */}
         <Animated.View style={listAnimatedStyle}>
           <View style={s.hSection}>
             <View style={[s.sectionHeader, { paddingHorizontal: 20 }]}>
               <View style={s.sectionDot} />
               <Text style={[s.sectionTitle, { fontSize: fonts.lg }]}>
-                {subcategoriaActiva
-                  ? t(subcats.find((s) => s.value === subcategoriaActiva)?.labelKey ?? '')
-                  : categoriaActiva
+                {categoriaActiva
                   ? (() => {
                       const c = categorias.find((c) => c.value === categoriaActiva);
                       return c ? labelDeCategoria(c) : t('all');
                     })()
                   : t('all')}
               </Text>
-              <View style={s.countBadge}>
-                <Text style={[s.countText, { fontSize: fonts.xs }]}>{horizontalData.length}</Text>
-              </View>
+              {/* Mientras carga la categoría ocultamos el numerador para
+                  no mostrar un "0" engañoso. */}
+              {!cargando && (
+                <View style={s.countBadge}>
+                  <Text style={[s.countText, { fontSize: fonts.xs }]}>{horizontalData.length}</Text>
+                </View>
+              )}
             </View>
 
-            {horizontalData.length === 0 ? (
+            {cargando ? (
+              // Logo de carga mientras llega la categoría desde el API
+              // (evita el parpadeo de "0 / sin resultados").
+              <RefreshLogo refreshing isDark={isDark} />
+            ) : horizontalData.length === 0 ? (
               <Text style={{ paddingHorizontal: 20, color: colors.subtext, fontSize: fonts.sm, marginBottom: 8 }}>
                 {t('no_results')}
               </Text>
@@ -730,7 +643,6 @@ export default function DirectorioScreen() {
 
   const [search, setSearch] = useState('');
   const [categoriaActiva, setCategoriaActiva] = useState<string | null>(null);
-  const [subcategoriaActiva, setSubcategoriaActiva] = useState<string | null>(null);
 
   // ── Chips de categorías generados dinámicamente desde el backend ──
   // (?modulo=categorias&action=listar). Excluimos las turísticas porque
@@ -766,11 +678,41 @@ export default function DirectorioScreen() {
   // Guarda la posición X del scroll de chips entre remounts del header
   const chipScrollX = useRef(0);
 
-  // Radio 10 km · máx 40 lugares. Con búsqueda activa el hook consulta toda la BD.
-  const { data: lugaresRaw, refresh: refreshLugares } = useLugares(
-    undefined,
+  // id_categoria de la categoría activa (si hay). Lo resolvemos desde los
+  // chips dinámicos (no hardcoded). Sirve para pedir los lugares DIRECTO
+  // por categoría al backend.
+  const idCategoriaActiva = useMemo(() => {
+    if (!categoriaActiva) return undefined;
+    const c = CATEGORIAS.find((c) => c.value === categoriaActiva);
+    return c ? Number(c.id) : undefined;
+  }, [categoriaActiva, CATEGORIAS]);
+
+  // Estrategia de fetch:
+  //  • Sin categoría → vista de exploración: los 40 lugares más cercanos
+  //    en 10 km (excluyendo turísticos).
+  //  • Con categoría → pedimos por id_categoria con TOPE de 30 y rotación
+  //    por página aleatoria. Así categorías enormes (Automotriz ~2000,
+  //    Tiendas ~3700) nunca cargan cientos de items (evita bugs/crashes)
+  //    y cada refresh trae 30 lugares NUEVOS de esa categoría.
+  // Con búsqueda activa el hook consulta toda la BD.
+  const { data: lugaresRaw, loading: cargandoLugares, refresh: refreshLugares } = useLugares(
+    idCategoriaActiva,
     search,
-    { radio_km: 10, limite: 40 },
+    idCategoriaActiva ? { limite: 30, rotarPagina: true } : { radio_km: 10, limite: 40 },
+  );
+
+  // Refresco al VOLVER a la pantalla (#2). Carga inicial (#1) la hace el
+  // hook al montar; pull-to-refresh cubre el manual (#3). Saltamos el
+  // primer foco para no duplicar la carga inicial.
+  const primerFocoRef = useRef(true);
+  useFocusEffect(
+    useCallback(() => {
+      if (primerFocoRef.current) {
+        primerFocoRef.current = false;
+        return;
+      }
+      refreshLugares();
+    }, [refreshLugares]),
   );
 
   // Directorio muestra todo lo NO turístico. Usamos exclusión en vez de
@@ -784,28 +726,13 @@ export default function DirectorioScreen() {
     return rotarLugares(directorio);
   }, [lugaresRaw]);
 
-  // Filtra por categoría (agrupando subcategorías del mismo padre) y luego por subcategoría
+  // Filtra solo por CATEGORÍA (ya no hay subcategorías).
   const filteredData = useMemo(() => {
-    let data = lugares;
-    if (categoriaActiva) {
-      const grupo = CATEGORIA_GRUPOS[categoriaActiva];
-      if (grupo) {
-        data = data.filter((l) => grupo.includes(l.categoria));
-      } else {
-        data = data.filter((l) => l.categoria === categoriaActiva);
-      }
-    }
-    if (subcategoriaActiva) {
-      // Compara contra subcategoria (campo nuevo) y también contra categoria
-      // como fallback para lugares que aún no tienen subcategoria en la BD.
-      data = data.filter(
-        (l) => l.subcategoria === subcategoriaActiva || l.categoria === subcategoriaActiva,
-      );
-    }
-    return data;
-  }, [lugares, categoriaActiva, subcategoriaActiva]);
+    if (!categoriaActiva) return lugares;
+    return lugares.filter((l) => l.categoria === categoriaActiva);
+  }, [lugares, categoriaActiva]);
 
-  const isEmpty = filteredData.length === 0 && (search.length > 0 || categoriaActiva !== null);
+  const isEmpty = !cargandoLugares && filteredData.length === 0 && (search.length > 0 || categoriaActiva !== null);
 
   useEffect(() => {
     if (isEmpty) {
@@ -871,21 +798,7 @@ export default function DirectorioScreen() {
 
   const seleccionarCategoria = useCallback(
     (cat: string) => {
-      setCategoriaActiva(prev => {
-        if (cat === prev) {
-          setSubcategoriaActiva(null);
-          return null;
-        }
-        setSubcategoriaActiva(null);
-        return cat;
-      });
-    },
-    []
-  );
-
-  const seleccionarSubcategoria = useCallback(
-    (sub: string) => {
-      setSubcategoriaActiva(prev => sub === prev ? null : sub);
+      setCategoriaActiva(prev => (cat === prev ? null : cat));
     },
     []
   );
@@ -935,9 +848,9 @@ export default function DirectorioScreen() {
       colors={colors}
       fonts={fonts}
       refreshing={refreshing}
+      cargando={cargandoLugares}
       search={search}
       categoriaActiva={categoriaActiva}
-      subcategoriaActiva={subcategoriaActiva}
       filteredData={filteredData}
       horizontalData={filteredData}
       todosData={lugares}
@@ -946,7 +859,6 @@ export default function DirectorioScreen() {
       onSearch={handleSearch}
       onLimpiar={limpiarSearch}
       onCategoria={seleccionarCategoria}
-      onSubcategoria={seleccionarSubcategoria}
       onUbicacion={obtenerUbicacion}
       onSelectItem={irAlDetalle}
       onIrAlDetalle={irAlDetalle}
@@ -1000,7 +912,9 @@ export default function DirectorioScreen() {
         windowSize={5}
         ListHeaderComponent={directorioHeader}
         ListEmptyComponent={
-          !refreshing ? (
+          // No mostramos el estado vacío mientras carga (el logo de carga
+          // del header ya da feedback) ni durante pull-to-refresh.
+          !refreshing && !cargandoLugares ? (
             <Animated.View style={[s.emptyWrap, emptyAnimatedStyle]}>
               <View style={s.emptyIconWrap}>
                 <Ionicons name="business-outline" size={42} color="#cbd5e1" />

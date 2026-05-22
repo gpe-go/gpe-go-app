@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getLugares } from '../api/api';
 import { mapLugar } from '../mappers/lugaresMapper';
 import { Lugar } from '../types/lugar';
@@ -8,8 +8,15 @@ import { getFotoLugarCached } from './fotosCache';
 export interface LugaresConfig {
   /** Radio en km para traer lugares cercanos (ej. 5 = Explorar, 15 = Directorio) */
   radio_km?: number;
-  /** Máximo de resultados en modo proximidad (default 40) */
+  /** Máximo de resultados (default 40). Con `rotarPagina` actúa como tamaño de página. */
   limite?: number;
+  /**
+   * Si true, cada carga trae una PÁGINA ALEATORIA del total (rotación de
+   * lugares nuevos en categorías grandes, sin cargar cientos a la vez).
+   * Solo aplica al modo categoría (sin búsqueda ni proximidad). Mantiene
+   * el tope en `limite` para evitar bugs/crashes por listas enormes.
+   */
+  rotarPagina?: boolean;
 }
 
 /**
@@ -29,14 +36,24 @@ export const useLugares = (
   busqueda?: string,
   config?: LugaresConfig,
 ) => {
-  const radio_km = config?.radio_km;
-  const limite   = config?.limite ?? 40;
+  const radio_km    = config?.radio_km;
+  const limite      = config?.limite ?? 40;
+  const rotarPagina = config?.rotarPagina ?? false;
 
   const { coords } = useUbicacion();
 
   const [data,    setData]    = useState<Lugar[]>([]);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState<string | null>(null);
+
+  // Total de lugares de la categoría actual (lo reporta el backend).
+  // Sirve para elegir una página aleatoria válida en modo `rotarPagina`.
+  const totalRef = useRef<number | null>(null);
+  // Al cambiar de categoría reseteamos el total → la primera carga de la
+  // nueva categoría usa página 1 y de ahí ya conoce su total para rotar.
+  useEffect(() => {
+    totalRef.current = null;
+  }, [id_categoria]);
 
   // Debounce de 500 ms para no disparar una petición por cada tecla
   const [debouncedBusqueda, setDebouncedBusqueda] = useState(busqueda ?? '');
@@ -68,11 +85,27 @@ export const useLugares = (
         params.radio_km  = radio_km;
         params.por_pagina = limite;
       } else {
-        // ── Fallback (sin GPS o sin radio configurado) ──
+        // ── Modo categoría / fallback (sin GPS ni radio) ──
         params.por_pagina = limite;
+        // Rotación: si ya conocemos el total y hay más de una página,
+        // pedimos una página ALEATORIA → cada refresh trae lugares nuevos
+        // sin pasar del tope `limite`. La primera carga (total desconocido)
+        // usa página 1 y de ahí aprende cuántas páginas hay.
+        if (rotarPagina) {
+          const total = totalRef.current;
+          if (total && total > limite) {
+            const totalPaginas = Math.ceil(total / limite);
+            params.pagina = 1 + Math.floor(Math.random() * totalPaginas);
+          }
+        }
       }
 
       const res = await getLugares(params);
+
+      // Guardamos el total reportado para las siguientes rotaciones.
+      if (res?.data?.total != null) {
+        totalRef.current = res.data.total;
+      }
 
       if (res.success && res.data?.lugares?.length > 0) {
         // getFotoLugarCached deduplica peticiones del mismo id_lugar y
@@ -94,7 +127,7 @@ export const useLugares = (
     } finally {
       setLoading(false);
     }
-  }, [id_categoria, debouncedBusqueda, radio_km, coords, limite]);
+  }, [id_categoria, debouncedBusqueda, radio_km, coords, limite, rotarPagina]);
 
   useEffect(() => {
     cargar();

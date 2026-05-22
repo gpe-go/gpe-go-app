@@ -1,6 +1,6 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Animated, FlatList, Image, Pressable, RefreshControl, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
@@ -41,9 +41,9 @@ type Categoria = {
 
 const CATEGORIAS_FALLBACK: Categoria[] = [
   { id: '1', value: 'Deporte',     labelKey: 'cat_deporte',     icon: 'soccer',        color: '#F97613' },
-  { id: '2', value: 'Cultural',    labelKey: 'cat_cultural',    icon: 'palette',       color: '#9C27B0' },
-  { id: '3', value: 'Gastronomía', labelKey: 'cat_gastronomia', icon: 'food',          color: '#10B981' },
-  { id: '4', value: 'Sociales',    labelKey: 'cat_sociales',    icon: 'account-group', color: '#4A90E2' },
+  { id: '2', value: 'Cultural',    labelKey: 'cat_cultural',    icon: 'palette',       color: '#F97613' },
+  { id: '3', value: 'Gastronomía', labelKey: 'cat_gastronomia', icon: 'food',          color: '#F97613' },
+  { id: '4', value: 'Sociales',    labelKey: 'cat_sociales',    icon: 'account-group', color: '#F97613' },
 ];
 
 function RefreshLogo({ refreshing, isDark }: { refreshing: boolean; isDark: boolean }) {
@@ -238,7 +238,8 @@ export default function EventosScreen() {
         value: c.nombre,
         labelKey: p.labelKey,
         icon: p.icon,
-        color: p.color,
+        // Todos los chips de eventos usan el naranja de marca (#F97613).
+        color: '#F97613',
       };
     });
   }, [apiCategoriasEventos]);
@@ -248,11 +249,27 @@ export default function EventosScreen() {
     [t],
   );
 
-  // Radio 10 km · máx 40 eventos. Con búsqueda activa el hook consulta toda la BD.
-  const { data: eventos, refresh: refreshEventos } = useEventos(
+  // Radio 10 km · TOPE de 30 eventos (igual que Directorio/Explorar) para
+  // evitar listas enormes que puedan causar bugs/crashes. Con búsqueda
+  // activa el hook consulta toda la BD.
+  const { data: eventos, loading: cargandoEventos, refresh: refreshEventos } = useEventos(
     undefined,
     search,
-    { radio_km: 10, limite: 40 },
+    { radio_km: 10, limite: 30 },
+  );
+
+  // Refresco al VOLVER a la pantalla (mecanismo #2). El hook ya carga al
+  // montar (#1) y el pull-to-refresh cubre el manual (#3). Saltamos el
+  // primer foco para no duplicar la carga inicial.
+  const primerFocoRef = useRef(true);
+  useFocusEffect(
+    useCallback(() => {
+      if (primerFocoRef.current) {
+        primerFocoRef.current = false;
+        return;
+      }
+      refreshEventos();
+    }, [refreshEventos]),
   );
 
   // Animated rotating placeholder hints
@@ -449,19 +466,23 @@ export default function EventosScreen() {
           />
         }
         ListEmptyComponent={
-          <Animated.View style={[s.emptyWrap, emptyAnimatedStyle]}>
-            <View style={s.emptyIconWrap}>
-              <Ionicons name="calendar-outline" size={42} color={isDark ? '#cbd5e1' : '#cbd5e1'} />
-            </View>
-            <Text style={[s.emptyTitle, { fontSize: fonts.base }]}>
-              {t('events_no_results')}
-            </Text>
-            <Text style={[s.emptySub, { fontSize: fonts.sm }]}>
-              {t('events_empty_hint', {
-                defaultValue: 'Prueba con otra categoría o busca otro evento.',
-              })}
-            </Text>
-          </Animated.View>
+          // No mostramos el estado vacío mientras carga (el logo de carga
+          // del header ya da feedback) ni durante pull-to-refresh.
+          !refreshing && !cargandoEventos ? (
+            <Animated.View style={[s.emptyWrap, emptyAnimatedStyle]}>
+              <View style={s.emptyIconWrap}>
+                <Ionicons name="calendar-outline" size={42} color={isDark ? '#cbd5e1' : '#cbd5e1'} />
+              </View>
+              <Text style={[s.emptyTitle, { fontSize: fonts.base }]}>
+                {t('events_no_results')}
+              </Text>
+              <Text style={[s.emptySub, { fontSize: fonts.sm }]}>
+                {t('events_empty_hint', {
+                  defaultValue: 'Prueba con otra categoría o busca otro evento.',
+                })}
+              </Text>
+            </Animated.View>
+          ) : null
         }
         ListHeaderComponent={
           <View>
@@ -657,14 +678,22 @@ export default function EventosScreen() {
                           return c ? labelDeCategoria(c) : t('tab_events');
                         })()}
                   </Text>
-                  <View style={s.countBadge}>
-                    <Text style={[s.countText, { fontSize: fonts.xs }]}>
-                      {filteredEvents.filter((e: any) => !e.especial).length}
-                    </Text>
-                  </View>
+                  {/* Mientras cargan los eventos ocultamos el numerador
+                      para no mostrar un "0" engañoso. */}
+                  {!cargandoEventos && (
+                    <View style={s.countBadge}>
+                      <Text style={[s.countText, { fontSize: fonts.xs }]}>
+                        {filteredEvents.filter((e: any) => !e.especial).length}
+                      </Text>
+                    </View>
+                  )}
                 </View>
 
-                {filteredEvents.filter((e: any) => !e.especial).length === 0 ? (
+                {cargandoEventos ? (
+                  // Logo de carga mientras llegan los eventos del API
+                  // (evita el parpadeo de "0 / sin resultados").
+                  <RefreshLogo refreshing isDark={isDark} />
+                ) : filteredEvents.filter((e: any) => !e.especial).length === 0 ? (
                   <Text style={{ paddingHorizontal: 20, color: colors.subtext, fontSize: fonts.sm, marginBottom: 8 }}>
                     {t('no_results')}
                   </Text>

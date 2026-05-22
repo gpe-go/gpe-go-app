@@ -150,6 +150,39 @@ function formatearFechaSeguro(fecha: string) {
   return fecha;
 }
 
+// Imagen de noticia con doble fallback:
+//   1. Si no hay URL (algunos RSS no traen imagen) → gradiente + ícono.
+//   2. Si la URL existe pero FALLA al cargar (hotlink bloqueado, 404,
+//      URL malformada — común en feeds de Milenio/El Financiero) →
+//      `onError` cambia al mismo fallback en vez de quedar en blanco.
+function NewsImage({
+  uri,
+  style,
+  iconSize,
+}: {
+  uri?: string;
+  style: any;
+  iconSize: number;
+}) {
+  const [failed, setFailed] = useState(false);
+
+  if (uri && !failed) {
+    return (
+      <Image
+        source={{ uri }}
+        style={style}
+        onError={() => setFailed(true)}
+      />
+    );
+  }
+
+  return (
+    <LinearGradient colors={['#F97613', '#d85f0e']} style={style}>
+      <Ionicons name="newspaper-outline" size={iconSize} color="rgba(255,255,255,0.55)" />
+    </LinearGradient>
+  );
+}
+
 function RefreshLogo({ refreshing }: { refreshing: boolean }) {
   const spinAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -553,13 +586,7 @@ export default function NoticiasScreen() {
                   ]}
                   onPress={() => irAlDetalle(item)}
                 >
-                  {item.image ? (
-                    <Image source={{ uri: item.image }} style={s.featuredImage} />
-                  ) : (
-                    <LinearGradient colors={['#F97613', '#d85f0e']} style={s.featuredImage}>
-                      <Ionicons name="newspaper-outline" size={48} color="rgba(255,255,255,0.5)" />
-                    </LinearGradient>
-                  )}
+                  <NewsImage uri={item.image} style={s.featuredImage} iconSize={48} />
 
                   <LinearGradient
                     colors={['transparent', 'rgba(0,0,0,0.85)']}
@@ -615,17 +642,7 @@ export default function NoticiasScreen() {
                 onPress={() => irAlDetalle(item)}
               >
                 <View style={s.cardImgWrap}>
-                  {item.image ? (
-                    <Image source={{ uri: item.image }} style={s.cardImage} />
-                  ) : (
-                    <LinearGradient colors={['#F97613', '#d85f0e']} style={s.cardImage}>
-                      <Ionicons
-                        name="newspaper-outline"
-                        size={28}
-                        color="rgba(255,255,255,0.6)"
-                      />
-                    </LinearGradient>
-                  )}
+                  <NewsImage uri={item.image} style={s.cardImage} iconSize={28} />
 
                   <View style={[s.catImgBadge, { backgroundColor: cat.color }]}>
                     <Text style={[s.catImgBadgeText, { fontSize: 9 }]}>{cat.label}</Text>

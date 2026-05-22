@@ -3,13 +3,13 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Animated, Image, Modal, Platform, Pressable, ScrollView, Share, StatusBar, StyleSheet, View } from 'react-native';
+import { Animated, Image, Linking, Modal, Platform, Pressable, ScrollView, Share, StatusBar, StyleSheet, View } from 'react-native';
+import { Alert } from '../../components/Alert';
 import { Text } from '../../components/Text';
 import Reseñas from "../../components/Reseñas";
 import { useAuth } from "../../src/context/AuthContext";
 import { useFavoritos } from "../../src/context/FavoritosContext";
 import { useTheme } from "../../src/context/ThemeContext";
-import { abrirEnMapa } from "../../src/utils/abrirMapa";
 import { getImagenLugarSource } from "../../src/utils/imagenLugar";
 
 const CATEGORIA_KEYS: Record<string, string> = {
@@ -129,7 +129,16 @@ export default function DetalleLugar() {
   };
 
   const abrirMapa = () => {
-    abrirEnMapa(`${lugar.nombre || ""} ${lugar.ubicacion || ""}`);
+    const q = encodeURIComponent(`${lugar.nombre || ""} ${lugar.ubicacion || ""}`.trim());
+    const googleUrl = `https://www.google.com/maps/search/?api=1&query=${q}`;
+    const appleUrl = `https://maps.apple.com/?q=${q}`;
+    const opciones: { text: string; onPress: () => void }[] = [
+      { text: 'Google Maps', onPress: () => Linking.openURL(googleUrl).catch(() => {}) },
+    ];
+    if (Platform.OS === 'ios') {
+      opciones.unshift({ text: 'Apple Maps', onPress: () => Linking.openURL(appleUrl).catch(() => {}) });
+    }
+    Alert.alert(t('open_in_maps'), t('choose_maps_app'), [...opciones, { text: t('cancel'), style: 'cancel' }]);
   };
 
   const compartir = async () => {

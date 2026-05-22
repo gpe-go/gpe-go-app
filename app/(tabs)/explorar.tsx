@@ -1,10 +1,10 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Animated, FlatList, Image, Platform, Pressable, RefreshControl, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
+import { Animated, FlatList, Image, Linking, Platform, Pressable, RefreshControl, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
 import { Alert } from '../../components/Alert';
 import { Text, TextInput } from '../../components/Text';
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
@@ -13,7 +13,6 @@ import { useTheme } from '../../src/context/ThemeContext';
 import { useAnimatedPlaceholder } from '../../src/hooks/useAnimatedPlaceholder';
 import { useLugares } from '../../src/hooks/useLugares';
 import { soloTuristicas, rotarLugares } from '../../src/hooks/filtrosLugares';
-import { abrirEnMapa } from '../../src/utils/abrirMapa';
 import { getImagenLugarSource } from '../../src/utils/imagenLugar';
 import { useCategorias } from '../../src/hooks/useCategorias';
 import { resolverPresentacion } from '../../src/utils/categoriaPresentacion';
@@ -127,6 +126,7 @@ type ExplorarHeaderProps = {
   colors: any;
   fonts: any;
   refreshing: boolean;
+  cargando: boolean;
   search: string;
   categoriaActiva: string | null;
   filteredData: Lugar[];
@@ -157,6 +157,7 @@ const ExplorarHeader = React.memo(
     colors,
     fonts,
     refreshing,
+    cargando,
     search,
     categoriaActiva,
     filteredData,
@@ -535,12 +536,19 @@ const ExplorarHeader = React.memo(
                     })()
                   : t('tab_explore')}
               </Text>
-              <View style={s.countBadge}>
-                <Text style={[s.countText, { fontSize: fonts.xs }]}>{horizontalData.length}</Text>
-              </View>
+              {/* Mientras carga ocultamos el numerador para no mostrar
+                  un "0" engañoso. */}
+              {!cargando && (
+                <View style={s.countBadge}>
+                  <Text style={[s.countText, { fontSize: fonts.xs }]}>{horizontalData.length}</Text>
+                </View>
+              )}
             </View>
 
-            {horizontalData.length === 0 ? (
+            {cargando ? (
+              // Logo de carga mientras llega la categoría desde el API.
+              <RefreshLogo refreshing isDark={isDark} />
+            ) : horizontalData.length === 0 ? (
               <Text style={{ paddingHorizontal: 20, color: colors.subtext, fontSize: fonts.sm, marginBottom: 8 }}>
                 {t('no_results')}
               </Text>
@@ -631,47 +639,75 @@ export default function ExplorarScreen() {
   // Guarda la posición X del scroll de chips entre remounts del header
   const chipScrollX = useRef(0);
 
-  // Radio 15 km · máx 40 lugares. Con búsqueda activa el hook consulta toda la BD.
-  const { data: sitiosRaw, refresh: refreshSitios } = useLugares(
-    undefined,
-    search,
-    { radio_km: 15, limite: 40 },
+  // ── Categorías turísticas desde la API ────────────────────────────
+  const { data: apiCategorias } = useCategorias();
+  const normCat = (s: string) =>
+    s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+
+  // Set de nombres turísticos (lo que muestra Explorar). Hoy es solo
+  // "Sitios turísticos"; dejamos el set por si el municipio reactiva
+  // subcategorías turísticas en el futuro.
+  const TURIST = useMemo(() => new Set(['sitios turisticos']), []);
+
+  const CATEGORIAS = useMemo<Categoria[]>(
+    () =>
+      apiCategorias
+        .filter((c) => TURIST.has(normCat(c.nombre)))
+        .map((c) => {
+          const p = resolverPresentacion(c.nombre);
+          return {
+            id: String(c.id),
+            value: c.nombre,
+            labelKey: p.labelKey,
+            icon: p.icon,
+            color: p.color,
+          };
+        }),
+    [apiCategorias, TURIST],
   );
 
-  // Explorar es la pestaña TURÍSTICA. Filtramos a las categorías
-  // "Sitios turísticos / Cerros / Parques / Pueblos Mágicos / Museos"
-  // (la lista vive en `filtrosLugares.CATEGORIAS_TURISTICAS`). Si el
-  // municipio agrega una categoría turística nueva al dashboard, basta
-  // con sumarla allí. El resto del flujo es dinámico: rotamos para que
-  // cada refresh muestre lugares distintos al inicio.
+  // id_categoria de la categoría turística para pedir los lugares DIRECTO
+  // por categoría al backend. Los sitios turísticos están repartidos por
+  // todo Nuevo León, así que el fetch por cercanía (radio 15 km) los
+  // perdía y Explorar salía vacío. Pidiendo por id_categoria traemos los
+  // 32 lugares sin importar dónde estén.
+  const idTuristico = useMemo(() => {
+    const cat = apiCategorias.find((c) => normCat(c.nombre) === 'sitios turisticos');
+    return cat ? cat.id : undefined;
+  }, [apiCategorias]);
+
+  // Tope de 30 con rotación por página aleatoria → cada refresh trae
+  // lugares turísticos NUEVOS sin cargar de golpe todo el catálogo
+  // (evita bugs/crashes). SIN radio_km → trae por categoría, no por
+  // proximidad. Con búsqueda activa el hook consulta toda la BD.
+  const { data: sitiosRaw, loading: cargandoSitios, refresh: refreshSitios } = useLugares(
+    idTuristico,
+    search,
+    { limite: 30, rotarPagina: true },
+  );
+
+  // Refresco al VOLVER a la pantalla (#2). Carga inicial (#1) la hace el
+  // hook al montar; pull-to-refresh cubre el manual (#3). Saltamos el
+  // primer foco para no duplicar la carga inicial.
+  const primerFocoRef = useRef(true);
+  useFocusEffect(
+    useCallback(() => {
+      if (primerFocoRef.current) {
+        primerFocoRef.current = false;
+        return;
+      }
+      refreshSitios();
+    }, [refreshSitios]),
+  );
+
+  // Mientras `idTuristico` se resuelve (categorías cargando) el hook
+  // pudo traer lugares mezclados; `soloTuristicas` actúa de red de
+  // seguridad. Una vez con id, todo viene ya filtrado por categoría.
+  // Rotamos para que cada visita muestre lugares distintos al inicio.
   const sitios = useMemo(() => {
     const turistico = soloTuristicas(sitiosRaw);
     return rotarLugares(turistico);
   }, [sitiosRaw]);
-
-  // ── Chips de categorías derivados de la API ───────────────────────
-  // `useCategorias()` trae todas las categorías del backend. En Explorar
-  // restringimos visualmente a las turísticas (igual que el filtro de
-  // lugares); si la API trae alguna que no es turística, no se muestra
-  // en el chip pero la app sigue funcionando.
-  const { data: apiCategorias } = useCategorias();
-  const CATEGORIAS = useMemo<Categoria[]>(() => {
-    const TURIST = new Set(['sitios turisticos', 'cerros', 'parques', 'pueblos magicos', 'museos']);
-    const norm = (s: string) =>
-      s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
-    return apiCategorias
-      .filter((c) => TURIST.has(norm(c.nombre)))
-      .map((c) => {
-        const p = resolverPresentacion(c.nombre);
-        return {
-          id: String(c.id),
-          value: c.nombre,
-          labelKey: p.labelKey,
-          icon: p.icon,
-          color: p.color,
-        };
-      });
-  }, [apiCategorias]);
   const labelDeCategoria = useCallback(
     (cat: Pick<Categoria, 'labelKey' | 'value'>) =>
       cat.labelKey ? t(cat.labelKey) : cat.value,
@@ -684,7 +720,7 @@ export default function ExplorarScreen() {
     return sitios.filter((l) => l.categoria === categoriaActiva);
   }, [sitios, categoriaActiva]);
 
-  const isEmpty = filteredData.length === 0 && (search.length > 0 || categoriaActiva !== null);
+  const isEmpty = !cargandoSitios && filteredData.length === 0 && (search.length > 0 || categoriaActiva !== null);
 
   useEffect(() => {
     if (isEmpty) {
@@ -800,8 +836,17 @@ export default function ExplorarScreen() {
   );
 
   const openInMaps = useCallback((nombre: string, ubicacion: string) => {
-    abrirEnMapa(`${nombre} ${ubicacion}`);
-  }, []);
+    const q = encodeURIComponent(`${nombre || ""} ${ubicacion || ""}`.trim());
+    const googleUrl = `https://www.google.com/maps/search/?api=1&query=${q}`;
+    const appleUrl = `https://maps.apple.com/?q=${q}`;
+    const opciones: { text: string; onPress: () => void }[] = [
+      { text: 'Google Maps', onPress: () => Linking.openURL(googleUrl).catch(() => {}) },
+    ];
+    if (Platform.OS === 'ios') {
+      opciones.unshift({ text: 'Apple Maps', onPress: () => Linking.openURL(appleUrl).catch(() => {}) });
+    }
+    Alert.alert(t('open_in_maps'), t('choose_maps_app'), [...opciones, { text: t('cancel'), style: 'cancel' }]);
+  }, [t]);
 
   const explorarHeader = (
     <ExplorarHeader
@@ -810,6 +855,7 @@ export default function ExplorarScreen() {
       colors={colors}
       fonts={fonts}
       refreshing={refreshing}
+      cargando={cargandoSitios}
       search={search}
       categoriaActiva={categoriaActiva}
       filteredData={filteredData}
@@ -872,19 +918,23 @@ export default function ExplorarScreen() {
         windowSize={5}
         ListHeaderComponent={explorarHeader}
         ListEmptyComponent={
-          <Animated.View style={[s.emptyWrap, emptyAnimatedStyle]}>
-            <View style={s.emptyIconWrap}>
-              <Ionicons name="compass-outline" size={42} color="#cbd5e1" />
-            </View>
-            <Text style={[s.emptyTitle, { fontSize: fonts.base }]}>
-              {t('no_results')}
-            </Text>
-            <Text style={[s.emptySub, { fontSize: fonts.sm }]}>
-              {t('explore_empty_hint', {
-                defaultValue: 'Prueba con otra categoría o busca otro lugar.',
-              })}
-            </Text>
-          </Animated.View>
+          // No mostramos el estado vacío mientras carga (el logo de carga
+          // del header ya da feedback) ni durante pull-to-refresh.
+          !refreshing && !cargandoSitios ? (
+            <Animated.View style={[s.emptyWrap, emptyAnimatedStyle]}>
+              <View style={s.emptyIconWrap}>
+                <Ionicons name="compass-outline" size={42} color="#cbd5e1" />
+              </View>
+              <Text style={[s.emptyTitle, { fontSize: fonts.base }]}>
+                {t('no_results')}
+              </Text>
+              <Text style={[s.emptySub, { fontSize: fonts.sm }]}>
+                {t('explore_empty_hint', {
+                  defaultValue: 'Prueba con otra categoría o busca otro lugar.',
+                })}
+              </Text>
+            </Animated.View>
+          ) : null
         }
         contentContainerStyle={s.listContent}
         style={{ backgroundColor: colors.background }}

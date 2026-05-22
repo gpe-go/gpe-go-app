@@ -20,12 +20,11 @@ import type { Lugar } from '../types/lugar';
  * municipio en el dashboard aparece automáticamente en Directorio
  * (porque no está en esta lista), y solo lo turístico queda apartado.
  */
+// El dashboard consolidó todo lo turístico en UNA sola categoría:
+// "Sitios turísticos". Antes existían Cerros/Parques/Pueblos Mágicos/
+// Museos/Ríos por separado, pero ya no — se eliminaron de la BD.
 export const CATEGORIAS_TURISTICAS = [
   'Sitios turísticos',
-  'Cerros',
-  'Parques',
-  'Pueblos Mágicos',
-  'Museos',
 ] as const;
 
 /**

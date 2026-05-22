@@ -8,13 +8,33 @@ import { Text } from '../../components/Text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFavoritos } from '../../src/context/FavoritosContext';
 import { useTheme } from '../../src/context/ThemeContext';
-import { getLugares } from '../../src/api/api';
+import { getLugares, getEventos, getFotosEvento } from '../../src/api/api';
 import { getFotoLugarCached } from '../../src/hooks/fotosCache';
 import { mapLugar } from '../../src/mappers/lugaresMapper';
+import { mapEvento } from '../../src/mappers/eventosMapper';
 import { Lugar } from '../../src/types/lugar';
-import { useUbicacion } from '../../src/hooks/useUbicacion';
-import { CARD_CATEGORIAS, filtrarPorCategorias, rotarLugares } from '../../src/hooks/filtrosLugares';
+import { rotarLugares } from '../../src/hooks/filtrosLugares';
 import { getImagenLugarSource } from '../../src/utils/imagenLugar';
+
+// ── Config de cada card del Home ──────────────────────────────────────
+// Define de qué categoría(s) saca lugares cada card, cuántos, y si además
+// incluye eventos. IDs reales del backend:
+//   Sitios turísticos = 5 · Centro comercial = 16 · Supermercados = 14
+//   Servicios = 9.  `id` ausente = lugares generales (todas las categorías).
+// `limite` es el tope por fuente; cada refresh trae una página aleatoria
+// (lugares NUEVOS) sin cargar cientos de golpe (evita bugs/crashes).
+type CardFuente = { id?: number; limite: number };
+const CARD_CONFIG: Record<string, { fuentes: CardFuente[]; eventos?: number }> = {
+  explorar:                { fuentes: [{ limite: 20 }] },                                  // 20 generales
+  'Fin de semana':         { fuentes: [{ limite: 20 }], eventos: 10 },                     // 20 lugares + 10 eventos
+  'Naturaleza & Aventura': { fuentes: [{ id: 5, limite: 30 }] },                           // 30 Sitios turísticos
+  'pueblos Magicos':       { fuentes: [{ id: 5, limite: 30 }] },
+  'Pueblos Mágicos':       { fuentes: [{ id: 5, limite: 30 }] },
+  tours:                   { fuentes: [{ id: 5, limite: 30 }] },
+  cultura:                 { fuentes: [{ id: 5, limite: 30 }] },
+  compras:                 { fuentes: [{ id: 16, limite: 15 }, { id: 14, limite: 15 }] },  // 15 + 15
+  servicios:               { fuentes: [{ id: 9, limite: 20 }] },                           // 20 Servicios
+};
 
 // Logo animado de carga (gira + pulsa) — mismo patrón que en las
 // tabs principales (Inicio, Noticias, Eventos, etc.). Se monta arriba
@@ -105,115 +125,126 @@ export default function Categoria() {
   const categoriaKey = CATEGORIA_KEYS[rawNombre];
   const titulo = categoriaKey ? t(categoriaKey) : rawNombre;
 
-  // ── Paginación / infinite scroll ─────────────────────────────
-  // Antes el screen llamaba a useLugares() que traía un solo bloque
-  // fijo (20 o 40). El usuario llegaba al final y no había forma de
-  // ver más. Ahora pedimos el backend en páginas: cada vez que la
-  // FlatList llega al final disparamos `cargarMas()` que pide la
-  // siguiente página y la APPENDA al estado, sin repetir IDs.
-  const PAGE_SIZE = 20;
-  const { coords } = useUbicacion();
+  // ── Carga config-driven con tope + rotación ──────────────────
+  // Cada card define sus fuentes (categoría + tope) en CARD_CONFIG.
+  // En vez de infinite scroll, mostramos un número FIJO de lugares y al
+  // refrescar traemos una página ALEATORIA → lugares nuevos sin cargar
+  // cientos (evita bugs/crashes). "Fin de semana" además trae eventos.
+  const config = useMemo(() => {
+    if (idCategoria) return { fuentes: [{ id: idCategoria, limite: 30 }] as CardFuente[], eventos: undefined };
+    return CARD_CONFIG[rawNombre] ?? { fuentes: [{ limite: 20 }] as CardFuente[], eventos: undefined };
+  }, [idCategoria, rawNombre]);
 
-  const [items, setItems]               = useState<Lugar[]>([]);
-  const [pagina, setPagina]             = useState(1);
-  const [loading, setLoading]           = useState(true);
-  const [loadingMore, setLoadingMore]   = useState(false);
-  const [refreshing, setRefreshing]     = useState(false);
-  const [hayMas, setHayMas]             = useState(true);
+  const [items, setItems]           = useState<any[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Set de IDs vistos para dedupe entre páginas — el backend a veces
-  // regresa el mismo lugar en páginas consecutivas si hay paginación
-  // basada en orden no estable (proximidad cambia con GPS).
-  const vistosRef = useRef<Set<string>>(new Set());
+  // Totales por fuente (clave) para elegir página aleatoria válida en la
+  // rotación. Se llenan tras la primera carga (el backend reporta total).
+  const totalsRef = useRef<Record<string, number>>({});
 
-  // Si la card es slug-based (Pueblos Mágicos, Naturaleza, etc.) el
-  // backend no sabe del filtro, así que filtramos en cliente. Para
-  // categorías por ID (directorio) NO filtramos en cliente.
-  const filtroPermitido = useMemo(
-    () => (idCategoria ? null : CARD_CATEGORIAS[rawNombre] ?? null),
-    [idCategoria, rawNombre],
-  );
+  // Elige una página aleatoria si ya conocemos el total y hay más de una.
+  const paginaAleatoria = (key: string, limite: number) => {
+    const total = totalsRef.current[key];
+    if (total && total > limite) {
+      return 1 + Math.floor(Math.random() * Math.ceil(total / limite));
+    }
+    return 1;
+  };
 
-  const cargarPagina = useCallback(
-    async (pg: number, reset: boolean) => {
-      const params: Record<string, any> = { pagina: pg, por_pagina: PAGE_SIZE };
-      if (idCategoria) params.id_categoria = idCategoria;
-      if (coords) {
-        params.lat = coords.lat;
-        params.lng = coords.lng;
-        params.radio_km = 15;
-      }
+  const cargar = useCallback(async () => {
+    const vistos = new Set<string>();
+    const resultados: any[] = [];
 
+    // 1) Lugares de cada fuente de la card.
+    for (const f of config.fuentes) {
+      const key = f.id != null ? `cat-${f.id}` : 'gen';
+      const params: Record<string, any> = {
+        por_pagina: f.limite,
+        pagina: paginaAleatoria(key, f.limite),
+      };
+      if (f.id != null) params.id_categoria = f.id;
       try {
         const res = await getLugares(params);
+        if (res?.data?.total != null) totalsRef.current[key] = res.data.total;
         const raws: any[] = res?.success ? (res.data?.lugares ?? []) : [];
-
-        // Trae fotos en paralelo (cacheadas en memoria por id).
-        const mapeados: Lugar[] = await Promise.all(
+        const mapeados = await Promise.all(
           raws.map(async (raw) => {
             const url = await getFotoLugarCached(raw.id);
-            return mapLugar(raw, url ?? undefined);
+            return { ...mapLugar(raw, url ?? undefined), _evento: false as const };
           }),
         );
-
-        // Dedupe + filtro de slug-card si aplica.
-        let frescos = mapeados.filter((l) => !vistosRef.current.has(l.id));
-        if (filtroPermitido) {
-          frescos = filtrarPorCategorias(frescos as any, filtroPermitido) as Lugar[];
+        for (const l of mapeados) {
+          if (!vistos.has(l.id)) { vistos.add(l.id); resultados.push(l); }
         }
-        frescos.forEach((l) => vistosRef.current.add(l.id));
-
-        if (reset) {
-          vistosRef.current = new Set(frescos.map((l) => l.id));
-          // Rotamos solo la primera carga para mantener la sensación de
-          // contenido fresco; al cargar más NO rotamos para que los
-          // resultados nuevos aparezcan en orden estable abajo.
-          setItems(rotarLugares(frescos));
-        } else {
-          setItems((prev) => [...prev, ...frescos]);
-        }
-
-        // Si el backend ya no entregó la página completa, no hay más.
-        setHayMas(raws.length === PAGE_SIZE);
       } catch {
-        setHayMas(false);
+        /* si una fuente falla, seguimos con las demás */
       }
-    },
-    [idCategoria, coords, filtroPermitido],
-  );
+    }
 
-  // Carga inicial / cuando cambia la categoría
+    // 2) Eventos (solo cards con `eventos`, ej. Fin de semana).
+    if (config.eventos) {
+      const key = 'eventos';
+      const params: Record<string, any> = {
+        por_pagina: config.eventos,
+        pagina: paginaAleatoria(key, config.eventos),
+      };
+      try {
+        const res = await getEventos(params);
+        if (res?.data?.total != null) totalsRef.current[key] = res.data.total;
+        const raws: any[] = res?.success ? (res.data?.eventos ?? []) : [];
+        const eventos = await Promise.all(
+          raws.map(async (raw) => {
+            let img: string | undefined;
+            try {
+              const fotos = await getFotosEvento(raw.id);
+              if (fotos?.success && Array.isArray(fotos.data) && fotos.data.length) {
+                img = fotos.data[0].url;
+              }
+            } catch {}
+            const ev = mapEvento(raw, img);
+            // Lo adaptamos a la forma de "card" que renderiza la lista,
+            // con flag `_evento` para navegar a detalleEvento.
+            return {
+              id: `ev-${ev.id}`,
+              nombre: ev.titulo,
+              imagen: ev.imagen,
+              ubicacion: ev.lugar,
+              categoria: ev.categoria,
+              rating: 0,
+              costo: ev.costo,
+              _evento: true as const,
+              _eventoRaw: ev,
+            };
+          }),
+        );
+        resultados.push(...eventos);
+      } catch {
+        /* sin eventos → solo lugares */
+      }
+    }
+
+    // Mezclamos todo para que lugares y eventos se intercalen.
+    setItems(rotarLugares(resultados));
+  }, [config]);
+
+  // Carga inicial / al cambiar de card.
   useEffect(() => {
     let activo = true;
     (async () => {
       setLoading(true);
-      vistosRef.current.clear();
-      await cargarPagina(1, true);
-      if (activo) {
-        setPagina(1);
-        setLoading(false);
-      }
+      totalsRef.current = {};
+      await cargar();
+      if (activo) setLoading(false);
     })();
     return () => { activo = false; };
-  }, [cargarPagina]);
-
-  const cargarMas = useCallback(async () => {
-    if (loadingMore || loading || refreshing || !hayMas) return;
-    setLoadingMore(true);
-    const sig = pagina + 1;
-    await cargarPagina(sig, false);
-    setPagina(sig);
-    setLoadingMore(false);
-  }, [loadingMore, loading, refreshing, hayMas, pagina, cargarPagina]);
+  }, [cargar]);
 
   const refrescar = useCallback(async () => {
     setRefreshing(true);
-    vistosRef.current.clear();
-    await cargarPagina(1, true);
-    setPagina(1);
-    setHayMas(true);
+    await cargar();
     setRefreshing(false);
-  }, [cargarPagina]);
+  }, [cargar]);
 
   // Alias para que el resto del JSX siga usando `lugares`.
   const lugares = items;
@@ -359,14 +390,10 @@ export default function Categoria() {
           keyExtractor={(item, index) => String(item?.id ?? index)}
           contentContainerStyle={[s.list, lugares.length === 0 && { flexGrow: 1 }]}
           showsVerticalScrollIndicator={false}
-          // Infinite scroll: dispara `cargarMas` cuando el usuario se acerca
-          // al final. Threshold de 0.6 = pide la página siguiente cuando aún
-          // quedan 60 % del viewport por ver, para que la carga sea invisible.
-          onEndReached={cargarMas}
-          onEndReachedThreshold={0.6}
-          // Spinner del sistema en `transparent` para que NO se vea — la
-          // animación visible es el `RefreshLogo` propio que renderiza el
-          // logo girando + "GuadalupeGO".
+          // Sin infinite scroll: mostramos un número FIJO por card y al
+          // refrescar (pull-to-refresh) traemos lugares NUEVOS (página
+          // aleatoria). El spinner del sistema va en `transparent`; la
+          // animación visible es el `RefreshLogo` propio.
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -377,22 +404,6 @@ export default function Categoria() {
             />
           }
           ListHeaderComponent={<RefreshLogo refreshing={refreshing} isDark={isDark} />}
-          ListFooterComponent={
-            loadingMore ? (
-              <View style={s.footerLoader}>
-                <ActivityIndicator size="small" color="#F97613" />
-                <Text style={[s.footerLoaderText, { fontSize: fonts.xs }]}>
-                  {t('loading')}
-                </Text>
-              </View>
-            ) : !hayMas && lugares.length > 0 ? (
-              <View style={s.footerLoader}>
-                <Text style={[s.footerLoaderText, { fontSize: fonts.xs }]}>
-                  {t('no_more_results', { defaultValue: 'Eso es todo por ahora' })}
-                </Text>
-              </View>
-            ) : null
-          }
           ListEmptyComponent={
             loading ? (
               <View style={s.loadingWrap}>
@@ -447,10 +458,15 @@ export default function Categoria() {
                   },
                 ]}
                 onPress={() =>
-                  router.push({
-                    pathname: '/(stack)/detalleLugar',
-                    params: { lugar: JSON.stringify(item) },
-                  })
+                  item._evento
+                    ? router.push({
+                        pathname: '/(stack)/detalleEvento',
+                        params: { evento: JSON.stringify(item._eventoRaw) },
+                      })
+                    : router.push({
+                        pathname: '/(stack)/detalleLugar',
+                        params: { lugar: JSON.stringify(item) },
+                      })
                 }
               >
                 <Image source={getImagenLugarSource(item.imagen)} style={s.cardImg} />

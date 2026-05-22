@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Animated, Linking, Platform, Pressable, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
+import { Animated, Easing, Image, Linking, Platform, Pressable, RefreshControl, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
 import { Alert } from '../../components/Alert';
 import { Text, TextInput } from '../../components/Text';
 import { enviarMensajeSoporte, getContactoInfo, getEmergencias } from '../../src/api/api';
@@ -33,18 +33,51 @@ type Emergencia = {
   color: string;
 };
 
-// ── Mapea la respuesta de la API al formato que espera la UI ───
-const ICONS_CICLO = ['flame', 'megaphone', 'medical', 'shield', 'car-sport', 'alert-circle'];
-const COLORS_CICLO = ['#EF4444', '#F97316', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899'];
+// ── Resolver de ícono + color por NOMBRE de la emergencia ──────────
+// Antes el ícono se asignaba por POSICIÓN en la lista (ICONS_CICLO[i]),
+// así que la 6ª emergencia siempre caía en el genérico y una 7ª
+// reciclaba íconos equivocados. Ahora detectamos palabras clave en el
+// nombre → cada emergencia recibe su ícono correcto sin importar el
+// orden, y las que el municipio agregue en el futuro salen bien solas.
+// NO requiere tocar el dashboard ni el código: el municipio solo crea
+// la emergencia con su nombre normal.
+const resolverEmergencia = (nombre: string): { icon: string; color: string } => {
+  const n = nombre
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '') // quita acentos
+    .toLowerCase();
 
+  if (/bombero|incendio|fuego/.test(n))                       return { icon: 'flame',         color: '#EF4444' };
+  if (/proteccion civil|rescate|auxilio/.test(n))             return { icon: 'megaphone',     color: '#F97316' };
+  if (/cruz|ambulancia|medic|paramedic|hospital|salud/.test(n)) return { icon: 'medical',     color: '#10B981' };
+  if (/policia|seguridad|911|emergencia/.test(n))             return { icon: 'shield',        color: '#3B82F6' };
+  if (/transito|vial|vialidad|transporte/.test(n))            return { icon: 'car-sport',     color: '#8B5CF6' };
+  if (/presidencia|municipio|alcald|ayuntamiento|gobierno/.test(n)) return { icon: 'business', color: '#F97613' };
+  if (/agua|drenaje/.test(n))                                 return { icon: 'water',         color: '#0EA5E9' };
+  if (/luz|electric|cfe|energia/.test(n))                     return { icon: 'flash',         color: '#F59E0B' };
+  if (/\bgas\b/.test(n))                                      return { icon: 'flame-outline', color: '#DC2626' };
+  if (/denuncia|fiscalia|ministerio|juridic/.test(n))         return { icon: 'document-text', color: '#6366F1' };
+  if (/mujer|violencia|familiar/.test(n))                     return { icon: 'heart',         color: '#EC4899' };
+  if (/animal|veterinari|mascota/.test(n))                    return { icon: 'paw',           color: '#92400E' };
+
+  // Fallback genérico decente para cualquier emergencia nueva no mapeada:
+  // un ícono de teléfono, que siempre tiene sentido en una tarjeta con
+  // botón "Llamar".
+  return { icon: 'call', color: '#64748B' };
+};
+
+// ── Mapea la respuesta de la API al formato que espera la UI ───
 const mapearEmergencias = (data: any[]): Emergencia[] =>
-  data.map((item, i) => ({
-    icon: ICONS_CICLO[i % ICONS_CICLO.length],
-    title: item.nombre ?? '',
-    sub: item.descripcion ?? '',
-    phone: item.telefono ?? '',
-    color: COLORS_CICLO[i % COLORS_CICLO.length],
-  }));
+  data.map((item) => {
+    const { icon, color } = resolverEmergencia(item.nombre ?? '');
+    return {
+      icon,
+      title: item.nombre ?? '',
+      sub: item.descripcion ?? '',
+      phone: item.telefono ?? '',
+      color,
+    };
+  });
 
 function AnimatedSection({
   children,
@@ -248,6 +281,49 @@ const inputStyles = StyleSheet.create({
   },
 });
 
+// Logo animado de carga (rotación + pulso) — mismo patrón que en las
+// otras tabs, para el pull-to-refresh.
+function RefreshLogo({ refreshing, isDark }: { refreshing: boolean; isDark: boolean }) {
+  const spinAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    if (!refreshing) return;
+    const spin = Animated.loop(
+      Animated.timing(spinAnim, { toValue: 1, duration: 900, easing: Easing.linear, useNativeDriver: true }),
+    );
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.18, duration: 450, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1,    duration: 450, useNativeDriver: true }),
+      ]),
+    );
+    spin.start();
+    pulse.start();
+    return () => { spin.stop(); pulse.stop(); spinAnim.setValue(0); pulseAnim.setValue(1); };
+  }, [refreshing, spinAnim, pulseAnim]);
+  const rotate = spinAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+  if (!refreshing) return null;
+  return (
+    <View style={refreshLogoStyles.container}>
+      <Animated.View style={{ transform: [{ rotate }, { scale: pulseAnim }] }}>
+        <View style={[refreshLogoStyles.iconBg, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#EDEDED' }]}>
+          <Image
+            source={require('../../assets/images/logosinnadaoficial.png')}
+            style={{ width: 24, height: 24, tintColor: isDark ? '#d1d5db' : '#9ca3af' }}
+            resizeMode="contain"
+          />
+        </View>
+      </Animated.View>
+      <Text style={[refreshLogoStyles.label, { color: isDark ? '#9ca3af' : '#a1a1aa' }]}>GuadalupeGO</Text>
+    </View>
+  );
+}
+const refreshLogoStyles = StyleSheet.create({
+  container: { alignItems: 'center', justifyContent: 'center', paddingVertical: 14, gap: 8 },
+  iconBg: { width: 42, height: 42, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  label: { fontSize: 13, fontWeight: '700', letterSpacing: 0.3 },
+});
+
 export default function ContactoScreen() {
   const { t } = useTranslation();
   const { colors, fonts, isDark } = useTheme();
@@ -272,6 +348,11 @@ export default function ContactoScreen() {
   const [enviando, setEnviando] = useState(false);
 
   const [emergencias, setEmergencias] = useState<Emergencia[]>(EMERGENCIAS_DEFAULT);
+  // Contactos institucionales (institutos de gobierno, etc.). Vacío por
+  // defecto → la sección "Institucional" no se muestra hasta que el
+  // dashboard tenga al menos uno con tipo "institucional".
+  const [institucionales, setInstitucionales] = useState<Emergencia[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
   const handleMensaje = (text: string) => {
     setMensaje(text);
@@ -299,30 +380,67 @@ export default function ContactoScreen() {
     maps_url: 'https://maps.google.com/?q=Palacio+Municipal+Guadalupe+Nuevo+Leon+Mexico',
   });
 
-  // ── Cargar emergencias desde la API ───────────────────
-  useEffect(() => {
-    getEmergencias()
-      .then(res => {
-        if (res?.success && Array.isArray(res.data) && res.data.length > 0) {
-          setEmergencias(mapearEmergencias(res.data));
-        }
-      })
-      .catch(() => { /* Sin conexión → usa datos por defecto */ });
+  // ── Carga de contactos (emergencia + institucional + info) ─────────
+  // Una sola función reutilizable que pide ambos endpoints en paralelo.
+  // El endpoint `emergencias` devuelve TODOS los contactos con un campo
+  // `tipo` ("emergencia" | "institucional"); los separamos en el cliente.
+  // Si el municipio agrega institucionales en el dashboard, la sección
+  // "Institucional" aparece sola; si no hay, no se muestra.
+  const cargarContactos = useCallback(async () => {
+    const [emRes, infoRes] = await Promise.allSettled([
+      getEmergencias(),
+      getContactoInfo(),
+    ]);
+
+    if (emRes.status === 'fulfilled') {
+      const res = emRes.value;
+      if (res?.success && Array.isArray(res.data) && res.data.length > 0) {
+        const todos = res.data;
+        const emerg = todos.filter((x: any) => (x.tipo ?? 'emergencia') === 'emergencia');
+        const inst  = todos.filter((x: any) => x.tipo === 'institucional');
+        if (emerg.length > 0) setEmergencias(mapearEmergencias(emerg));
+        setInstitucionales(mapearEmergencias(inst));
+      }
+    }
+
+    if (infoRes.status === 'fulfilled') {
+      const res = infoRes.value;
+      if (res?.success && res.data) {
+        // El correo institucional se fija a go@guadalupe.gob.mx; ignoramos
+        // lo que devuelva el backend en `emails`.
+        const { emails: _ignored, ...rest } = res.data;
+        setContactoInfo(prev => ({ ...prev, ...rest }));
+      }
+    }
   }, []);
 
-  // ── Cargar info de contacto institucional desde la API ─
+  // #1 Carga inicial (al abrir la app / montar la pantalla).
   useEffect(() => {
-    getContactoInfo()
-      .then(res => {
-        if (res?.success && res.data) {
-          // El correo institucional se fija a go@guadalupe.gob.mx aquí mismo;
-          // ignoramos lo que devuelva el backend en `emails`.
-          const { emails: _ignored, ...rest } = res.data;
-          setContactoInfo(prev => ({ ...prev, ...rest }));
-        }
-      })
-      .catch(() => { /* Sin conexión → usa datos por defecto */ });
-  }, []);
+    cargarContactos();
+  }, [cargarContactos]);
+
+  // #2 Refresco al VOLVER a la pantalla. Saltamos el primer foco para no
+  //    duplicar la carga inicial del #1.
+  const primerFocoRef = useRef(true);
+  useFocusEffect(
+    useCallback(() => {
+      if (primerFocoRef.current) {
+        primerFocoRef.current = false;
+        return;
+      }
+      cargarContactos();
+    }, [cargarContactos]),
+  );
+
+  // #3 Pull-to-refresh manual (refresco en vivo).
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await cargarContactos();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [cargarContactos]);
 
   const handleCall = (numero: string) => Linking.openURL(`tel:${numero}`);
   const handleEmail = (correo: string) => Linking.openURL(`mailto:${correo}`);
@@ -385,13 +503,65 @@ export default function ContactoScreen() {
     }
   };
 
+  // Tarjeta reutilizable para contactos (emergencia e institucional).
+  // `showBadge247` solo se activa en emergencias — las instituciones
+  // tienen horario, no son 24/7.
+  const renderContactoCard = (item: Emergencia, key: React.Key, showBadge247: boolean) => (
+    <View key={key} style={s.emergencyCard}>
+      <View style={[s.emergencyIconWrap, { backgroundColor: item.color + '18' }]}>
+        <Ionicons name={item.icon as any} size={22} color={item.color} />
+      </View>
+      <View style={s.emergencyInfo}>
+        <View style={s.emergencyTitleRow}>
+          <Text style={[s.emergencyTitle, { fontSize: fonts.sm }]} numberOfLines={1}>
+            {item.title}
+          </Text>
+          {showBadge247 && (
+            <View style={s.badge247}>
+              <Text style={s.badgeText}>24/7</Text>
+            </View>
+          )}
+        </View>
+        <Text style={[s.emergencySub, { fontSize: fonts.xs }]} numberOfLines={1}>
+          {item.sub}
+        </Text>
+      </View>
+      <Pressable
+        onPress={() => handleCall(item.phone)}
+        style={({ pressed }) => [
+          s.callBtn,
+          {
+            backgroundColor: item.color,
+            opacity: pressed ? 0.88 : 1,
+            transform: [{ scale: pressed ? 0.97 : 1 }],
+          },
+        ]}
+      >
+        <Ionicons name="call" size={14} color="#fff" />
+        <Text style={[s.callBtnText, { fontSize: fonts.xs }]}>
+          {t('call_btn')}
+        </Text>
+      </Pressable>
+    </View>
+  );
+
   return (
     <ScrollView
       style={s.container}
       showsVerticalScrollIndicator={false}
       contentContainerStyle={{ paddingBottom: 50 }}
       keyboardShouldPersistTaps="handled"
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor="transparent"
+          colors={["transparent"]}
+          progressBackgroundColor="transparent"
+        />
+      }
     >
+      <RefreshLogo refreshing={refreshing} isDark={isDark} />
 
       {/* ══ BANNER ══════════════════════════════════════ */}
       <AnimatedSection delay={0}>
@@ -429,44 +599,25 @@ export default function ContactoScreen() {
             </Text>
           </View>
 
-          {emergencias.map((item, i) => (
-            <View key={i} style={s.emergencyCard}>
-              <View style={[s.emergencyIconWrap, { backgroundColor: item.color + '18' }]}>
-                <Ionicons name={item.icon as any} size={22} color={item.color} />
-              </View>
-              <View style={s.emergencyInfo}>
-                <View style={s.emergencyTitleRow}>
-                  <Text style={[s.emergencyTitle, { fontSize: fonts.sm }]} numberOfLines={1}>
-                    {item.title}
-                  </Text>
-                  <View style={s.badge247}>
-                    <Text style={s.badgeText}>24/7</Text>
-                  </View>
-                </View>
-                <Text style={[s.emergencySub, { fontSize: fonts.xs }]} numberOfLines={1}>
-                  {item.sub}
-                </Text>
-              </View>
-              <Pressable
-                onPress={() => handleCall(item.phone)}
-                style={({ pressed }) => [
-                  s.callBtn,
-                  {
-                    backgroundColor: item.color,
-                    opacity: pressed ? 0.88 : 1,
-                    transform: [{ scale: pressed ? 0.97 : 1 }],
-                  },
-                ]}
-              >
-                <Ionicons name="call" size={14} color="#fff" />
-                <Text style={[s.callBtnText, { fontSize: fonts.xs }]}>
-                  {t('call_btn')}
-                </Text>
-              </Pressable>
-            </View>
-          ))}
+          {emergencias.map((item, i) => renderContactoCard(item, `em-${i}`, true))}
         </View>
       </AnimatedSection>
+
+      {/* ══ INSTITUCIONAL (solo si hay contactos institucionales) ══ */}
+      {institucionales.length > 0 && (
+        <AnimatedSection delay={130}>
+          <View style={s.section}>
+            <View style={s.sectionHeader}>
+              <View style={s.sectionDot} />
+              <Text style={[s.sectionTitle, { fontSize: fonts.md }]}>
+                {t('institutional_title', { defaultValue: 'Institucional' })}
+              </Text>
+            </View>
+
+            {institucionales.map((item, i) => renderContactoCard(item, `inst-${i}`, false))}
+          </View>
+        </AnimatedSection>
+      )}
 
       {/* ══ FORMULARIO SOPORTE ═════════════════════════ */}
       <AnimatedSection delay={170}>
@@ -582,46 +733,13 @@ export default function ContactoScreen() {
               </View>
             </View>
 
-            {/* Teléfono — botón llamar. El divisor va DENTRO del condicional
-                para que no quede una rayita huérfana cuando el backend no
-                devuelva teléfono (ahora vive en la sección de emergencias). */}
-            {contactoInfo.telefono && (
-              <>
-                <View style={s.contactDivider} />
-                <View style={s.contactRow}>
-                  <LinearGradient colors={['#F97613', '#d85f0e']} style={s.contactIconWrap}>
-                    <Ionicons name="call" size={20} color="#fff" />
-                  </LinearGradient>
-                  <View style={s.contactInfo}>
-                    <Text style={[s.contactLabel, { fontSize: fonts.sm }]}>
-                      {contactoInfo.telefono_nombre}
-                    </Text>
-                    <Text style={[s.contactValue, { fontSize: fonts.xs }]}>
-                      {contactoInfo.telefono}
-                    </Text>
-                    <Text style={[s.contactSubValue, { fontSize: fonts.xs }]}>
-                      {t('contact_schedule_hours')}
-                    </Text>
-                  </View>
-                  <Pressable
-                    onPress={() => handleCall(contactoInfo.telefono!)}
-                    style={({ pressed }) => [
-                      s.llamarBtn,
-                      {
-                        opacity: pressed ? 0.85 : 1,
-                        transform: [{ scale: pressed ? 0.97 : 1 }],
-                      },
-                    ]}
-                  >
-                    <Ionicons name="call" size={14} color="#fff" />
-                    <Text style={[s.llamarBtnText, { fontSize: fonts.xs }]}>{t('call_btn')}</Text>
-                  </Pressable>
-                </View>
-              </>
-            )}
+            {/* La fila de TELÉFONO se removió a propósito de "Contacto
+                directo": los números (emergencia + institucional) ahora
+                viven en sus secciones dedicadas (Emergencias / Institucional).
+                Aquí solo van Correo electrónico y Dirección. */}
 
-            {/* Dirección — toca para abrir Google Maps. Divisor también
-                dentro del condicional por la misma razón. */}
+            {/* Dirección — toca para abrir Google Maps. Divisor dentro del
+                condicional para no dejar una rayita huérfana. */}
             {contactoInfo.direccion && (
               <>
                 <View style={s.contactDivider} />
