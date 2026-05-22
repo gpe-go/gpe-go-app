@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { Animated, Image, ImageBackground, Keyboard, Platform, Pressable, RefreshControl, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
 import { Text, TextInput } from '../../components/Text';
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
+import { useIsFocused } from "@react-navigation/native";
 import { useOnboarding } from "../../src/context/OnboardingContext";
 import { useTheme } from "../../src/context/ThemeContext";
 import { useAnimatedPlaceholder } from "../../src/hooks/useAnimatedPlaceholder";
@@ -171,6 +172,11 @@ export default function HomeScreen() {
   const s = makeStyles(colors, fonts, isDark);
   const { fecha, hora } = useDateTime();
 
+  // El mapa de Home solo se monta cuando la pantalla está enfocada. El
+  // drawer mantiene las pantallas montadas; si Home, Directorio y Explorar
+  // conservan su MapView (superficie GPU nativa) vivo a la vez, TODA la app
+  // se vuelve lenta. Al desmontar el mapa al salir, nunca hay más de uno.
+  const mapVivo = useIsFocused();
   const mapRef = useRef<MapView>(null);
   const containerRef = useRef<View>(null);
   const searchWrapRef = useRef<View>(null);
@@ -884,6 +890,7 @@ export default function HomeScreen() {
 
           <View style={s.mapFrame}>
             <View style={s.mapContainer}>
+              {mapVivo ? (
               <MapView
                 ref={mapRef}
                 provider={PROVIDER_GOOGLE}
@@ -903,6 +910,9 @@ export default function HomeScreen() {
                   </Marker>
                 )}
               </MapView>
+              ) : (
+                <View style={StyleSheet.absoluteFillObject} />
+              )}
 
               <Pressable
                 style={({ pressed }) => [

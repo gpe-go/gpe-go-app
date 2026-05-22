@@ -2,6 +2,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { useIsFocused } from '@react-navigation/native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Animated, FlatList, Image, Platform, Pressable, RefreshControl, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
@@ -186,6 +187,12 @@ const DirectorioHeader = React.memo(
     categorias,
     labelDeCategoria,
   }: HeaderProps) => {
+    // El mapa SOLO se monta cuando la pantalla está enfocada. El drawer
+    // mantiene montadas las pantallas visitadas; si cada una conserva su
+    // MapView vivo (superficie GPU nativa), tener Home + Directorio +
+    // Explorar abiertos a la vez vuelve TODA la app lenta. Al desmontar el
+    // mapa al salir, nunca hay más de uno vivo.
+    const mapVivo = useIsFocused();
     const bannerAnim = useRef(new Animated.Value(0)).current;
     const mapAnim = useRef(new Animated.Value(0)).current;
     const catAnim = useRef(new Animated.Value(0)).current;
@@ -420,6 +427,7 @@ const DirectorioHeader = React.memo(
             </View>
 
             <View style={s.mapWrapper}>
+              {mapVivo ? (
               <MapView
                 ref={mapRef}
                 provider={PROVIDER_GOOGLE}
@@ -457,6 +465,9 @@ const DirectorioHeader = React.memo(
                   ) : null
                 )}
               </MapView>
+              ) : (
+                <View style={StyleSheet.absoluteFillObject} />
+              )}
 
               <Pressable
                 style={({ pressed }) => [

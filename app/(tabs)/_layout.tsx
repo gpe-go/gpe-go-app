@@ -114,6 +114,12 @@ export default function Layout() {
         drawerContent={(props) => <CustomDrawer {...props} />}
         screenOptions={{
           headerShown: true,
+          // Congela las pantallas que NO están enfocadas: react-native-screens
+          // pausa su render de React, así las pantallas montadas en el drawer
+          // (Home/Directorio/Explorar/etc.) no siguen trabajando en segundo
+          // plano. Junto con el montaje del mapa solo en foco, evita que la
+          // app se vuelva lenta tras visitar varias pantallas.
+          freezeOnBlur: true,
           // `front` desliza el drawer SOBRE el contenido y siempre vuelve a
           // su posición al soltar — `slide` tenía gestos parciales que
           // dejaban el panel a medio camino sin auto-cerrar.
