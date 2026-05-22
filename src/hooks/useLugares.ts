@@ -17,6 +17,12 @@ export interface LugaresConfig {
    * el tope en `limite` para evitar bugs/crashes por listas enormes.
    */
   rotarPagina?: boolean;
+  /**
+   * Si true, NO se piden las fotos de cada lugar (ahorra hasta `limite`
+   * peticiones de red por carga). Úsalo en pantallas donde los resultados
+   * se muestran SIN imagen (ej. el dropdown de búsqueda del Home).
+   */
+  sinFotos?: boolean;
 }
 
 /**
@@ -39,6 +45,7 @@ export const useLugares = (
   const radio_km    = config?.radio_km;
   const limite      = config?.limite ?? 40;
   const rotarPagina = config?.rotarPagina ?? false;
+  const sinFotos    = config?.sinFotos ?? false;
 
   const { coords } = useUbicacion();
 
@@ -76,8 +83,12 @@ export const useLugares = (
 
       if (buscando) {
         // ── Modo búsqueda: toda la BD, sin restricción geográfica ──
+        // por_pagina = `limite` (no 100): los dropdowns muestran ~20
+        // resultados, así evitamos traer y enriquecer con fotos cientos
+        // de items por tecla (causa de lags/crashes). El llamador decide
+        // el tope vía config.limite (Home usa 20).
         params.busqueda   = buscando;
-        params.por_pagina = 100;
+        params.por_pagina = limite;
       } else if (radio_km && coords) {
         // ── Modo proximidad: el backend filtra por distancia ──
         params.lat       = coords.lat;
@@ -108,16 +119,23 @@ export const useLugares = (
       }
 
       if (res.success && res.data?.lugares?.length > 0) {
-        // getFotoLugarCached deduplica peticiones del mismo id_lugar y
-        // mantiene un cache en memoria por 30 min. Esto reduce de ~40
-        // requests por carga a ~0 en re-entradas a la misma pantalla.
-        const lugaresConFotos = await Promise.all(
-          res.data.lugares.map(async (raw: any) => {
-            const url = await getFotoLugarCached(raw.id);
-            return mapLugar(raw, url ?? undefined);
-          })
-        );
-        setData(lugaresConFotos);
+        if (sinFotos) {
+          // Modo sin fotos: mapeamos directo sin pedir imágenes (ahorra
+          // hasta `limite` peticiones). Para pantallas que muestran los
+          // resultados sin imagen (dropdown de búsqueda del Home).
+          setData(res.data.lugares.map((raw: any) => mapLugar(raw)));
+        } else {
+          // getFotoLugarCached deduplica peticiones del mismo id_lugar y
+          // mantiene un cache en memoria por 30 min. Esto reduce de ~40
+          // requests por carga a ~0 en re-entradas a la misma pantalla.
+          const lugaresConFotos = await Promise.all(
+            res.data.lugares.map(async (raw: any) => {
+              const url = await getFotoLugarCached(raw.id);
+              return mapLugar(raw, url ?? undefined);
+            })
+          );
+          setData(lugaresConFotos);
+        }
       } else {
         setData([]);
       }
@@ -127,7 +145,7 @@ export const useLugares = (
     } finally {
       setLoading(false);
     }
-  }, [id_categoria, debouncedBusqueda, radio_km, coords, limite, rotarPagina]);
+  }, [id_categoria, debouncedBusqueda, radio_km, coords, limite, rotarPagina, sinFotos]);
 
   useEffect(() => {
     cargar();

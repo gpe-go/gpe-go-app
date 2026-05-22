@@ -46,6 +46,14 @@ const TABLA: Record<string, CategoriaPresentacion> = {
   'parques':                       { icon: 'tree',                 color: '#22C55E', labelKey: 'cat_parques' },
   'pueblos magicos':               { icon: 'castle',               color: '#A855F7', labelKey: 'cat_magic' },
   'museos':                        { icon: 'palette',              color: '#0EA5E9', labelKey: 'cat_culture' },
+  // Categorías de EVENTOS (?modulo=categorias_eventos). Se mantienen en
+  // naranja para conservar el look unificado de la pantalla de Eventos.
+  // Si el dashboard agrega una categoría de evento nueva sin mapeo aquí,
+  // cae al default y se muestra con su nombre del dashboard (sin romper).
+  'cultural':                      { icon: 'palette',              color: '#F97613', labelKey: 'cat_cultural' },
+  'deporte':                       { icon: 'soccer',               color: '#F97613', labelKey: 'cat_deporte' },
+  'gastronomia':                   { icon: 'food',                 color: '#F97613', labelKey: 'cat_gastronomia' },
+  'sociales':                      { icon: 'account-group',        color: '#F97613', labelKey: 'cat_sociales' },
 };
 
 const DEFAULT_PRESENTACION: CategoriaPresentacion = {

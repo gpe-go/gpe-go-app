@@ -3,7 +3,7 @@ import * as Location from 'expo-location';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Animated, FlatList, Image, Linking, Platform, Pressable, StatusBar, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Animated, FlatList, Image, Linking, Platform, Pressable, StatusBar, StyleSheet, View } from 'react-native';
 import { Alert } from '../../components/Alert';
 import { Text, TextInput } from '../../components/Text';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
@@ -12,32 +12,13 @@ import { Lugar } from '../../src/context/FavoritosContext';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useAnimatedPlaceholder } from '../../src/hooks/useAnimatedPlaceholder';
 import { useLugares } from '../../src/hooks/useLugares';
+import { useCategorias } from '../../src/hooks/useCategorias';
+import { useSearchHints } from '../../src/hooks/useSearchHints';
+import { excluirTuristicas, soloTuristicas } from '../../src/hooks/filtrosLugares';
 import { getImagenLugarSource } from '../../src/utils/imagenLugar';
 
-// ── Categorías por scope ───────────────────────────────────────────────────────
-const EXPLORAR_CATS  = ['Cerros', 'Parques', 'Pueblos Mágicos', 'Museos'];
-const DIRECTORIO_CATS = [
-  'Restaurantes', 'Hoteles', 'Tiendas', 'Servicios',
-  'Plazas', 'Hospitales', 'Farmacias', 'Supermercados', 'Gasolineras',
-];
-const TODAS_CATS = [...EXPLORAR_CATS, ...DIRECTORIO_CATS];
-
-// Mapeo de nombres de categoría (español, usados internamente) → claves i18n
-const CAT_I18N_KEY: Record<string, string> = {
-  'Cerros':          'cat_cerros',
-  'Parques':         'cat_parques',
-  'Pueblos Mágicos': 'cat_pueblos_magicos',
-  'Museos':          'cat_museos',
-  'Restaurantes':    'cat_restaurantes',
-  'Hoteles':         'cat_hoteles',
-  'Tiendas':         'cat_tiendas',
-  'Servicios':       'cat_servicios',
-  'Plazas':          'cat_plazas',
-  'Hospitales':      'cat_hospitales',
-  'Farmacias':       'cat_farmacias',
-  'Supermercados':   'cat_supermercados',
-  'Gasolineras':     'cat_gasolineras',
-};
+const normalizar = (s: string): string =>
+  s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 
 const DEFAULT_REGION = {
   latitude: 25.676,
@@ -123,42 +104,49 @@ export default function MapaCompletoScreen() {
   // ── Búsqueda y datos ────────────────────────────────────────────────────────
   const [mapSearch, setMapSearch] = useState(catInicial);
 
-  // Cargamos todos los lugares cercanos (sin filtro de texto → máx 100 más cercanos)
-  const { data: allPlaces } = useLugares(undefined, '', { radio_km: 15, limite: 100 });
+  // Scope dinámico según la pantalla origen:
+  //   • explorar   → solo lo turístico
+  //   • directorio → todo lo NO turístico
+  //   • home       → todo
+  const scope = fromParam === 'explorar'
+    ? 'explorar'
+    : fromParam === 'directorio'
+      ? 'directorio'
+      : 'all';
 
-  // Scope según la pantalla origen
-  const scopeCats: string[] | null = useMemo(() => {
-    if (fromParam === 'explorar')   return EXPLORAR_CATS;
-    if (fromParam === 'directorio') return DIRECTORIO_CATS;
-    return null; // pantalla principal → todas
-  }, [fromParam]);
+  // Categorías dinámicas (backend) para resolver si el texto buscado es
+  // el NOMBRE de una categoría → en ese caso pedimos por id_categoria.
+  const { data: cats } = useCategorias();
+  const matchedCat = useMemo(() => {
+    const q = normalizar(mapSearch.trim());
+    if (!q) return undefined;
+    return cats.find((c) => {
+      const n = normalizar(c.nombre);
+      return n === q || n.startsWith(q);
+    });
+  }, [cats, mapSearch]);
 
-  // Resultados filtrados por scope + búsqueda
+  // Si el texto es una categoría → browse por id (rotando página, tope 20).
+  // Si es texto libre → búsqueda por nombre en toda la BD (tope 20).
+  const matchedCatId = matchedCat?.id;
+  const textoBusqueda = matchedCatId ? '' : mapSearch;
+  const { data: rawResults, loading: cargandoMapa } = useLugares(
+    matchedCatId,
+    textoBusqueda,
+    { limite: 20, rotarPagina: !!matchedCatId },
+  );
+
+  // Aplica el scope (turístico / no turístico) y recorta a 20 resultados.
+  const aplicarScope = useCallback((lista: Lugar[]): Lugar[] => {
+    if (scope === 'explorar') return soloTuristicas(lista);
+    if (scope === 'directorio') return excluirTuristicas(lista);
+    return lista;
+  }, [scope]);
+
   const searchResults: Lugar[] = useMemo(() => {
-    const q = mapSearch.trim().toLowerCase();
-    if (!q) return [];
-
-    let pool = scopeCats
-      ? allPlaces.filter(p => scopeCats.includes(p.categoria))
-      : allPlaces;
-
-    // Detectar si el texto coincide con un nombre de categoría conocida
-    const matchedCat = TODAS_CATS.find(
-      cat => cat.toLowerCase() === q || cat.toLowerCase().startsWith(q)
-    );
-
-    if (matchedCat && (!scopeCats || scopeCats.includes(matchedCat))) {
-      // Mostrar todos los lugares de esa categoría
-      return pool.filter(p => p.categoria === matchedCat);
-    }
-
-    // Búsqueda por nombre o categoría parcial
-    return pool.filter(
-      p =>
-        p.nombre.toLowerCase().includes(q) ||
-        p.categoria.toLowerCase().includes(q)
-    );
-  }, [allPlaces, mapSearch, scopeCats]);
+    if (mapSearch.trim().length === 0) return [];
+    return aplicarScope(rawResults).slice(0, 20);
+  }, [rawResults, mapSearch, aplicarScope]);
 
   // Marcador seleccionado (para resaltar)
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -214,32 +202,20 @@ export default function MapaCompletoScreen() {
     }
   }, [userLocation, t]);
 
-  // ── Placeholder animado: 3 lugares aleatorios + 3 categorías del scope ──────
+  // ── Placeholder animado DINÁMICO: nombres de lugares + categorías ───────────
+  // Los nombres salen de `rawResults` (lo que cargó el hook) ya filtrado
+  // por scope; las categorías las agrega `useSearchHints` desde el backend.
   const [pickedPlaceNames, setPickedPlaceNames] = useState<string[]>([]);
 
   useEffect(() => {
     if (pickedPlaceNames.length > 0) return;
-    const pool = scopeCats
-      ? allPlaces.filter(p => scopeCats.includes(p.categoria))
-      : allPlaces;
+    const pool = aplicarScope(rawResults);
     if (pool.length === 0) return;
     const shuffled = [...pool].sort(() => Math.random() - 0.5);
-    setPickedPlaceNames(shuffled.slice(0, 3).map(p => p.nombre));
-  }, [allPlaces, scopeCats, pickedPlaceNames.length]);
+    setPickedPlaceNames(shuffled.slice(0, 4).map(p => p.nombre));
+  }, [rawResults, aplicarScope, pickedPlaceNames.length]);
 
-  const searchHints = useMemo(() => {
-    const cats = scopeCats ?? TODAS_CATS;
-    const catHints = cats.slice(0, 3).map(c => {
-      const key = CAT_I18N_KEY[c];
-      return key ? t(key) : c;
-    });
-    const hints: string[] = [];
-    for (let i = 0; i < 3; i++) {
-      if (pickedPlaceNames[i]) hints.push(pickedPlaceNames[i]);
-      if (catHints[i])          hints.push(catHints[i]);
-    }
-    return hints.length > 0 ? hints : [t('search_places_or_cats')];
-  }, [pickedPlaceNames, scopeCats, t]);
+  const searchHints = useSearchHints({ nombres: pickedPlaceNames, scope });
 
   const { index: hintIdx, opacity: hintOpacity } = useAnimatedPlaceholder(searchHints.length);
 
@@ -447,8 +423,18 @@ export default function MapaCompletoScreen() {
         </View>
       )}
 
-      {/* Mensaje sin resultados */}
-      {mapSearch.trim().length > 0 && searchResults.length === 0 && (
+      {/* Cargando resultados (evita el parpadeo de "sin resultados") */}
+      {mapSearch.trim().length > 0 && cargandoMapa && searchResults.length === 0 && (
+        <View style={[ms.noResultsBubble, { backgroundColor: cardBg, bottom: insets.bottom + 100 }]}>
+          <ActivityIndicator size="small" color="#F97613" />
+          <Text style={[ms.noResultsText, { color: subCol, fontSize: fonts.sm }]}>
+            {t('search')}…
+          </Text>
+        </View>
+      )}
+
+      {/* Mensaje sin resultados (solo cuando ya terminó de cargar) */}
+      {mapSearch.trim().length > 0 && !cargandoMapa && searchResults.length === 0 && (
         <View style={[ms.noResultsBubble, { backgroundColor: cardBg, bottom: insets.bottom + 100 }]}>
           <Ionicons name="search-outline" size={16} color={subCol} />
           <Text style={[ms.noResultsText, { color: subCol, fontSize: fonts.sm }]}>

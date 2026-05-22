@@ -9,6 +9,12 @@ export interface EventosConfig {
   radio_km?: number;
   /** Máximo de resultados en modo proximidad (default 40) */
   limite?: number;
+  /**
+   * Si true, NO se piden las fotos de cada evento (ahorra hasta `limite`
+   * peticiones). Úsalo donde los resultados se muestran SIN imagen
+   * (ej. el dropdown de búsqueda del Home).
+   */
+  sinFotos?: boolean;
 }
 
 /**
@@ -27,6 +33,7 @@ export const useEventos = (
 ) => {
   const radio_km = config?.radio_km;
   const limite   = config?.limite ?? 40;
+  const sinFotos = config?.sinFotos ?? false;
 
   const { coords } = useUbicacion();
 
@@ -54,8 +61,10 @@ export const useEventos = (
 
       if (buscando) {
         // ── Modo búsqueda: toda la BD ──
+        // por_pagina = `limite` (no 100) para no traer ni enriquecer con
+        // fotos cientos de eventos por tecla (evita lags/crashes).
         params.busqueda   = buscando;
-        params.por_pagina = 100;
+        params.por_pagina = limite;
       } else if (radio_km && coords) {
         // ── Modo proximidad ──
         params.lat        = coords.lat;
@@ -69,21 +78,28 @@ export const useEventos = (
       const res = await getEventos(params);
 
       if (res.success && res.data?.eventos?.length > 0) {
-        const eventosConFotos = await Promise.all(
-          res.data.eventos.map(async (raw: any) => {
-            let imagen: string | undefined;
-            try {
-              const fotosRes = await getFotosEvento(raw.id);
-              if (fotosRes.success && Array.isArray(fotosRes.data) && fotosRes.data.length > 0) {
-                imagen = fotosRes.data[0].url;
+        if (sinFotos) {
+          // Modo sin fotos: mapeo directo sin pedir imágenes (ahorra hasta
+          // `limite` peticiones). Para resultados que se muestran sin
+          // imagen (dropdown de búsqueda del Home).
+          setData(res.data.eventos.map((raw: any) => mapEvento(raw)));
+        } else {
+          const eventosConFotos = await Promise.all(
+            res.data.eventos.map(async (raw: any) => {
+              let imagen: string | undefined;
+              try {
+                const fotosRes = await getFotosEvento(raw.id);
+                if (fotosRes.success && Array.isArray(fotosRes.data) && fotosRes.data.length > 0) {
+                  imagen = fotosRes.data[0].url;
+                }
+              } catch {
+                // Foto no disponible
               }
-            } catch {
-              // Foto no disponible
-            }
-            return mapEvento(raw, imagen);
-          })
-        );
-        setData(eventosConFotos);
+              return mapEvento(raw, imagen);
+            })
+          );
+          setData(eventosConFotos);
+        }
       } else {
         setData([]);
       }
@@ -93,7 +109,7 @@ export const useEventos = (
     } finally {
       setLoading(false);
     }
-  }, [tipo, debouncedBusqueda, radio_km, coords, limite]);
+  }, [tipo, debouncedBusqueda, radio_km, coords, limite, sinFotos]);
 
   useEffect(() => {
     cargar();

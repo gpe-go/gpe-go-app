@@ -129,9 +129,28 @@ export default function DetalleLugar() {
   };
 
   const abrirMapa = () => {
-    const q = encodeURIComponent(`${lugar.nombre || ""} ${lugar.ubicacion || ""}`.trim());
-    const googleUrl = `https://www.google.com/maps/search/?api=1&query=${q}`;
-    const appleUrl = `https://maps.apple.com/?q=${q}`;
+    // Preferimos COORDENADAS (lat/lng) sobre el texto de la dirección:
+    // las direcciones de la BD a veces son ambiguas y Google/Apple Maps
+    // caían en otra ubicación o "no existe". Con lat/lng el pin queda
+    // exacto (igual que el mapa interno). El nombre se usa solo como
+    // etiqueta del pin. Si por algún motivo no hubiera coordenadas, se
+    // hace fallback a la búsqueda por dirección.
+    const lat = Number(lugar.lat);
+    const lng = Number(lugar.lng);
+    const tieneCoords = Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0);
+    const label = encodeURIComponent((lugar.nombre || "").trim());
+
+    let googleUrl: string;
+    let appleUrl: string;
+    if (tieneCoords) {
+      googleUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+      appleUrl = `https://maps.apple.com/?ll=${lat},${lng}${label ? `&q=${label}` : ''}`;
+    } else {
+      const q = encodeURIComponent((lugar.ubicacion || lugar.nombre || "").trim());
+      googleUrl = `https://www.google.com/maps/search/?api=1&query=${q}`;
+      appleUrl = `https://maps.apple.com/?q=${q}`;
+    }
+
     const opciones: { text: string; onPress: () => void }[] = [
       { text: 'Google Maps', onPress: () => Linking.openURL(googleUrl).catch(() => {}) },
     ];

@@ -10,6 +10,7 @@ import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { Lugar, useFavoritos } from '../../src/context/FavoritosContext';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useAnimatedPlaceholder } from '../../src/hooks/useAnimatedPlaceholder';
+import { useSearchHints } from '../../src/hooks/useSearchHints';
 import { useLugares } from '../../src/hooks/useLugares';
 import { excluirTuristicas, rotarLugares } from '../../src/hooks/filtrosLugares';
 import { getImagenLugarSource } from '../../src/utils/imagenLugar';
@@ -204,8 +205,6 @@ const DirectorioHeader = React.memo(
       }
     }, [chipScrollX]);
 
-    const catInfo = categoriaActiva ? categorias.find((c) => c.value === categoriaActiva) : null;
-
     // Lugares aleatorios de directorio para el placeholder animado (se eligen una vez al cargar)
     const [randomDirPlaces, setRandomDirPlaces] = useState<string[]>([]);
     useEffect(() => {
@@ -219,21 +218,9 @@ const DirectorioHeader = React.memo(
       setRandomDirPlaces(shuffled.slice(0, 3).map(p => p.nombre));
     }, [todosData, randomDirPlaces.length]);
 
-    // Animated rotating placeholder hints (3 lugares + 3 categorías intercalados)
-    const searchHints = useMemo(() => {
-      const catHints = [
-        `${t('search')} ${t('cat_restaurantes')}...`,
-        `${t('search')} ${t('cat_hoteles')}...`,
-        `${t('search')} ${t('cat_tiendas')}...`,
-      ];
-      const placeHints = randomDirPlaces.map(n => `${t('search')} ${n}...`);
-      const hints: string[] = [];
-      for (let i = 0; i < 3; i++) {
-        if (placeHints[i]) hints.push(placeHints[i]);
-        hints.push(catHints[i]);
-      }
-      return hints;
-    }, [t, randomDirPlaces]);
+    // Placeholder rotativo DINÁMICO: categorías de Directorio (no
+    // turísticas, desde el backend) + nombres de comercios ya cargados.
+    const searchHints = useSearchHints({ nombres: randomDirPlaces, scope: 'directorio' });
     const { index: hintIdx, opacity: hintOpacity } = useAnimatedPlaceholder(searchHints.length);
 
     useEffect(() => {
@@ -309,7 +296,7 @@ const DirectorioHeader = React.memo(
       ],
     };
 
-    const suggestions = search.trim() ? filteredData.slice(0, 5) : [];
+    const suggestions = search.trim() ? filteredData.slice(0, 20) : [];
 
     return (
       <View>
@@ -391,26 +378,33 @@ const DirectorioHeader = React.memo(
                   {suggestions.length === 0 ? (
                     <Text style={[s.noResults, { fontSize: fonts.sm }]}>{t('no_results')}</Text>
                   ) : (
-                    suggestions.map((item) => (
-                      <Pressable
-                        key={item.id}
-                        style={({ pressed }) => [
-                          s.searchItem,
-                          {
-                            opacity: pressed ? 0.88 : 1,
-                            transform: [{ scale: pressed ? 0.98 : 1 }],
-                          },
-                        ]}
-                        onPress={() => onSelectItem(item)}
-                      >
-                        <View style={s.searchItemIconWrap}>
-                          <Ionicons name="location-outline" size={16} color="#F97613" />
-                        </View>
-                        <Text style={[s.searchItemText, { fontSize: fonts.sm }]} numberOfLines={1}>
-                          {item.nombre}
-                        </Text>
-                      </Pressable>
-                    ))
+                    <ScrollView
+                      style={{ maxHeight: 300 }}
+                      keyboardShouldPersistTaps="handled"
+                      showsVerticalScrollIndicator={false}
+                      nestedScrollEnabled
+                    >
+                      {suggestions.map((item) => (
+                        <Pressable
+                          key={item.id}
+                          style={({ pressed }) => [
+                            s.searchItem,
+                            {
+                              opacity: pressed ? 0.88 : 1,
+                              transform: [{ scale: pressed ? 0.98 : 1 }],
+                            },
+                          ]}
+                          onPress={() => onSelectItem(item)}
+                        >
+                          <View style={s.searchItemIconWrap}>
+                            <Ionicons name="location-outline" size={16} color="#F97613" />
+                          </View>
+                          <Text style={[s.searchItemText, { fontSize: fonts.sm }]} numberOfLines={1}>
+                            {item.nombre}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </ScrollView>
                   )}
                 </View>
               )}

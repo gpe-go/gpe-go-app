@@ -109,7 +109,13 @@ export default function LugarDetalle() {
     CATEGORIA_KEYS[categoria] ? t(CATEGORIA_KEYS[categoria]) : categoria;
 
   const abrirMapa = () => {
-    abrirEnMapa(`${lugar.nombre} ${lugar.ubicacion}`);
+    // Preferimos COORDENADAS sobre el texto: las direcciones de la BD a
+    // veces son ambiguas y Maps caía en otra ubicación. Con lat/lng el
+    // pin queda exacto. Fallback al texto si no hubiera coordenadas.
+    const lat = Number((lugar as any).lat);
+    const lng = Number((lugar as any).lng);
+    const tieneCoords = Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0);
+    abrirEnMapa(tieneCoords ? `${lat},${lng}` : `${lugar.nombre} ${lugar.ubicacion}`);
   };
 
   const compartir = async () => {

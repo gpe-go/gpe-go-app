@@ -122,7 +122,11 @@ export default function Layout() {
           swipeEdgeWidth: 60,
           swipeMinDistance: 30,
           drawerStyle: {
-            width: width * 0.72,
+            // Ancho ENTERO: con un ancho fraccionario (width*0.72) Android
+            // dejaba una hairline naranja del panel en el borde izquierdo
+            // cuando el drawer está cerrado (subpixel bleed). Redondear lo
+            // elimina. En iOS no se notaba.
+            width: Math.round(width * 0.72),
             backgroundColor: '#F97613',
           },
           overlayColor: colors.overlay,

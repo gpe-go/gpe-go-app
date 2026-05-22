@@ -156,6 +156,33 @@ module.exports = {
       ],
 
       "expo-web-browser",
+
+      // ── Hardening del build nativo (NO afecta Expo Go) ──────────────
+      // Estas opciones SOLO aplican al APK/IPA de producción (EAS/prebuild).
+      // En Expo Go la app sigue corriendo igual.
+      //
+      //   • enableProguardInReleaseBuilds      → ofusca + reduce el código
+      //     Java/Kotlin del APK release: dificulta el reversing/tampering.
+      //   • enableShrinkResourcesInReleaseBuilds → elimina recursos sin uso
+      //     (APK más chico y con menos superficie).
+      //   • usesCleartextTraffic: false        → bloquea tráfico HTTP en
+      //     claro; la app solo habla con https://go.guadalupe.gob.mx, así
+      //     que esto previene fugas/MITM por accidente.
+      //
+      // ⚠️ IMPORTANTE: ProGuard solo se nota en el build RELEASE. Hay que
+      // PROBAR el APK de release una vez (no solo Expo Go) por si alguna
+      // librería necesitara una keep-rule extra. Expo ya incluye las reglas
+      // de sus módulos, así que el riesgo es bajo, pero conviene validarlo.
+      [
+        "expo-build-properties",
+        {
+          android: {
+            enableProguardInReleaseBuilds: true,
+            enableShrinkResourcesInReleaseBuilds: true,
+            usesCleartextTraffic: false,
+          },
+        },
+      ],
     ],
 
     // ── Experimental ────────────────────────────────────────

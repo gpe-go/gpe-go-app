@@ -1,4 +1,4 @@
-import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Animated, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
 import { Alert } from '../../components/Alert';
 import { Text, TextInput } from '../../components/Text';
+import GoogleLogo from '../../components/GoogleLogo';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMisLugares, registrarUsuario, solicitarCodigo, verificarCodigo, getApiErrorMessage } from '../../src/api/api';
@@ -1049,31 +1050,7 @@ export default function PerfilScreen() {
         </View>
 
         <View style={s.socialButtons}>
-          <Pressable
-            style={({ pressed }) => [
-              s.socialBtn,
-              s.googleBtn,
-              {
-                opacity: pressed ? 0.88 : 1,
-                transform: [{ scale: pressed ? 0.985 : 1 }],
-              },
-            ]}
-            onPress={handleGoogleLogin}
-          >
-            <View style={s.socialIconWrap}>
-              <FontAwesome5 name="google" size={16} color="#EA4335" />
-            </View>
-            <Text
-              style={[
-                s.socialBtnText,
-                { fontSize: fonts.base, color: colors.text },
-              ]}
-            >
-              {t('profile_google')}
-            </Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.subtext} />
-          </Pressable>
-
+          {/* Apple — botón negro con logo + texto centrados (estilo oficial) */}
           <Pressable
             style={({ pressed }) => [
               s.socialBtn,
@@ -1085,19 +1062,32 @@ export default function PerfilScreen() {
             ]}
             onPress={handleAppleLogin}
           >
-            <View style={[s.socialIconWrap, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
-              <Ionicons name="logo-apple" size={18} color="#fff" />
-            </View>
+            <Ionicons name="logo-apple" size={20} color="#fff" />
             <Text
               style={[s.socialBtnText, { fontSize: fonts.base, color: '#fff' }]}
             >
               {t('profile_apple')}
             </Text>
-            <Ionicons
-              name="chevron-forward"
-              size={16}
-              color="rgba(255,255,255,0.6)"
-            />
+          </Pressable>
+
+          {/* Google — botón blanco con borde + logo + texto centrados */}
+          <Pressable
+            style={({ pressed }) => [
+              s.socialBtn,
+              s.googleBtn,
+              {
+                opacity: pressed ? 0.88 : 1,
+                transform: [{ scale: pressed ? 0.985 : 1 }],
+              },
+            ]}
+            onPress={handleGoogleLogin}
+          >
+            <GoogleLogo size={20} />
+            <Text
+              style={[s.socialBtnText, { fontSize: fonts.base, color: '#1f1f1f' }]}
+            >
+              {t('profile_google')}
+            </Text>
           </Pressable>
         </View>
 
@@ -1517,32 +1507,26 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       gap: 12,
     },
     socialBtn: {
-      height: 58,
-      borderRadius: 20,
+      height: 60,
+      borderRadius: 26,
       flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'center',
       paddingHorizontal: 16,
-      gap: 12,
+      gap: 10,
       borderWidth: 1,
     },
+    // Google: siempre blanco con borde gris claro (guía de marca + imagen).
     googleBtn: {
-      backgroundColor: c.card,
-      borderColor: c.border,
+      backgroundColor: '#fff',
+      borderColor: '#dadce0',
     },
+    // Apple: siempre negro (guía de marca + imagen).
     appleBtn: {
       backgroundColor: '#000',
       borderColor: '#000',
     },
-    socialIconWrap: {
-      width: 36,
-      height: 36,
-      borderRadius: 12,
-      backgroundColor: 'rgba(234,67,53,0.1)',
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
     socialBtnText: {
-      flex: 1,
       fontWeight: '800',
     },
     registerContainer: {

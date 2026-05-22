@@ -4,13 +4,15 @@ import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Animated, Image, ImageBackground, Keyboard, Platform, Pressable, RefreshControl, StatusBar, StyleSheet, View } from 'react-native';
+import { Animated, Image, ImageBackground, Keyboard, Platform, Pressable, RefreshControl, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
 import { Text, TextInput } from '../../components/Text';
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { useOnboarding } from "../../src/context/OnboardingContext";
 import { useTheme } from "../../src/context/ThemeContext";
 import { useAnimatedPlaceholder } from "../../src/hooks/useAnimatedPlaceholder";
 import { useLugares } from "../../src/hooks/useLugares";
+import { useEventos } from "../../src/hooks/useEventos";
+import { useSearchHints } from "../../src/hooks/useSearchHints";
 import i18n, { AppLanguage, cambiarIdioma } from "../../src/i18n/i18n";
 import LanguageSheet from "../../components/LanguageSheet";
 import MundialWidget from "../../components/MundialWidget";
@@ -158,13 +160,6 @@ const rl = StyleSheet.create({
   },
 });
 
-type LugarLite = {
-  id?: string | number;
-  nombre?: string;
-  ubicacion?: string;
-  imagen?: string;
-};
-
 export default function HomeScreen() {
   const router = useRouter();
 
@@ -265,16 +260,25 @@ export default function HomeScreen() {
     outputRange: ["-5deg", "15deg", "30deg"],
   });
 
-  // Animated rotating placeholder hints
-  const searchHints = useMemo(
-    () => [
-      `${t("search")} ${t("cat_hoteles")}...`,
-      `${t("search")} ${t("cat_restaurantes")}...`,
-      `${t("search")} ${t("cat_magic")}...`,
-      `${t("search")} ${t("cat_cerros")}...`,
-    ],
-    [t]
-  );
+  // ── Búsqueda global: lugares (directorio + explorar) + eventos ──────
+  // El backend filtra por texto (`busqueda`) sobre TODA la BD; con tope
+  // de 20 por tipo no traemos cientos de items (evita lags/crashes).
+  // Sin texto, ambos hooks devuelven los primeros 20 → sirven de fuente
+  // para los nombres dinámicos del placeholder rotativo.
+  const { data: lugaresBusqueda } = useLugares(undefined, search, { limite: 20, sinFotos: true });
+  const { data: eventosBusqueda } = useEventos(undefined, search, { limite: 20, sinFotos: true });
+
+  // ── Placeholder rotativo DINÁMICO ──────────────────────────────────
+  // Nombres de muestra: mezcla de lugares y eventos ya cargados. Se
+  // recalcula solo cuando llegan datos nuevos (no por tecla, porque el
+  // placeholder se oculta al escribir). Las categorías las agrega
+  // `useSearchHints` desde el backend (lugares + eventos).
+  const hintNombres = useMemo(() => {
+    const placeNames = lugaresBusqueda.slice(0, 10).map((l) => l.nombre).filter(Boolean) as string[];
+    const eventNames = eventosBusqueda.slice(0, 10).map((e: any) => e.titulo).filter(Boolean) as string[];
+    return [...placeNames, ...eventNames].sort(() => Math.random() - 0.5).slice(0, 6);
+  }, [lugaresBusqueda, eventosBusqueda]);
+  const searchHints = useSearchHints({ nombres: hintNombres, incluirEventos: true, scope: 'all' });
   const { index: hintIdx, opacity: hintOpacity } = useAnimatedPlaceholder(searchHints.length);
 
   const headerAnim = useRef(new Animated.Value(0)).current;
@@ -285,9 +289,6 @@ export default function HomeScreen() {
   const mapAnim = useRef(new Animated.Value(0)).current;
   const searchFocusAnim = useRef(new Animated.Value(0)).current;
   const scrollY = useRef(new Animated.Value(0)).current;
-
-  const lugaresHook = useLugares() as { data?: LugarLite[] };
-  const lugares = Array.isArray(lugaresHook?.data) ? lugaresHook.data : [];
 
   useEffect(() => {
     let sub: Location.LocationSubscription | undefined;
@@ -386,14 +387,14 @@ export default function HomeScreen() {
     mapRef.current.animateToRegion(region, 600);
   };
 
-  const searchResults =
-    search.length > 0
-      ? lugares.filter((item) =>
-          String(item?.nombre ?? "")
-            .toLowerCase()
-            .includes(search.toLowerCase())
-        )
-      : [];
+  // Resultados combinados (lugares + eventos), tope 20. Cada item se
+  // etiqueta con `_tipo` para saber a qué pantalla de detalle navegar.
+  const searchResults = useMemo(() => {
+    if (search.trim().length === 0) return [] as any[];
+    const lugares = lugaresBusqueda.map((l) => ({ ...l, _tipo: 'lugar' as const }));
+    const eventos = eventosBusqueda.map((e: any) => ({ ...e, _tipo: 'evento' as const }));
+    return [...lugares, ...eventos].slice(0, 20);
+  }, [search, lugaresBusqueda, eventosBusqueda]);
 
   const headerAnimatedStyle = {
     opacity: headerAnim,
@@ -970,35 +971,58 @@ export default function HomeScreen() {
             <Text style={[s.searchResultsTitle, { fontSize: fonts.sm }]}>
               {t("search")}
             </Text>
-            {searchResults.slice(0, 6).map((item, index) => (
-              <Pressable
-                key={item.id ?? index}
-                style={s.searchItem}
-                onPress={() => {
-                  setSearch("");
-                  Keyboard.dismiss();
-                  router.push(`/lugar/${item.id}` as any);
-                }}
-              >
-                <View style={s.searchItemIcon}>
-                  <Ionicons name="location-outline" size={16} color="#F97613" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={[s.searchItemTitle, { fontSize: fonts.sm }]}
-                    numberOfLines={1}
+            <ScrollView
+              style={{ maxHeight: 340 }}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              nestedScrollEnabled
+            >
+              {searchResults.map((item, index) => {
+                const esEvento = item._tipo === 'evento';
+                const titulo = esEvento ? item.titulo : item.nombre;
+                const sub = esEvento ? (item.fecha || item.lugar) : item.ubicacion;
+                return (
+                  <Pressable
+                    key={`${item._tipo}-${item.id ?? index}`}
+                    style={s.searchItem}
+                    onPress={() => {
+                      setSearch("");
+                      Keyboard.dismiss();
+                      if (esEvento) {
+                        router.push({
+                          pathname: '/(stack)/detalleEvento',
+                          params: { evento: JSON.stringify(item) },
+                        });
+                      } else {
+                        router.push(`/lugar/${item.id}` as any);
+                      }
+                    }}
                   >
-                    {item.nombre}
-                  </Text>
-                  {item.ubicacion ? (
-                    <Text style={[s.searchSub, { fontSize: fonts.xs }]} numberOfLines={1}>
-                      {item.ubicacion}
-                    </Text>
-                  ) : null}
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.subtext} />
-              </Pressable>
-            ))}
+                    <View style={s.searchItemIcon}>
+                      <Ionicons
+                        name={esEvento ? "calendar-outline" : "location-outline"}
+                        size={16}
+                        color="#F97613"
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={[s.searchItemTitle, { fontSize: fonts.sm }]}
+                        numberOfLines={1}
+                      >
+                        {titulo}
+                      </Text>
+                      {sub ? (
+                        <Text style={[s.searchSub, { fontSize: fonts.xs }]} numberOfLines={1}>
+                          {sub}
+                        </Text>
+                      ) : null}
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color={colors.subtext} />
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
           </View>
         </>
       )}

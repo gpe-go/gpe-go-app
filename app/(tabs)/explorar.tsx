@@ -11,6 +11,7 @@ import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import { Lugar, useFavoritos } from '../../src/context/FavoritosContext';
 import { useTheme } from '../../src/context/ThemeContext';
 import { useAnimatedPlaceholder } from '../../src/hooks/useAnimatedPlaceholder';
+import { useSearchHints } from '../../src/hooks/useSearchHints';
 import { useLugares } from '../../src/hooks/useLugares';
 import { soloTuristicas, rotarLugares } from '../../src/hooks/filtrosLugares';
 import { getImagenLugarSource } from '../../src/utils/imagenLugar';
@@ -138,7 +139,7 @@ type ExplorarHeaderProps = {
   onLimpiar: () => void;
   onCategoria: (cat: string) => void;
   onUbicacion: () => void;
-  onOpenMaps: (nombre: string, ubicacion: string) => void;
+  onOpenMaps: (lugar: Lugar) => void;
   onSelectItem: (item: Lugar) => void;
   onIrAlDetalle: (item: Lugar) => void;
   onExpandMap: () => void;
@@ -210,21 +211,9 @@ const ExplorarHeader = React.memo(
       setRandomTourismPlaces(shuffled.slice(0, 3).map(p => p.nombre));
     }, [todosData, randomTourismPlaces.length]);
 
-    // Animated rotating placeholder hints (3 lugares + 3 categorías intercalados)
-    const searchHints = useMemo(() => {
-      const catHints = [
-        `${t('search')} ${t('cat_pueblos_magicos')}...`,
-        `${t('search')} ${t('cat_museos')}...`,
-        `${t('search')} ${t('cat_parques')}...`,
-      ];
-      const placeHints = randomTourismPlaces.map(n => `${t('search')} ${n}...`);
-      const hints: string[] = [];
-      for (let i = 0; i < 3; i++) {
-        if (placeHints[i]) hints.push(placeHints[i]);
-        hints.push(catHints[i]);
-      }
-      return hints;
-    }, [t, randomTourismPlaces]);
+    // Placeholder rotativo DINÁMICO: categorías turísticas (desde el
+    // backend) + nombres de sitios turísticos ya cargados.
+    const searchHints = useSearchHints({ nombres: randomTourismPlaces, scope: 'explorar' });
     const { index: hintIdx, opacity: hintOpacity } = useAnimatedPlaceholder(searchHints.length);
 
     useEffect(() => {
@@ -300,7 +289,7 @@ const ExplorarHeader = React.memo(
       ],
     };
 
-    const suggestions = search.trim() ? filteredData.slice(0, 5) : [];
+    const suggestions = search.trim() ? filteredData.slice(0, 20) : [];
 
     return (
       <View>
@@ -382,26 +371,33 @@ const ExplorarHeader = React.memo(
                   {suggestions.length === 0 ? (
                     <Text style={[s.noResults, { fontSize: fonts.sm }]}>{t('no_results')}</Text>
                   ) : (
-                    suggestions.map((item) => (
-                      <Pressable
-                        key={item.id}
-                        style={({ pressed }) => [
-                          s.searchItem,
-                          {
-                            opacity: pressed ? 0.88 : 1,
-                            transform: [{ scale: pressed ? 0.98 : 1 }],
-                          },
-                        ]}
-                        onPress={() => onSelectItem(item)}
-                      >
-                        <View style={s.searchItemIconWrap}>
-                          <Ionicons name="location-outline" size={16} color="#F97613" />
-                        </View>
-                        <Text style={[s.searchItemText, { fontSize: fonts.sm }]} numberOfLines={1}>
-                          {item.nombre}
-                        </Text>
-                      </Pressable>
-                    ))
+                    <ScrollView
+                      style={{ maxHeight: 300 }}
+                      keyboardShouldPersistTaps="handled"
+                      showsVerticalScrollIndicator={false}
+                      nestedScrollEnabled
+                    >
+                      {suggestions.map((item) => (
+                        <Pressable
+                          key={item.id}
+                          style={({ pressed }) => [
+                            s.searchItem,
+                            {
+                              opacity: pressed ? 0.88 : 1,
+                              transform: [{ scale: pressed ? 0.98 : 1 }],
+                            },
+                          ]}
+                          onPress={() => onSelectItem(item)}
+                        >
+                          <View style={s.searchItemIconWrap}>
+                            <Ionicons name="location-outline" size={16} color="#F97613" />
+                          </View>
+                          <Text style={[s.searchItemText, { fontSize: fonts.sm }]} numberOfLines={1}>
+                            {item.nombre}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </ScrollView>
                   )}
                 </View>
               )}
@@ -835,10 +831,27 @@ export default function ExplorarScreen() {
     [router]
   );
 
-  const openInMaps = useCallback((nombre: string, ubicacion: string) => {
-    const q = encodeURIComponent(`${nombre || ""} ${ubicacion || ""}`.trim());
-    const googleUrl = `https://www.google.com/maps/search/?api=1&query=${q}`;
-    const appleUrl = `https://maps.apple.com/?q=${q}`;
+  const openInMaps = useCallback((lugar: Lugar) => {
+    // Preferimos COORDENADAS sobre el texto de la dirección: las
+    // direcciones de la BD a veces son ambiguas y Maps caía en otra
+    // ubicación. Con lat/lng el pin queda exacto (igual que el mapa de
+    // la app). Fallback a búsqueda por dirección si no hubiera coords.
+    const lat = Number((lugar as any).lat);
+    const lng = Number((lugar as any).lng);
+    const tieneCoords = Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0);
+    const label = encodeURIComponent((lugar.nombre || "").trim());
+
+    let googleUrl: string;
+    let appleUrl: string;
+    if (tieneCoords) {
+      googleUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+      appleUrl = `https://maps.apple.com/?ll=${lat},${lng}${label ? `&q=${label}` : ''}`;
+    } else {
+      const q = encodeURIComponent((lugar.ubicacion || lugar.nombre || "").trim());
+      googleUrl = `https://www.google.com/maps/search/?api=1&query=${q}`;
+      appleUrl = `https://maps.apple.com/?q=${q}`;
+    }
+
     const opciones: { text: string; onPress: () => void }[] = [
       { text: 'Google Maps', onPress: () => Linking.openURL(googleUrl).catch(() => {}) },
     ];
@@ -1062,7 +1075,7 @@ export default function ExplorarScreen() {
                       transform: [{ scale: pressed ? 0.97 : 1 }],
                     },
                   ]}
-                  onPress={() => openInMaps(item.nombre, item.ubicacion)}
+                  onPress={() => openInMaps(item)}
                 >
                   <Ionicons name="navigate" size={12} color="#fff" />
                   <Text style={[s.mapBtnText, { fontSize: fonts.xs }]}>{t('location')}</Text>

@@ -175,8 +175,10 @@ const EventCard = React.memo(({ item, colors, fonts, onPress, t, isDark, categor
         {catInfo && (
           <View style={[s.catImgBadge, { backgroundColor: catInfo.color }]}>
             <MaterialCommunityIcons name={catInfo.icon as any} size={12} color="#fff" />
-            <Text style={s.catImgBadgeText}>
-              {SUB_KEYS[item.sub] ? t(SUB_KEYS[item.sub]) : item.sub}
+            <Text style={s.catImgBadgeText} numberOfLines={1}>
+              {catInfo.labelKey
+                ? t(catInfo.labelKey)
+                : (SUB_KEYS[item.sub] ? t(SUB_KEYS[item.sub]) : item.sub)}
             </Text>
           </View>
         )}
@@ -1183,6 +1185,10 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       position: 'absolute',
       bottom: 8,
       left: 8,
+      // Tope de ancho = ancho de la imagen (112) menos los márgenes
+      // laterales. Sin esto, en Android las palabras largas ("Gastronomía")
+      // empujaban el badge fuera del recuadro de la imagen.
+      maxWidth: 112 - 16,
       flexDirection: 'row',
       alignItems: 'center',
       gap: 4,
@@ -1195,6 +1201,8 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       color: '#fff',
       fontSize: 10,
       fontWeight: '800',
+      // Permite que el texto se recorte (…) en vez de desbordar el badge.
+      flexShrink: 1,
     },
 
     cardContent: {
