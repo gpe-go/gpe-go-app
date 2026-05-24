@@ -617,5 +617,7 @@
   "cat_turisticos": "Туристичні місця",
   "cat_salud": "Здоров’я та аптеки",
   "cat_transporte": "Транспорт і логістика",
-  "institutional_title": "Установи"
+  "institutional_title": "Установи",
+  "detail_phone": "Телефон",
+  "call": "Зателефонувати"
 }

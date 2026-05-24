@@ -617,5 +617,7 @@
   "cat_turisticos": "Turistmål",
   "cat_salud": "Hälsa och apotek",
   "cat_transporte": "Transport och logistik",
-  "institutional_title": "Institutionell"
+  "institutional_title": "Institutionell",
+  "detail_phone": "Telefon",
+  "call": "Ring"
 }

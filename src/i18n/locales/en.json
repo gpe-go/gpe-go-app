@@ -603,5 +603,7 @@
   "cat_turisticos": "Tourist sites",
   "cat_salud": "Health & pharmacies",
   "cat_transporte": "Transportation & logistics",
-  "institutional_title": "Institutional"
+  "institutional_title": "Institutional",
+  "detail_phone": "Phone",
+  "call": "Call"
 }

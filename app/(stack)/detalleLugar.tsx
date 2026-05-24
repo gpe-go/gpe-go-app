@@ -160,6 +160,14 @@ export default function DetalleLugar() {
     Alert.alert(t('open_in_maps'), t('choose_maps_app'), [...opciones, { text: t('cancel'), style: 'cancel' }]);
   };
 
+  // Llama directamente al teléfono del lugar (si tiene). Limpiamos el
+  // número para dejar solo dígitos y un posible '+' inicial.
+  const llamar = () => {
+    const tel = String(lugar.telefono ?? "").replace(/[^0-9+]/g, "");
+    if (!tel) return;
+    Linking.openURL(`tel:${tel}`).catch(() => {});
+  };
+
   const compartir = async () => {
     try {
       await Share.share({
@@ -360,6 +368,47 @@ export default function DetalleLugar() {
             </Text>
           </View>
         </View>
+
+        {/* Teléfono — solo se muestra si el lugar tiene uno en el dashboard.
+            Incluye botón para llamar directamente. */}
+        {!!lugar.telefono && (
+          <>
+            <View style={s.detailDivider} />
+            <View style={s.detailRow}>
+              <View
+                style={[
+                  s.detailIconWrap,
+                  { backgroundColor: "rgba(16,185,129,0.12)" },
+                ]}
+              >
+                <MaterialCommunityIcons name="phone" size={20} color="#10B981" />
+              </View>
+              <View style={s.detailInfo}>
+                <Text style={[s.detailLabel, { fontSize: fonts.xs }]}>
+                  {t("detail_phone", { defaultValue: "Teléfono" })}
+                </Text>
+                <Text style={[s.detailValue, { fontSize: fonts.sm }]}>
+                  {lugar.telefono}
+                </Text>
+              </View>
+              <Pressable
+                onPress={llamar}
+                style={({ pressed }) => [
+                  s.callBtn,
+                  {
+                    opacity: pressed ? 0.88 : 1,
+                    transform: [{ scale: pressed ? 0.96 : 1 }],
+                  },
+                ]}
+              >
+                <Ionicons name="call" size={15} color="#fff" />
+                <Text style={[s.callBtnText, { fontSize: fonts.xs }]}>
+                  {t("call", { defaultValue: "Llamar" })}
+                </Text>
+              </Pressable>
+            </View>
+          </>
+        )}
 
         {!!lugar.rating && (
           <>
@@ -1056,6 +1105,21 @@ const makeStyles = (c: any, f: any, isDark: boolean) =>
       backgroundColor: isDark
         ? "rgba(249,118,19,0.1)"
         : "rgba(249,118,19,0.08)",
+    },
+
+    // Botón "Llamar" (verde) en la fila de teléfono.
+    callBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
+      paddingHorizontal: 12,
+      height: 34,
+      borderRadius: 10,
+      backgroundColor: "#10B981",
+    },
+    callBtnText: {
+      color: "#fff",
+      fontWeight: "800",
     },
 
     detailDivider: {

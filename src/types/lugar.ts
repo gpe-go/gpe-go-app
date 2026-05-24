@@ -12,4 +12,6 @@ export type Lugar = {
   /** Coordenadas GPS del lugar (vienen de tb_lugares.latitud / .longitud) */
   lat?: number;
   lng?: number;
+  /** Teléfono de contacto (tb_lugares.telefono). Puede venir null/vacío. */
+  telefono?: string;
 };

@@ -16,6 +16,12 @@ export const mapLugar = (raw: any, imagenOverride?: string): Lugar => ({
   rating: 0,
   lat: raw.latitud != null ? parseFloat(raw.latitud) : undefined,
   lng: raw.longitud != null ? parseFloat(raw.longitud) : undefined,
+  // El teléfono puede venir null/"" desde el dashboard → lo normalizamos a
+  // undefined para que la UI lo oculte cuando no exista.
+  telefono:
+    raw.telefono != null && String(raw.telefono).trim() !== ""
+      ? String(raw.telefono).trim()
+      : undefined,
 });
 
 export const mapLugares = (rawList: any[]): Lugar[] =>

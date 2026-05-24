@@ -617,5 +617,7 @@
   "cat_turisticos": "المواقع السياحية",
   "cat_salud": "الصحة والصيدليات",
   "cat_transporte": "النقل واللوجستيات",
-  "institutional_title": "مؤسسي"
+  "institutional_title": "مؤسسي",
+  "detail_phone": "الهاتف",
+  "call": "اتصال"
 }

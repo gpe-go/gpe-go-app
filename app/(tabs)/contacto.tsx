@@ -769,6 +769,26 @@ export default function ContactoScreen() {
                 </Pressable>
               </>
             )}
+
+            {/* Horario — dinámico desde el dashboard (getContactoInfo). Solo
+                se muestra si existe; divisor dentro del condicional para no
+                dejar una rayita huérfana. */}
+            {contactoInfo.horario && (
+              <>
+                <View style={s.contactDivider} />
+                <View style={s.contactRow}>
+                  <LinearGradient colors={['#F97613', '#d85f0e']} style={s.contactIconWrap}>
+                    <Ionicons name="time" size={20} color="#fff" />
+                  </LinearGradient>
+                  <View style={s.contactInfo}>
+                    <Text style={[s.contactLabel, { fontSize: fonts.sm }]}>{t('detail_schedule')}</Text>
+                    <Text style={[s.contactValue, { fontSize: fonts.xs }]}>
+                      {contactoInfo.horario}
+                    </Text>
+                  </View>
+                </View>
+              </>
+            )}
           </View>
         </View>
       </AnimatedSection>

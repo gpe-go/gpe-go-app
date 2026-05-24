@@ -617,5 +617,7 @@
   "cat_turisticos": "Toeristische plaatsen",
   "cat_salud": "Gezondheid en apotheken",
   "cat_transporte": "Transport en logistiek",
-  "institutional_title": "Institutioneel"
+  "institutional_title": "Institutioneel",
+  "detail_phone": "Telefoon",
+  "call": "Bellen"
 }

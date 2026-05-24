@@ -617,5 +617,7 @@
   "cat_turisticos": "観光地",
   "cat_salud": "健康・薬局",
   "cat_transporte": "交通・物流",
-  "institutional_title": "行政機関"
+  "institutional_title": "行政機関",
+  "detail_phone": "電話",
+  "call": "電話する"
 }

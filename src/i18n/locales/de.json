@@ -617,5 +617,7 @@
   "cat_turisticos": "Sehenswürdigkeiten",
   "cat_salud": "Gesundheit und Apotheken",
   "cat_transporte": "Transport und Logistik",
-  "institutional_title": "Institutionell"
+  "institutional_title": "Institutionell",
+  "detail_phone": "Telefon",
+  "call": "Anrufen"
 }

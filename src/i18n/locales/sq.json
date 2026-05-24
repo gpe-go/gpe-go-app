@@ -617,5 +617,7 @@
   "cat_turisticos": "Vende turistike",
   "cat_salud": "Shëndeti dhe farmacitë",
   "cat_transporte": "Transporti dhe logjistika",
-  "institutional_title": "Institucional"
+  "institutional_title": "Institucional",
+  "detail_phone": "Telefoni",
+  "call": "Telefono"
 }
