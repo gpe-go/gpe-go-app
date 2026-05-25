@@ -157,6 +157,10 @@ module.exports = {
 
       "expo-web-browser",
 
+      // Almacén seguro cifrado (Android Keystore / iOS Keychain) para el
+      // token de sesión. Ver src/auth/tokenStore.ts.
+      "expo-secure-store",
+
       // ── Hardening del build nativo (NO afecta Expo Go) ──────────────
       // Estas opciones SOLO aplican al APK/IPA de producción (EAS/prebuild).
       // En Expo Go la app sigue corriendo igual.

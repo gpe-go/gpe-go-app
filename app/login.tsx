@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTranslation } from 'react-i18next';
 import { solicitarCodigo, verificarCodigo, getApiErrorMessage } from '../src/api/api';
+import { setToken } from '../src/auth/tokenStore';
 
 type Step = 'email' | 'codigo';
 
@@ -57,7 +58,8 @@ export default function Login() {
       const res = await verificarCodigo(email.trim().toLowerCase(), codigo.trim());
 
       if (res.success) {
-        await AsyncStorage.setItem('token', res.data.token);
+        // Token (credencial) → almacén seguro cifrado; perfil → AsyncStorage.
+        await setToken(res.data.token);
         await AsyncStorage.setItem('usuario', JSON.stringify(res.data.usuario));
         router.replace('/(tabs)');
       } else {

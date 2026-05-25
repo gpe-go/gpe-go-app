@@ -1,7 +1,7 @@
 import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 import { PRODUCTION_API_URL, DEV_API_URL, API_PATH } from "../config/env";
+import { getToken } from "../auth/tokenStore";
 
 // ============================================================
 //  Para cambiar el servidor: edita src/config/env.ts
@@ -25,24 +25,28 @@ const API = axios.create({
   timeout: 8000,
 });
 
-// Interceptor: agrega JWT automáticamente si existe
+// Interceptor: agrega JWT automáticamente si existe (token cifrado).
 API.interceptors.request.use(async (config) => {
-  const token = await AsyncStorage.getItem("token");
+  const token = await getToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   if (__DEV__) {
-    // Log temporal para diagnosticar "Error de conexión".
-    console.log("[API →]", config.method?.toUpperCase(), (config.baseURL ?? "") + (config.url ?? ""), config.params);
+    // Log de diagnóstico SOLO en desarrollo. No imprimimos `params` ni
+    // bodies porque pueden traer datos personales (email, código de
+    // verificación). En release `__DEV__` es false → no se loguea nada.
+    console.log("[API →]", config.method?.toUpperCase(), (config.baseURL ?? "") + (config.url ?? ""));
   }
   return config;
 });
 
 if (__DEV__) {
-  // Log de respuestas/errores para diagnóstico.
+  // Log de diagnóstico SOLO en desarrollo. NO imprimimos cuerpos de
+  // respuesta (`res.data` puede traer el token al hacer login) ni
+  // `params` (email/código). En release `__DEV__` es false → sin logs.
   API.interceptors.response.use(
     (res) => {
-      console.log("[API ←]", res.status, res.config.url, res.data);
+      console.log("[API ←]", res.status, res.config.url);
       return res;
     },
     (err) => {
@@ -50,9 +54,7 @@ if (__DEV__) {
         message: err.message,
         code: err.code,
         url: err.config?.baseURL + (err.config?.url ?? ""),
-        params: err.config?.params,
         status: err.response?.status,
-        data: err.response?.data,
       });
       return Promise.reject(err);
     },

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getToken } from "../auth/tokenStore";
 import { getFavoritos, agregarFavorito, quitarFavorito, getLugar } from "../api/api";
 import { mapLugar } from "../mappers/lugaresMapper";
 import { mapFavoritos } from "../mappers/favoritosMapper";
@@ -14,7 +14,7 @@ export const useFavoritosAPI = () => {
   useEffect(() => {
     const cargar = async () => {
       try {
-        const token = await AsyncStorage.getItem("token");
+        const token = await getToken();
 
         if (token) {
           setIsAuth(true);

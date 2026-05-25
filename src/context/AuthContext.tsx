@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { subirFotoPerfil } from '../api/api';
+import { setToken, removeToken } from '../auth/tokenStore';
 
 export type Usuario = {
   id?: string | number;
@@ -65,10 +66,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = useCallback(async (token: string, u: Usuario) => {
-    await AsyncStorage.multiSet([
-      ['token',   token],
-      ['usuario', JSON.stringify(u)],
-    ]);
+    // El token (credencial) va al almacén seguro cifrado; el perfil
+    // (datos no secretos que el usuario ya ve) queda en AsyncStorage.
+    await setToken(token);
+    await AsyncStorage.setItem('usuario', JSON.stringify(u));
     setUsuario(u);
 
     // 1. Primero intentar foto guardada localmente para este usuario
@@ -88,9 +89,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
-    // Solo borrar credenciales — la foto queda guardada por ID de usuario
-    // para restaurarse en el próximo login
-    await AsyncStorage.multiRemove(['token', 'usuario']);
+    // Borra el token del almacén seguro y el perfil de AsyncStorage.
+    // La foto queda guardada por ID de usuario para el próximo login.
+    await removeToken();
+    await AsyncStorage.removeItem('usuario');
     setUsuario(null);
     setFotoPerfil(null);
   }, []);
