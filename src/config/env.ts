@@ -1,36 +1,35 @@
 // ============================================================
 //  GuadalupeGO — Configuración central de entorno
 //
-//  Este es el único archivo que debes editar para cambiar
-//  la URL del servidor.
-//
-//  ANTES DE PUBLICAR EN TIENDAS:
-//  Reemplaza PRODUCTION_API_URL con la URL real del servidor
-//  que te proporcione el municipio.
+//  Único archivo a editar si algún día cambia la URL del
+//  servidor. Hoy la app apunta al servidor de PRODUCCIÓN del
+//  municipio (https://go.guadalupe.gob.mx) tanto en builds de
+//  tienda como en desarrollo.
 // ============================================================
 
 // ── URL de PRODUCCIÓN ────────────────────────────────────────
 //
-//  ← PENDIENTE: reemplaza con la URL del servidor de producción
-//  que te entregue el municipio. Ejemplo:
-//    "https://api.guadalupe.gob.mx/gpe_go_api/inputs.php"
-//    "https://tudominio.com/gpe_go_api/inputs.php"
+//  Servidor de producción del municipio. La API vive en la RAÍZ
+//  del dominio (HTTPS). Si el municipio migra de dominio, basta
+//  con cambiar esta línea.
 //
 export const PRODUCTION_API_URL =
   "https://go.guadalupe.gob.mx";
 
-// ── URL de DESARROLLO LOCAL ──────────────────────────────────
+// ── URL de DESARROLLO ────────────────────────────────────────
 //
 //  Se usa cuando la app corre en modo desarrollo (Expo Go).
-//  Para pruebas locales con XAMPP, cambia a:
-//    "http://TU_IP_LOCAL/gpe_go_api/inputs.php"
+//  Ya NO se usa un backend local (XAMPP): apunta al mismo
+//  servidor de producción para que desarrollo y release
+//  consuman exactamente los mismos datos.
 //
 export const DEV_API_URL =
   "https://go.guadalupe.gob.mx";
 
 // ── Ruta del backend dentro del servidor ────────────────────
 //
-//  En el servidor remoto la API está en la raíz (sin ruta).
-//  Para XAMPP local sería "gpe_go_api/inputs.php".
+//  La API está en la RAÍZ del dominio (sin sub-ruta), por eso
+//  queda vacío. Las peticiones van directo a
+//  https://go.guadalupe.gob.mx con sus parámetros (?modulo=...).
 //
 export const API_PATH = "";
