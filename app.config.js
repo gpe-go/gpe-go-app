@@ -5,26 +5,21 @@
 //  marcadas con  ← PENDIENTE  con los datos del municipio.
 // ============================================================
 
-// API Keys de Google Maps proporcionadas por el municipio.
-// El ingeniero generó keys SEPARADAS por plataforma para que cada una
-// tenga su propia restricción en Google Cloud Console:
+// API Key de Google Maps proporcionada por el municipio.
+// El ingeniero confirmó que UNA SOLA key cubre AMBAS plataformas, con
+// restricciones configuradas en Google Cloud Console para:
 //
-//   • Android  → restringida por package name + SHA-1 del firmado APK
-//   • iOS      → restringida por Bundle Identifier   (⏳ PENDIENTE)
-//   • Web      → restringida al subdominio go.guadalupe.gob.mx
-//                (NO se usa en esta app — vive del lado del backend)
+//   • Android → restringida por package name (com.guadalupego.app)
+//               + SHA-1 del firmado APK
+//   • iOS     → restringida por Bundle Identifier (com.guadalupego.app)
+//   • Web     → restringida al subdominio go.guadalupe.gob.mx
+//               (NO se usa en esta app — vive del lado del backend)
 //
-// ⚠️ iOS PENDIENTE: cuando el ingeniero entregue la key específica de
-// iOS con restricción por Bundle ID `com.guadalupego.app`, reemplazar
-// el string vacío de GOOGLE_MAPS_API_KEY_IOS por la nueva key.
-//
-// Mientras tanto en iOS:
-//   • Expo Go    → los mapas funcionan (Expo usa sus propias credenciales)
-//   • Build IPA  → los mapas saldrán en gris hasta tener la key
+// Por eso ambas constantes apuntan a la MISMA key.
 const GOOGLE_MAPS_API_KEY_ANDROID =
   process.env.GOOGLE_MAPS_API_KEY_ANDROID ?? "AIzaSyDQhdj6DHeFL1lRTpud20uAmvsu6MkVHrk";
 const GOOGLE_MAPS_API_KEY_IOS =
-  process.env.GOOGLE_MAPS_API_KEY_IOS ?? "";
+  process.env.GOOGLE_MAPS_API_KEY_IOS ?? "AIzaSyDQhdj6DHeFL1lRTpud20uAmvsu6MkVHrk";
 
 module.exports = {
   expo: {
@@ -49,12 +44,8 @@ module.exports = {
       //   nueva versión al App Store (formato string)
       buildNumber: "1",
 
-      // Google Maps API Key para iOS — ⏳ PENDIENTE de que el ingeniero
-      // la genere con restricción por Bundle ID `com.guadalupego.app`.
-      // Cuando llegue, reemplazar GOOGLE_MAPS_API_KEY_IOS arriba con la
-      // nueva key. Mientras esté vacía, los mapas en builds nativos
-      // de iOS saldrán en gris (en Expo Go siguen funcionando porque
-      // Expo usa sus propias credenciales internas).
+      // Google Maps API Key para iOS — misma key que Android, ya con la
+      // restricción por Bundle ID configurada en Google Cloud Console.
       config: {
         googleMapsApiKey: GOOGLE_MAPS_API_KEY_IOS,
       },
